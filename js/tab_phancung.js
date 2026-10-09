@@ -55,7 +55,7 @@ function getPcPctBadge(pct) {
  * Chuẩn hóa dữ liệu thô từ sheet 'phancung'
  */
 function normalizePhanCungData(rawData) {
-  if (!Array.isArray(rawData) || rawData.length < 20) {
+  if (!Array.isArray(rawData) || rawData.length < 12) {
     return null;
   }
 
@@ -120,14 +120,14 @@ function normalizePhanCungData(rawData) {
     q.pct = pctQ;
   });
 
-  // Table 2: Danh sách Sale & Kênh SC (Rows 10 -> 19)
+  // Table 2: Danh sách Sale & Kênh SC (Rows 10 -> hết bảng)
   // Row 10: Header ['Stt', 'Sale', 'Tháng 1' .. 'Tháng 12', 'Tổng Doanh Số']
   const items = [];
   let grandTotalRow = null;
 
-  for (let r = 10; r <= 19; r++) {
+  for (let r = 10; r < rawData.length; r++) {
     const row = rawData[r];
-    if (!row) continue;
+    if (!row || !row.length) continue;
     const stt = row[0] != null && String(row[0]).trim() !== '' ? parseInt(row[0], 10) : null;
     const name = String(row[1] || '').trim();
     if (!name) continue;
@@ -139,7 +139,7 @@ function normalizePhanCungData(rawData) {
     const total = parsePcNumber(row[14]);
 
     const isGrandTotal = name.toUpperCase() === 'TỔNG';
-    const isChannel = name.startsWith('SC ');
+    const isChannel = name.startsWith('SC ') || name.includes('SC');
 
     const item = {
       stt: (stt != null && !isNaN(stt)) ? stt : null,
@@ -157,7 +157,7 @@ function normalizePhanCungData(rawData) {
     }
   }
 
-  const grandTotal = grandTotalRow ? grandTotalRow.total : items.reduce((s, x) => s + x.total, 0);
+  const grandTotal = grandTotalRow && grandTotalRow.total > 0 ? grandTotalRow.total : items.reduce((s, x) => s + x.total, 0);
 
   // Tính tỷ trọng % đóng góp của từng dòng
   items.forEach(it => {
@@ -169,7 +169,7 @@ function normalizePhanCungData(rawData) {
 
   // Tổng KPI năm & Tổng Đạt năm
   const totKpiYear = kpiMonths.reduce((s, v) => s + v, 0);
-  const totDatYear = datMonths.reduce((s, v) => s + v, 0);
+  const totDatYear = (grandTotalRow && grandTotalRow.total > 0) ? grandTotalRow.total : datMonths.reduce((s, v) => s + v, 0);
   const pctDatYear = totKpiYear > 0 ? (totDatYear / totKpiYear) * 100 : 0;
 
   // Top 1 Sale
@@ -481,6 +481,7 @@ function renderSaleDetailTable(parsed) {
     return 0;
   });
 
+  
   // 1. THEAD
   let thead = '<thead><tr>';
   const sortArrow = key => (PHANCUNG_SORT.k === key ? (PHANCUNG_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
@@ -615,7 +616,7 @@ async function loadPhanCung(forceReload = false) {
         req.onerror = () => resolve(null);
       });
 
-      if (cached && cached.data && Array.isArray(cached.data) && cached.data.length >= 20) {
+      if (cached && cached.data && Array.isArray(cached.data) && cached.data.length >= 12) {
         const ageMs = Date.now() - (cached.savedAt || 0);
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
@@ -652,7 +653,7 @@ async function loadPhanCung(forceReload = false) {
   const cacheBusterUrl = API_PHANCUNG + (API_PHANCUNG.includes('?') ? '&' : '?') + '_t=' + Date.now();
   try {
     const res = await safeFetchJson(cacheBusterUrl, 2);
-    if (res.status !== 'success' || !Array.isArray(res.data) || res.data.length < 20) {
+    if (res.status !== 'success' || !Array.isArray(res.data) || res.data.length < 12) {
       throw new Error(res.status || 'Dữ liệu không đầy đủ');
     }
 
