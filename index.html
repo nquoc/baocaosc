@@ -300,6 +300,7 @@
         <span id="baocaoscSrcBadge" class="badge b-load">Đang tải…</span>
         <button id="btnReloadBaoCaoSc" onclick="loadBaoCaoSc(true)">⟳ Tải lại Báo Cáo SC</button>
         <button onclick="exportActiveRateCsv()" style="background:#059669;border-color:#10b981;color:#fff">⬇ Xuất CSV Mục 1</button>
+        <button onclick="exportCareRateCsv()" style="background:#0284c7;border-color:#0ea5e9;color:#fff">⬇ Xuất CSV Mục 2</button>
       </div>
     </div>
   </div>
@@ -340,11 +341,43 @@
     </div>
   </div>
 
-  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 2, MỤC 3...) -->
+  <!-- ==================== MỤC 2: TỶ LỆ CHĂM KHÁCH NEW T10 ==================== -->
+  <div id="bscSecCareRate" class="bsc-centered-block" style="margin-top:24px">
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 2 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#10b981;color:#ffffff;letter-spacing:0.5px">MỤC 2</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Tỷ Lệ Chăm Khách New T10 (Ký Mới · Inactive · SC Chăm)</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Nguồn: Sheet <b>baocaotuan</b> (phạm vi F2:I6)
+      </div>
+    </div>
+
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 2 -->
+    <div class="grid kpis" id="bscCareSummaryCards" style="margin-bottom:16px"></div>
+
+    <!-- BẢNG CHI TIẾT MỤC 2 -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📊 Bảng Chi Tiết Tỷ Lệ Chăm Khách New Theo Ngành Hàng (Tháng 10)</span>
+            <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+          </h3>
+        </div>
+      </div>
+      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscCareTable" class="kpi-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 3, MỤC 4...) -->
   <div class="card bsc-centered-block" style="padding:18px 20px;margin-bottom:16px;border:1.5px dashed var(--line);text-align:center;background:transparent">
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--mut)">
       <span style="font-size:16px">➕</span>
-      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 2, Mục 3...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
+      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 3, Mục 4...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
     </div>
   </div>
 </div>

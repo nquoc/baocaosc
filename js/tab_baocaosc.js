@@ -1,7 +1,7 @@
 /**
  * tab_baocaosc.js - Logic xử lý dữ liệu và giao diện Tab 6: BÁO CÁO SC
  * Mục 1: Active Rate Năm 2026 (Retail, F&B, Booking qua các tháng)
- * Hỗ trợ so sánh tháng sau tăng/giảm xanh đỏ so với tháng liền kề trước đó.
+ * Mục 2: Tỷ Lệ Chăm Khách New T10 (Ký Mới, Inactive, SC Chăm)
  */
 
 // Helper parse số tỷ lệ phần trăm từ Google Sheet
@@ -11,11 +11,15 @@ function parseActiveRateVal(val) {
     if (isNaN(val)) return null;
     return val <= 1 ? val * 100 : val;
   }
-  const s = String(val).replace('%', '').replace(/\./g, '').replace(/,/g, '.').trim();
+  const s = String(val).replace(/%/g, '').replace(/\./g, '').replace(/,/g, '.').trim();
   const n = parseFloat(s);
   if (isNaN(n)) return null;
   return n <= 1 ? n * 100 : n;
 }
+
+/* ==========================================================================
+   MỤC 1: ACTIVE RATE NĂM 2026 (RETAIL · F&B · BOOKING)
+   ========================================================================== */
 
 /**
  * Chuẩn hóa dữ liệu thô từ sheet 'baocaotuan' (range A2:D14)
@@ -252,8 +256,7 @@ function renderBaoCaoScSummaryCards(parsed) {
 function renderBaoCaoScCharts() {}
 
 /**
- * BẢNG CHI TIẾT THEO TỪNG THÁNG (TIMELINE VIEW)
- * Có tìm kiếm, sắp xếp theo cột và đánh giá xu hướng biến động
+ * BẢNG CHI TIẾT THEO TỪNG THÁNG (TIMELINE VIEW - MỤC 1)
  */
 function renderActiveRateTimelineTable(parsed) {
   const tbl = $('bscTimelineTable');
@@ -287,9 +290,6 @@ function renderActiveRateTimelineTable(parsed) {
     if (k === 'booking') {
       return dir * ((a.booking || 0) - (b.booking || 0));
     }
-    if (k === 'avg') {
-      return dir * ((a.avg || 0) - (b.avg || 0));
-    }
     return 0;
   });
 
@@ -311,7 +311,6 @@ function renderActiveRateTimelineTable(parsed) {
     tbody += `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--mut)">Không có dữ liệu phù hợp với tìm kiếm</td></tr>`;
   } else {
     list.forEach(m => {
-      // Đánh giá xu hướng biến động của tháng
       let trendBadge = '';
       const hasAnyData = m.retail != null || m.fnb != null || m.booking != null;
 
@@ -363,7 +362,7 @@ function renderActiveRateTimelineTable(parsed) {
 }
 
 /**
- * Sắp xếp bảng
+ * Sắp xếp bảng Mục 1
  */
 function sortActiveRate(key) {
   if (BAOCAOSC_SORT.k === key) {
@@ -389,23 +388,209 @@ function onActiveRateSearch(val) {
   }
 }
 
+/* ==========================================================================
+   MỤC 2: TỶ LỆ CHĂM KHÁCH NEW T10 (KÝ MỚI · INACTIVE · SC CHĂM)
+   ========================================================================== */
+
 /**
- * Điều phối render toàn bộ Tab BÁO CÁO SC
+ * Chuẩn hóa dữ liệu thô từ sheet 'baocaotuan' (range F2:I6)
  */
-function renderBaoCaoSc() {
-  if (!BAOCAOSC_STATE.activeRate) return;
-  const parsed = normalizeActiveRateData(BAOCAOSC_STATE.activeRate);
-  if (!parsed) {
-    showToast('Dữ liệu Báo Cáo SC chưa đầy đủ!', false);
-    return;
+function normalizeCareRateData(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const header = rawData[0] || [];
+  let colName = 0;
+  let colKyMoi = 1;
+  let colInactive = 2;
+  let colScCham = 3;
+
+  for (let c = 0; c < header.length; c++) {
+    const h = String(header[c] || '').trim().toLowerCase();
+    if (h.includes('ngành') || h.includes('tháng')) colName = c;
+    else if (h.includes('ký mới') || h.includes('ky moi')) colKyMoi = c;
+    else if (h.includes('inactive')) colInactive = c;
+    else if (h.includes('sc chăm') || h.includes('sc cham')) colScCham = c;
   }
 
-  renderBaoCaoScSummaryCards(parsed);
-  renderActiveRateTimelineTable(parsed);
+  const items = [];
+  let totalRow = null;
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+    const rawName = String(row[colName] || '').trim();
+    if (!rawName) continue;
+
+    // Chuẩn hóa tên ngành
+    let name = rawName;
+    if (name.toUpperCase().startsWith('FNB')) name = 'F&B';
+
+    const kyMoi = parseInt(String(row[colKyMoi] || '0').replace(/\D/g, ''), 10) || 0;
+    const inactive = parseActiveRateVal(row[colInactive]);
+    const scCham = parseActiveRateVal(row[colScCham]);
+
+    const isTotal = name.toLowerCase().includes('tổng');
+    const item = {
+      name,
+      kyMoi,
+      inactive,
+      scCham,
+      share: 0,
+      activeRate: inactive != null ? Math.max(0, 100 - inactive) : null,
+      isTotal
+    };
+
+    if (isTotal) {
+      totalRow = item;
+    } else {
+      items.push(item);
+    }
+  }
+
+  const totKyMoi = totalRow && totalRow.kyMoi > 0 ? totalRow.kyMoi : items.reduce((s, it) => s + it.kyMoi, 0);
+
+  items.forEach(it => {
+    it.share = totKyMoi > 0 ? (it.kyMoi / totKyMoi) * 100 : 0;
+  });
+
+  if (totalRow) {
+    totalRow.share = 100;
+  }
+
+  return {
+    items,
+    totalRow,
+    totKyMoi,
+    avgInactive: totalRow ? (totalRow.inactive || 0) : 0,
+    avgScCham: totalRow ? (totalRow.scCham || 0) : 0
+  };
 }
 
 /**
- * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (?sheet=baocaotuan&range=A2:D14)
+ * Hiển thị 3 thẻ KPI tóm tắt cho Mục 2
+ */
+function renderBaoCaoScCareSummaryCards(parsedCare) {
+  const box = $('bscCareSummaryCards');
+  if (!box || !parsedCare) return;
+
+  const K = (label, val, sub, color = '') => `
+    <div class="card kpi">
+      <div class="l">${label}</div>
+      <div class="v" style="${color}">${val}</div>
+      <div class="s">${sub}</div>
+    </div>`;
+
+  const itemsSummary = parsedCare.items.map(it => `${esc(it.name)}: ${n0(it.kyMoi)}`).join(' · ');
+
+  box.innerHTML =
+    K('Tổng Ký Mới (Tháng 10)', `${n0(parsedCare.totKyMoi)} gian hàng`, itemsSummary, 'color:#38bdf8') +
+    K('Tỷ Lệ Inactive Chung', `${parsedCare.avgInactive.toFixed(2)}%`, `Khách hàng ký mới chưa active (T10)`, 'color:#f59e0b') +
+    K('Tỷ Lệ SC Chăm Chung', `${parsedCare.avgScCham.toFixed(2)}%`, `Gian hàng mới đã được SC hỗ trợ chăm sóc`, 'color:#c084fc');
+}
+
+/**
+ * Hiển thị bảng chi tiết Mục 2
+ */
+function renderBaoCaoScCareTable(parsedCare) {
+  const tbl = $('bscCareTable');
+  if (!tbl || !parsedCare) return;
+
+  let list = [...parsedCare.items];
+
+  // Sắp xếp
+  const { k, dir } = BAOCAOSC_CARE_SORT;
+  list.sort((a, b) => {
+    if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
+    if (k === 'kyMoi') return dir * (a.kyMoi - b.kyMoi);
+    if (k === 'share') return dir * (a.share - b.share);
+    if (k === 'inactive') return dir * ((a.inactive || 0) - (b.inactive || 0));
+    if (k === 'scCham') return dir * ((a.scCham || 0) - (b.scCham || 0));
+    return 0;
+  });
+
+  let thead = '<thead><tr>';
+  const sortArrow = key => (BAOCAOSC_CARE_SORT.k === key ? (BAOCAOSC_CARE_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
+
+  thead += `<th onclick="sortCareRate('name')" style="text-align:left;min-width:140px;cursor:pointer">Ngành Hàng${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortCareRate('kyMoi')" style="text-align:right;min-width:140px;cursor:pointer;color:#38bdf8">Ký Mới (Gian Hàng)${sortArrow('kyMoi')}</th>`;
+  thead += `<th onclick="sortCareRate('share')" style="text-align:right;min-width:120px;cursor:pointer">Tỷ Trọng Ký Mới${sortArrow('share')}</th>`;
+  thead += `<th onclick="sortCareRate('inactive')" style="text-align:right;min-width:140px;cursor:pointer;color:#f59e0b">Tỷ Lệ Inactive${sortArrow('inactive')}</th>`;
+  thead += `<th onclick="sortCareRate('scCham')" style="text-align:right;min-width:140px;cursor:pointer;color:#c084fc">Tỷ Lệ SC Chăm${sortArrow('scCham')}</th>`;
+  thead += '</tr></thead>';
+
+  let tbody = '<tbody>';
+  list.forEach(it => {
+    const badgeInactive = it.inactive != null ? `<span class="ar-badge" style="background:rgba(245,158,11,0.16);color:#f59e0b">${it.inactive.toFixed(2)}%</span>` : '–';
+    const badgeScCham = it.scCham != null ? `<span class="ar-badge" style="background:rgba(192,132,252,0.16);color:#c084fc">${it.scCham.toFixed(2)}%</span>` : '–';
+
+    tbody += '<tr>';
+    tbody += `<td class="sc-name" style="text-align:left;font-weight:700">${esc(it.name)}</td>`;
+    tbody += `<td style="text-align:right;font-weight:700;color:#38bdf8">${n0(it.kyMoi)}</td>`;
+    tbody += `<td style="text-align:right;font-weight:600">${it.share.toFixed(2)}%</td>`;
+    tbody += `<td style="text-align:right">${badgeInactive}</td>`;
+    tbody += `<td style="text-align:right">${badgeScCham}</td>`;
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  let tfoot = '';
+  if (parsedCare.totalRow) {
+    const tot = parsedCare.totalRow;
+    tfoot += '<tfoot><tr>';
+    tfoot += '<td class="sc-name" style="text-align:left;color:var(--acc)">TỔNG TOÀN BỘ</td>';
+    tfoot += `<td style="text-align:right;color:#38bdf8;font-weight:800;font-size:14px">${n0(tot.kyMoi)}</td>`;
+    tfoot += `<td style="text-align:right;color:var(--acc);font-weight:800">100%</td>`;
+    tfoot += `<td style="text-align:right;color:#f59e0b;font-weight:800">${tot.inactive ? tot.inactive.toFixed(2) + '%' : '–'}</td>`;
+    tfoot += `<td style="text-align:right;color:#c084fc;font-weight:800">${tot.scCham ? tot.scCham.toFixed(2) + '%' : '–'}</td>`;
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * Sắp xếp bảng Mục 2
+ */
+function sortCareRate(key) {
+  if (BAOCAOSC_CARE_SORT.k === key) {
+    BAOCAOSC_CARE_SORT.dir = -BAOCAOSC_CARE_SORT.dir;
+  } else {
+    BAOCAOSC_CARE_SORT.k = key;
+    BAOCAOSC_CARE_SORT.dir = key === 'name' ? 1 : -1;
+  }
+  if (BAOCAOSC_STATE.careRate) {
+    const parsed = normalizeCareRateData(BAOCAOSC_STATE.careRate);
+    renderBaoCaoScCareTable(parsed);
+  }
+}
+
+/* ==========================================================================
+   ĐIỀU PHỐI CHUNG & TẢI DỮ LIỆU TAB BÁO CÁO SC
+   ========================================================================== */
+
+/**
+ * Điều phối render toàn bộ Tab BÁO CÁO SC (Mục 1 & Mục 2)
+ */
+function renderBaoCaoSc() {
+  if (BAOCAOSC_STATE.activeRate) {
+    const parsedActive = normalizeActiveRateData(BAOCAOSC_STATE.activeRate);
+    if (parsedActive) {
+      renderBaoCaoScSummaryCards(parsedActive);
+      renderActiveRateTimelineTable(parsedActive);
+    }
+  }
+
+  if (BAOCAOSC_STATE.careRate) {
+    const parsedCare = normalizeCareRateData(BAOCAOSC_STATE.careRate);
+    if (parsedCare) {
+      renderBaoCaoScCareSummaryCards(parsedCare);
+      renderBaoCaoScCareTable(parsedCare);
+    }
+  }
+}
+
+/**
+ * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1 + Mục 2 song song)
  */
 async function loadBaoCaoSc(forceReload = false) {
   const btn = $('btnReloadBaoCaoSc');
@@ -463,19 +648,26 @@ async function loadBaoCaoSc(forceReload = false) {
     }
   }
 
-  // 2. Tải API trực tiếp (?sheet=baocaotuan&range=A2:D14)
-  const cacheBusterUrl = API_BAOCAOSC_ACTIVE_RATE + (API_BAOCAOSC_ACTIVE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  // 2. Tải API trực tiếp song song (Mục 1 range A2:D14 + Mục 2 range F2:I6)
+  const urlActive = API_BAOCAOSC_ACTIVE_RATE + (API_BAOCAOSC_ACTIVE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlCare = API_BAOCAOSC_CARE_RATE + (API_BAOCAOSC_CARE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
+
   try {
-    const res = await safeFetchJson(cacheBusterUrl, 2);
-    if (res.status !== 'success' || !Array.isArray(res.data) || res.data.length < 2) {
-      throw new Error(res.status || 'Dữ liệu không đầy đủ');
+    const [resActive, resCare] = await Promise.all([
+      safeFetchJson(urlActive, 2),
+      safeFetchJson(urlCare, 2)
+    ]);
+
+    if (resActive.status !== 'success' || !Array.isArray(resActive.data) || resActive.data.length < 2) {
+      throw new Error(resActive.status || 'Dữ liệu Mục 1 không đầy đủ');
     }
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     BAOCAOSC_STATE = {
-      activeRate: res.data,
+      activeRate: resActive.data,
+      careRate: resCare && resCare.data ? resCare.data : null,
       savedAt: Date.now(),
       timeStr: timeStr
     };
@@ -492,7 +684,7 @@ async function loadBaoCaoSc(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast(`Đã đồng bộ thành công Báo Cáo SC từ Google Sheets lúc ${timeStr}!`, true);
+    showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1 & Mục 2) lúc ${timeStr}!`, true);
   } catch (err) {
     console.error('Lỗi khi tải Báo Cáo SC:', err);
     if (BAOCAOSC_STATE.activeRate) {
@@ -517,7 +709,7 @@ async function loadBaoCaoSc(forceReload = false) {
 }
 
 /**
- * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 1
  */
 function exportActiveRateCsv() {
   if (!BAOCAOSC_STATE.activeRate) {
@@ -578,5 +770,64 @@ function exportActiveRateCsv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Active Rate thành công!', true);
+  showToast('Đã xuất file CSV Active Rate (Mục 1) thành công!', true);
+}
+
+/**
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 2
+ */
+function exportCareRateCsv() {
+  if (!BAOCAOSC_STATE.careRate) {
+    showToast('Chưa có dữ liệu Mục 2 để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizeCareRateData(BAOCAOSC_STATE.careRate);
+  if (!parsed) return;
+
+  const lines = [];
+
+  // Tiêu đề
+  lines.push(['BÁO CÁO SC - MỤC 2: TỶ LỆ CHĂM KHÁCH NEW T10']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+
+  lines.push(['Ngành Hàng', 'Ký Mới (Gian Hàng)', 'Tỷ Trọng Ký Mới (%)', 'Tỷ Lệ Inactive (%)', 'Tỷ Lệ SC Chăm (%)']);
+  parsed.items.forEach(it => {
+    lines.push([
+      it.name,
+      it.kyMoi,
+      it.share.toFixed(2) + '%',
+      it.inactive != null ? it.inactive.toFixed(2) + '%' : '–',
+      it.scCham != null ? it.scCham.toFixed(2) + '%' : '–'
+    ]);
+  });
+
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    lines.push([
+      'TỔNG TOÀN BỘ',
+      tot.kyMoi,
+      '100%',
+      tot.inactive != null ? tot.inactive.toFixed(2) + '%' : '–',
+      tot.scCham != null ? tot.scCham.toFixed(2) + '%' : '–'
+    ]);
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_ChamKhachNew_T10_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Chăm Khách New (Mục 2) thành công!', true);
 }
