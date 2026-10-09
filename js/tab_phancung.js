@@ -647,20 +647,30 @@ async function loadPhanCung(forceReload = false) {
   if (!forceReload) {
     try {
       const db = await openDB();
-      const cached = await new Promise(resolve => {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => resolve(null);
-      });
+      const [cachedYear, cachedOct] = await Promise.all([
+        new Promise(resolve => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        }),
+        new Promise(resolve => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG_OCT);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        })
+      ]);
 
-      if (cached && cached.data && Array.isArray(cached.data) && cached.data.length >= 12) {
-        const ageMs = Date.now() - (cached.savedAt || 0);
+      if (cachedYear && cachedYear.data && Array.isArray(cachedYear.data) && cachedYear.data.length >= 12) {
+        const ageMs = Date.now() - (cachedYear.savedAt || 0);
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
 
+        PHANCUNG_STATE = cachedYear;
+        if (cachedOct && cachedOct.data) PHANCUNG_OCT_STATE = cachedOct;
+
         if (ageMs < CACHE_TTL_MS) {
-          PHANCUNG_STATE = cached;
           renderPhanCung();
           if (badge) {
             badge.className = 'badge b-cache';
@@ -674,7 +684,8 @@ async function loadPhanCung(forceReload = false) {
           return;
         } else {
           // Hiển thị tạm cache cũ và tải ngầm
-          PHANCUNG_STATE = cached;
+          PHANCUNG_STATE = cachedYear;
+          if (cachedOct && cachedOct.data) PHANCUNG_OCT_STATE = cachedOct;
           renderPhanCung();
           if (badge) {
             badge.className = 'badge b-load';
@@ -687,28 +698,44 @@ async function loadPhanCung(forceReload = false) {
     }
   }
 
-  // 2. Tải API trực tiếp
-  const cacheBusterUrl = API_PHANCUNG + (API_PHANCUNG.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  // 2. Tải API trực tiếp song song (Mục 1 sheet phancung + Mục 2 sheet opp)
+  const urlYear = API_PHANCUNG + (API_PHANCUNG.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlOct = API_PHANCUNG_OCT + (API_PHANCUNG_OCT.includes('?') ? '&' : '?') + '_t=' + Date.now();
   try {
-    const res = await safeFetchJson(cacheBusterUrl, 2);
-    if (res.status !== 'success' || !Array.isArray(res.data) || res.data.length < 12) {
-      throw new Error(res.status || 'Dữ liệu không đầy đủ');
+    const [resYear, resOct] = await Promise.all([
+      safeFetchJson(urlYear, 2),
+      safeFetchJson(urlOct, 2)
+    ]);
+
+    if (resYear.status !== 'success' || !Array.isArray(resYear.data) || resYear.data.length < 12) {
+      throw new Error(resYear.status || 'Dữ liệu Mục 1 không đầy đủ');
     }
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     PHANCUNG_STATE = {
-      data: res.data,
+      data: resYear.data,
       savedAt: Date.now(),
       timeStr: timeStr
     };
+
+    if (resOct && resOct.status === 'success' && Array.isArray(resOct.data) && resOct.data.length >= 2) {
+      PHANCUNG_OCT_STATE = {
+        data: resOct.data,
+        savedAt: Date.now(),
+        timeStr: timeStr
+      };
+    }
 
     // Lưu IndexedDB
     try {
       const db = await openDB();
       const tx = db.transaction(STORE_NAME, 'readwrite');
       tx.objectStore(STORE_NAME).put(PHANCUNG_STATE, CACHE_KEY_PHANCUNG);
+      if (PHANCUNG_OCT_STATE.data) {
+        tx.objectStore(STORE_NAME).put(PHANCUNG_OCT_STATE, CACHE_KEY_PHANCUNG_OCT);
+      }
     } catch (e) {}
 
     renderPhanCung();
@@ -716,7 +743,7 @@ async function loadPhanCung(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast(`Đã đồng bộ thành công DS Phần Cứng từ Google Sheets lúc ${timeStr}!`, true);
+    showToast(`Đã đồng bộ thành công DS Phần Cứng (Mục 1 & Mục 2) lúc ${timeStr}!`, true);
   } catch (err) {
     console.error('Lỗi khi tải DS Phần Cứng:', err);
     if (PHANCUNG_STATE.data) {
@@ -806,43 +833,447 @@ function exportPhanCungCsv() {
 }
 
 /* ==========================================================================
-   MỤC 2: CHI TIẾT PHẦN CỨNG THÁNG 10 (SẴN SÀNG KẾT NỐI API)
+   MỤC 2: CHI TIẾT PHẦN CỨNG THÁNG 10 (MA TRẬN TÌNH TRẠNG × NHÓM)
    ========================================================================== */
+
+/**
+ * Rút gọn tên nhóm nhân sự để vừa vặn tiêu đề cột bảng
+ */
+function getShortGroupName(nhom) {
+  if (!nhom) return { title: 'Khác', sub: '' };
+  const s = String(nhom).trim();
+  const parts = s.split('-').map(p => p.trim());
+  if (parts.length >= 3) {
+    const code = parts[0];
+    const name = parts[1];
+    const dept = parts.slice(2).join(' · ');
+    return { title: name, sub: `${code} · ${dept}` };
+  }
+  if (parts.length === 2) {
+    return { title: parts[1], sub: parts[0] };
+  }
+  return { title: s, sub: '' };
+}
+
+/**
+ * Badge trạng thái đơn cơ hội
+ */
+function getOctStatusBadge(st) {
+  const s = String(st || '').trim();
+  if (s === 'Thành công') {
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-weight:800;font-size:12px;color:#10b981;background:rgba(16,185,129,0.18);border:1px solid rgba(16,185,129,0.3)">✓ Thành công</span>`;
+  }
+  if (s === 'KH đã thanh toán') {
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-weight:800;font-size:12px;color:#0ea5e9;background:rgba(14,165,233,0.18);border:1px solid rgba(14,165,233,0.3)">💳 KH đã thanh toán</span>`;
+  }
+  if (s === 'Chờ Xét Duyệt') {
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-weight:800;font-size:12px;color:#f59e0b;background:rgba(245,158,11,0.18);border:1px solid rgba(245,158,11,0.3)">⏳ Chờ Xét Duyệt</span>`;
+  }
+  if (s === 'Bán hàng') {
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-weight:800;font-size:12px;color:#a855f7;background:rgba(168,85,247,0.18);border:1px solid rgba(168,85,247,0.3)">🛒 Bán hàng</span>`;
+  }
+  return `<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-weight:700;font-size:12px;color:var(--mut);background:rgba(148,163,184,0.15)">${esc(s)}</span>`;
+}
+
+/**
+ * Định dạng ô ma trận: SL: {count} / {val ₫}
+ */
+function formatPivotCell(count, val) {
+  if (!count && !val) {
+    return '<span style="color:var(--mut);opacity:0.45">–</span>';
+  }
+  const valStr = formatVND(val);
+  return `<div style="font-weight:600;font-size:12.5px;line-height:1.35;white-space:nowrap">
+    <span style="color:var(--mut);font-size:11px;font-weight:600">SL:</span> <b style="font-weight:800;color:var(--tx-heading);font-size:13px">${count}</b> <span style="color:var(--mut);font-weight:600;margin:0 3px">/</span> <span style="color:${val > 0 ? '#38bdf8' : 'var(--mut)'};font-weight:700">${valStr}</span>
+  </div>`;
+}
+
+/**
+ * Chuẩn hóa dữ liệu thô sheet 'opp' (Mục 2 Phần Cứng Tháng 10)
+ */
+function normalizePhanCungOctData(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const headers = rawData[0].map(h => String(h || '').trim());
+  let colStatus = headers.findIndex(h => h.toLowerCase() === 'tình trạng');
+  let colNhom = headers.findIndex(h => h.toLowerCase() === 'nhóm');
+  let colTienVal = headers.findIndex(h => h.toLowerCase() === 'thành tiền value');
+  let colTienStr = headers.findIndex(h => h.toLowerCase() === 'thành tiền');
+
+  if (colStatus === -1) colStatus = 10;
+  if (colNhom === -1) colNhom = 16;
+  if (colTienVal === -1) colTienVal = 17;
+  if (colTienStr === -1) colTienStr = 6;
+
+  const records = [];
+  const statusSet = new Set();
+  const groupSet = new Set();
+  const groupTotals = {};
+  const statusTotals = {};
+  const matrix = {};
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+
+    const st = String(row[colStatus] || '').trim();
+    const gp = String(row[colNhom] || '').trim();
+    if (!st && !gp) continue;
+
+    let val = 0;
+    if (colTienVal !== -1 && row[colTienVal] != null && String(row[colTienVal]).trim() !== '') {
+      val = parsePcNumber(row[colTienVal]);
+    } else if (colTienStr !== -1 && row[colTienStr] != null) {
+      val = parsePcNumber(row[colTienStr]);
+    }
+
+    const safeSt = st || 'Chưa phân loại';
+    const safeGp = gp || 'Khác';
+
+    statusSet.add(safeSt);
+    groupSet.add(safeGp);
+
+    if (!matrix[safeSt]) matrix[safeSt] = {};
+    if (!matrix[safeSt][safeGp]) matrix[safeSt][safeGp] = { count: 0, val: 0, records: [] };
+    matrix[safeSt][safeGp].count += 1;
+    matrix[safeSt][safeGp].val += val;
+    matrix[safeSt][safeGp].records.push(row);
+
+    if (!statusTotals[safeSt]) statusTotals[safeSt] = { count: 0, val: 0 };
+    statusTotals[safeSt].count += 1;
+    statusTotals[safeSt].val += val;
+
+    if (!groupTotals[safeGp]) groupTotals[safeGp] = { count: 0, val: 0 };
+    groupTotals[safeGp].count += 1;
+    groupTotals[safeGp].val += val;
+
+    records.push({
+      status: safeSt,
+      group: safeGp,
+      val: val,
+      raw: row
+    });
+  }
+
+  // Thứ tự tình trạng nghiệp vụ chuẩn
+  const preferredStatuses = ['Thành công', 'KH đã thanh toán', 'Chờ Xét Duyệt', 'Bán hàng'];
+  const statuses = Array.from(statusSet).sort((a, b) => {
+    const ia = preferredStatuses.indexOf(a);
+    const ib = preferredStatuses.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b, 'vi');
+  });
+
+  // Thứ tự nhóm: Doanh số cao nhất xếp trước
+  const groups = Array.from(groupSet).sort((a, b) => {
+    const va = groupTotals[a]?.val || 0;
+    const vb = groupTotals[b]?.val || 0;
+    if (vb !== va) return vb - va;
+    const ca = groupTotals[a]?.count || 0;
+    const cb = groupTotals[b]?.count || 0;
+    return cb - ca;
+  });
+
+  const grandTotal = {
+    count: records.length,
+    val: records.reduce((s, r) => s + r.val, 0)
+  };
+
+  return {
+    headers,
+    records,
+    statuses,
+    groups,
+    matrix,
+    statusTotals,
+    groupTotals,
+    grandTotal,
+    rawData
+  };
+}
+
+/**
+ * Hiển thị thẻ tóm tắt KPI Mục 2
+ */
+function renderPhanCungOctSummaryCards(parsedOct) {
+  const box = $('pcOctSummaryCards');
+  if (!box || !parsedOct) return;
+
+  const K = (l, v, s, c = '') => `<div class="card kpi"><div class="l">${l}</div><div class="v" style="${c}">${v}</div><div class="s">${s}</div></div>`;
+
+  const gt = parsedOct.grandTotal;
+  const tc = parsedOct.statusTotals['Thành công'] || { count: 0, val: 0 };
+  const tt = parsedOct.statusTotals['KH đã thanh toán'] || { count: 0, val: 0 };
+  const cxd = parsedOct.statusTotals['Chờ Xét Duyệt'] || { count: 0, val: 0 };
+  const bh = parsedOct.statusTotals['Bán hàng'] || { count: 0, val: 0 };
+
+  const tcPct = gt.val > 0 ? (tc.val / gt.val * 100).toFixed(1) : '0';
+  const cxdPct = gt.val > 0 ? (cxd.val / gt.val * 100).toFixed(1) : '0';
+
+  box.innerHTML =
+    K('Tổng Cơ Hội Tháng 10', `${gt.count} đơn`, `Tổng giá trị: ${formatVND(gt.val)}`, 'color:#38bdf8') +
+    K('Thành Công (Đã Chốt)', `${tc.count} đơn`, `${formatVND(tc.val)} (${tcPct}% tổng)`, 'color:#10b981') +
+    K('KH Đã Thanh Toán', `${tt.count} đơn`, `${formatVND(tt.val)}`, 'color:#0ea5e9') +
+    K('Chờ Xét Duyệt', `${cxd.count} đơn`, `${formatVND(cxd.val)} (${cxdPct}% tổng)`, 'color:#f59e0b') +
+    K('Đang Bán Hàng / Tư Vấn', `${bh.count} đơn`, `${formatVND(bh.val)}`, 'color:#a855f7');
+}
+
+/**
+ * Render bảng ma trận Pivot: Dòng là Tình trạng, Cột là Nhóm
+ */
+function renderPhanCungOctPivotTable(parsedOct) {
+  const tbl = $('pcOctPivotTable');
+  if (!tbl || !parsedOct) return;
+
+  const { statuses, groups, matrix, statusTotals, groupTotals, grandTotal } = parsedOct;
+
+  // 1. THEAD
+  let thead = '<thead><tr>';
+  thead += '<th style="min-width:160px">TÌNH TRẠNG</th>';
+  groups.forEach(gp => {
+    const meta = getShortGroupName(gp);
+    thead += `<th title="${esc(gp)}" style="min-width:145px;padding:9px 6px">
+      <div style="font-weight:800;font-size:13px;line-height:1.3">${esc(meta.title)}</div>
+      ${meta.sub ? `<div style="font-size:10.5px;font-weight:600;opacity:0.75;margin-top:2px">${esc(meta.sub)}</div>` : ''}
+    </th>`;
+  });
+  thead += '<th class="kpi-final-col" style="min-width:150px;color:#38bdf8">TỔNG CỘNG</th>';
+  thead += '</tr></thead>';
+
+  // 2. TBODY
+  let tbody = '<tbody>';
+  statuses.forEach(st => {
+    tbody += '<tr>';
+    // Cột 1: Tình trạng
+    tbody += `<td class="sc-name" style="text-align:center">${getOctStatusBadge(st)}</td>`;
+
+    // Các cột Nhóm
+    groups.forEach(gp => {
+      const cell = matrix[st]?.[gp] || { count: 0, val: 0 };
+      const safeSt = st.replace(/'/g, "\\'");
+      const safeGp = gp.replace(/'/g, "\\'");
+      const clickAttr = cell.count > 0 ? `onclick="openPhanCungOctCellModal('${safeSt}', '${safeGp}')" style="cursor:pointer" title="Bấm để xem ${cell.count} đơn chi tiết"` : '';
+      tbody += `<td ${clickAttr}>${formatPivotCell(cell.count, cell.val)}</td>`;
+    });
+
+    // Cột Tổng cộng theo Tình trạng
+    const stTot = statusTotals[st] || { count: 0, val: 0 };
+    const safeStTot = st.replace(/'/g, "\\'");
+    const clickStTot = stTot.count > 0 ? `onclick="openPhanCungOctCellModal('${safeStTot}', '')" style="cursor:pointer" title="Bấm để xem tất cả ${stTot.count} đơn ${esc(st)}"` : '';
+    tbody += `<td class="kpi-final-col" style="font-weight:700" ${clickStTot}>${formatPivotCell(stTot.count, stTot.val)}</td>`;
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  // 3. TFOOT (Hàng Tổng cộng)
+  let tfoot = '<tfoot><tr>';
+  tfoot += '<td class="sc-name" style="color:var(--acc);font-weight:800;text-align:center">TỔNG CỘNG</td>';
+  groups.forEach(gp => {
+    const gpTot = groupTotals[gp] || { count: 0, val: 0 };
+    const safeGpTot = gp.replace(/'/g, "\\'");
+    const clickGpTot = gpTot.count > 0 ? `onclick="openPhanCungOctCellModal('', '${safeGpTot}')" style="cursor:pointer" title="Bấm để xem tất cả ${gpTot.count} đơn của nhóm"` : '';
+    tfoot += `<td style="font-weight:800" ${clickGpTot}>${formatPivotCell(gpTot.count, gpTot.val)}</td>`;
+  });
+  const clickAll = grandTotal.count > 0 ? `onclick="openPhanCungOctCellModal('', '')" style="cursor:pointer" title="Bấm để xem toàn bộ ${grandTotal.count} đơn tháng 10"` : '';
+  tfoot += `<td class="kpi-final-col" style="color:#38bdf8;font-weight:800;background:rgba(56,189,248,0.12)" ${clickAll}>${formatPivotCell(grandTotal.count, grandTotal.val)}</td>`;
+  tfoot += '</tr></tfoot>';
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * Hiển thị Modal chi tiết khi bấm vào một ô trong Ma Trận
+ */
+function openPhanCungOctCellModal(st, gp) {
+  if (!PHANCUNG_OCT_STATE.data) return;
+  const parsed = normalizePhanCungOctData(PHANCUNG_OCT_STATE.data);
+  if (!parsed) return;
+
+  let filtered = parsed.records;
+  let titleStr = '';
+
+  if (st && gp) {
+    filtered = filtered.filter(r => r.status === st && r.group === gp);
+    const meta = getShortGroupName(gp);
+    titleStr = `${st} · ${meta.title}`;
+  } else if (st && !gp) {
+    filtered = filtered.filter(r => r.status === st);
+    titleStr = `${st} (Tất cả các nhóm)`;
+  } else if (!st && gp) {
+    filtered = filtered.filter(r => r.group === gp);
+    const meta = getShortGroupName(gp);
+    titleStr = `${meta.title} (Tất cả tình trạng)`;
+  } else {
+    titleStr = 'Tất cả cơ hội phần cứng Tháng 10';
+  }
+
+  const totVal = filtered.reduce((s, r) => s + r.val, 0);
+
+  const m = $('cardListModal');
+  const t = $('mTitle');
+  const s = $('mSubtitle');
+  const body = $('mCardList');
+  if (!m || !t || !body) return;
+
+  t.textContent = titleStr;
+  if (s) s.textContent = `${filtered.length} cơ hội · Tổng giá trị: ${formatVND(totVal)}`;
+
+  if (filtered.length === 0) {
+    body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--mut)">Không có dữ liệu đơn nào.</div>';
+  } else {
+    body.innerHTML = filtered.map((item, idx) => {
+      const r = item.raw;
+      const recordId = r[0] || '–';
+      const shopName = r[1] || '–';
+      const retId = r[2] || '–';
+      const custName = r[3] || '–';
+      const creator = r[4] || '–';
+      const createdTime = r[5] || '–';
+      const dateConfirm = r[8] || '–';
+      const oppType = r[9] || '–';
+      const status = r[10] || '–';
+      const industry = r[11] || '–';
+      const custType = r[12] || '–';
+      const province = r[13] || '–';
+      const handler = r[15] || '–';
+      const groupName = r[16] || '–';
+      const valStr = formatVND(item.val);
+
+      return `
+        <div class="card" style="margin-bottom:10px;padding:12px 14px;border:1px solid var(--line);background:var(--card-sub, var(--card));border-radius:8px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">
+            <div>
+              <div style="font-weight:700;font-size:14px;color:var(--tx-heading)">
+                ${idx + 1}. ${esc(shopName)} <span style="font-size:12px;color:var(--acc);font-weight:600">(${esc(retId)})</span>
+              </div>
+              <div class="mut sm" style="margin-top:2px">
+                KH: <b>${esc(custName)}</b> · ${esc(province)} · Ngành: ${esc(industry)}
+              </div>
+            </div>
+            <div style="text-align:right;white-space:nowrap">
+              <div style="font-size:14px;font-weight:800;color:#38bdf8">${valStr}</div>
+              <div style="margin-top:3px">${getOctStatusBadge(status)}</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--mut);border-top:1px dashed var(--line);padding-top:6px;margin-top:6px">
+            <span>👤 Người tạo: <b>${esc(creator)}</b></span>
+            <span>🛠 Xử lý: <b>${esc(handler)}</b></span>
+            <span>👥 Nhóm: <b>${esc(groupName)}</b></span>
+            <span>📅 Tạo: ${esc(createdTime)}</span>
+            ${dateConfirm && dateConfirm !== '–' ? `<span>✓ Xác nhận: ${esc(dateConfirm)}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  m.style.display = 'flex';
+}
 
 /**
  * Render Mục 2: Chi Tiết Phần Cứng Tháng 10
  */
 function renderPhanCungOct() {
-  const container = $('pcOctContainer');
+  const container = $('pcSecOct');
   const cardsBox = $('pcOctSummaryCards');
+  const tbl = $('pcOctPivotTable');
   if (!container) return;
 
-  // Khi chưa có API hoặc chưa có dữ liệu: Giữ khung thông báo chờ kết nối
   if (!PHANCUNG_OCT_STATE.data) {
     if (cardsBox) cardsBox.style.display = 'none';
+    if (tbl) tbl.innerHTML = '';
     return;
   }
 
-  // Khi đã có dữ liệu từ API Tháng 10: Sẵn sàng kích hoạt render
-  // (Sẽ triển khai parser & render bảng chi tiết ngay khi có link API)
+  if (cardsBox) cardsBox.style.display = 'grid';
+  const parsedOct = normalizePhanCungOctData(PHANCUNG_OCT_STATE.data);
+  if (!parsedOct) return;
+
+  renderPhanCungOctSummaryCards(parsedOct);
+  renderPhanCungOctPivotTable(parsedOct);
 }
 
 /**
  * Tải dữ liệu Mục 2 từ API Tháng 10 (IndexedDB Smart Cache + Fetch trực tiếp)
  */
 async function loadPhanCungOct(forceReload = false) {
-  if (!API_PHANCUNG_OCT) {
-    showToast('Đang chờ cấu hình link API cho Mục 2 (Chi Tiết Phần Cứng Tháng 10).', false);
-    return;
-  }
+  return loadPhanCung(forceReload);
 }
 
 /**
- * Xuất file CSV Mục 2: Chi Tiết Phần Cứng Tháng 10
+ * Xuất file CSV Mục 2: Ma Trận Tình Trạng x Nhóm + Danh Sách 164 Đơn Chi Tiết
  */
 function exportPhanCungOctCsv() {
   if (!PHANCUNG_OCT_STATE.data) {
     showToast('Chưa có dữ liệu API Tháng 10 để xuất CSV!', false);
     return;
   }
+  const parsed = normalizePhanCungOctData(PHANCUNG_OCT_STATE.data);
+  if (!parsed) {
+    showToast('Lỗi cấu trúc dữ liệu Tháng 10!', false);
+    return;
+  }
+
+  const lines = [];
+
+  // Phần 1: BẢNG MA TRẬN PIVOT TÌNH TRẠNG × NHÓM
+  lines.push(['BÁO CÁO PHẦN CỨNG THÁNG 10 - MA TRẬN TÌNH TRẠNG x NHÓM']);
+  lines.push(['Thời gian xuất:', new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+
+  // Header dòng ma trận
+  const matrixHeaders = ['Tình Trạng', ...parsed.groups.map(g => {
+    const meta = getShortGroupName(g);
+    return meta.sub ? `${meta.title} (${meta.sub})` : meta.title;
+  }), 'TỔNG CỘNG'];
+  lines.push(matrixHeaders);
+
+  // Các dòng tình trạng
+  parsed.statuses.forEach(st => {
+    const row = [st];
+    parsed.groups.forEach(gp => {
+      const cell = parsed.matrix[st]?.[gp] || { count: 0, val: 0 };
+      row.push(`SL: ${cell.count} / ${cell.val.toLocaleString('vi-VN')} đ`);
+    });
+    const stTot = parsed.statusTotals[st] || { count: 0, val: 0 };
+    row.push(`SL: ${stTot.count} / ${stTot.val.toLocaleString('vi-VN')} đ`);
+    lines.push(row);
+  });
+
+  // Dòng TỔNG CỘNG
+  const footRow = ['TỔNG CỘNG'];
+  parsed.groups.forEach(gp => {
+    const gpTot = parsed.groupTotals[gp] || { count: 0, val: 0 };
+    footRow.push(`SL: ${gpTot.count} / ${gpTot.val.toLocaleString('vi-VN')} đ`);
+  });
+  footRow.push(`SL: ${parsed.grandTotal.count} / ${parsed.grandTotal.val.toLocaleString('vi-VN')} đ`);
+  lines.push(footRow);
+
+  lines.push([]);
+  lines.push(['------------------------------------------------------------']);
+  lines.push(['DANH SÁCH CHI TIẾT CƠ HỘI PHẦN CỨNG THÁNG 10']);
+  lines.push([]);
+
+  // Thêm toàn bộ danh sách 164 dòng từ API
+  if (Array.isArray(parsed.rawData)) {
+    parsed.rawData.forEach(r => {
+      lines.push(r);
+    });
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return (row || []).map(val => {
+      const s = String(val == null ? '' : val);
+      return '"' + s.replace(/"/g, '""') + '"';
+    }).join(',');
+  }).join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ma_tran_phan_cung_thang_10_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  showToast('Đã xuất thành công file CSV Ma Trận Phần Cứng Tháng 10!', true);
 }

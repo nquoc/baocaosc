@@ -298,33 +298,38 @@
   </div>
 
   <!-- ==================== MỤC 2: CHI TIẾT PHẦN CỨNG THÁNG 10 ==================== -->
-  <div id="pcSecOct" style="margin-top:24px">
+  <div id="pcSecOct" style="margin-top:28px">
     <!-- Tiêu đề phân đoạn Mục 2 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
         <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#10b981;color:#ffffff;letter-spacing:0.5px">MỤC 2</span>
-        <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Chi Tiết Phần Cứng Tháng 10</h2>
+        <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Chi Tiết Phần Cứng Tháng 10 (Ma Trận Tình Trạng × Nhóm)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
-        Trạng thái: <span style="color:#f59e0b;font-weight:700">⏳ Đang chờ link / range API Google Sheets</span>
+        Nguồn: Sheet <b>opp</b> · Phân bổ cơ hội &amp; doanh số phần cứng Tháng 10
       </div>
     </div>
 
     <!-- CÁC THẺ KPI TÓM TẮT MỤC 2 (THÁNG 10) -->
-    <div class="grid kpis" id="pcOctSummaryCards" style="margin-bottom:14px;display:none"></div>
+    <div class="grid kpis" id="pcOctSummaryCards" style="margin-bottom:14px"></div>
 
-    <!-- KHUNG CHỜ API / BẢNG CHI TIẾT MỤC 2 -->
-    <div id="pcOctContainer">
-      <div class="card" style="padding:28px 24px;border:1.5px dashed var(--line);background:transparent;text-align:center;border-radius:12px;margin-bottom:16px">
-        <div style="font-size:38px;margin-bottom:8px">🔌</div>
-        <h3 style="margin:0 0 6px 0;font-size:16px;color:var(--tx-heading)">Sẵn Sàng Nạp Dữ Liệu "Chi Tiết Phần Cứng Tháng 10"</h3>
-        <p class="mut sm" style="max-width:580px;margin:0 auto 16px auto;line-height:1.6">
-          Em đã tạo sẵn cấu trúc <b>Mục nhỏ 2: Chi Tiết Phần Cứng Tháng 10</b> (sẵn sàng cho Thẻ KPI tóm tắt, Bảng chi tiết, Bộ lọc tìm kiếm, Sắp xếp cột và Xuất CSV).<br>
-          Ngay khi anh gửi đường dẫn <b>API mới (hoặc tên sheet &amp; range)</b>, hệ thống sẽ kết nối và hiển thị dữ liệu lên ngay!
-        </p>
-        <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:99px;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-weight:700;font-size:12.5px">
-          <span>⏳ Đang chờ anh gửi API để kết nối...</span>
+    <!-- BẢNG MA TRẬN PIVOT MỤC 2 -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📊 Ma Trận Cơ Hội Phần Cứng: Tình Trạng (Dòng) × Nhóm (Cột)</span>
+          </h3>
+          <div class="mut sm" style="margin-top:3px">
+            Giá trị từng ô: <b>SL: [Số lượng đơn] / [Tổng Thành Tiền]</b>
+          </div>
         </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="exportPhanCungOctCsv()" style="background:#059669;color:#fff;border-color:#10b981;font-size:12px;padding:5px 11px">⬇ Xuất CSV Ma Trận T10</button>
+        </div>
+      </div>
+      <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="pcOctPivotTable" class="kpi-table"></table>
       </div>
     </div>
   </div>
