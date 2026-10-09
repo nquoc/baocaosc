@@ -193,6 +193,10 @@ function setTheme(theme) {
     if (typeof window.renderPhanCungCharts === 'function' && window._lastPcChartArgs) {
       window.renderPhanCungCharts(...window._lastPcChartArgs);
     }
+    // Nếu đang ở Tab Báo Cáo SC và có sẵn tham số vẽ chart, vẽ lại chart ngay
+    if (typeof window.renderBaoCaoScCharts === 'function' && window._lastBscChartArgs) {
+      window.renderBaoCaoScCharts(...window._lastBscChartArgs);
+    }
   }
 }
 

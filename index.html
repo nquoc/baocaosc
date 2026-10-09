@@ -38,6 +38,9 @@
   <button id="tabBtnPhanCung" class="tab-btn" onclick="switchTab('phancung')">
     💻 DS Phần Cứng
   </button>
+  <button id="tabBtnBaoCaoSc" class="tab-btn" onclick="switchTab('baocaosc')">
+    📑 BÁO CÁO SC
+  </button>
 </div>
 
 <!-- GLOBAL FILTERS -->
@@ -280,6 +283,97 @@
   </div>
 </div>
 
+<!-- ==================== TAB 6: BÁO CÁO SC ==================== -->
+<div id="baocaoscSection" style="display:none">
+  <!-- THANH ĐIỀU KHIỂN & TRẠNG THÁI TAB -->
+  <div class="card" style="margin-bottom:16px;padding:14px 18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading);display:flex;align-items:center;gap:8px">
+          <span>📑 Báo Cáo Tổng Hợp SC (Báo Cáo Tuần &amp; Chỉ Số Vận Hành)</span>
+        </h2>
+        <div class="mut sm" style="margin-top:3px">
+          Dữ liệu đồng bộ trực tiếp từ Google Sheets (sheet <b>baocaotuan</b>) · Hỗ trợ so sánh biến động tháng liền kề xanh / đỏ
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="baocaoscSrcBadge" class="badge b-load">Đang tải…</span>
+        <button id="btnReloadBaoCaoSc" onclick="loadBaoCaoSc(true)">⟳ Tải lại Báo Cáo SC</button>
+        <button onclick="exportActiveRateCsv()" style="background:#059669;border-color:#10b981;color:#fff">⬇ Xuất CSV Mục 1</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MỤC 1: ACTIVE RATE NĂM 2026 ==================== -->
+  <div id="bscSecActiveRate">
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 1 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#2563eb;color:#ffffff;letter-spacing:0.5px">MỤC 1</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Active Rate Năm 2026 (Retail · F&amp;B · Booking)</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Màu sắc ô: <span style="color:#10b981;font-weight:700">▲ Xanh lá = Tăng</span> · <span style="color:#ef4444;font-weight:700">▼ Đỏ = Giảm</span> so với tháng trước
+      </div>
+    </div>
+
+    <!-- CÁC THẺ KPI TÓM TẮT -->
+    <div class="grid kpis" id="bscSummaryCards" style="margin-bottom:16px"></div>
+
+    <!-- 2 BIỂU ĐỒ CHART.JS -->
+    <div class="grid g2" style="margin-bottom:16px">
+      <div class="card">
+        <h2>Xu hướng Active Rate 2026 (10 Tháng) <span class="mut sm">(Đường = Tỷ lệ %)</span></h2>
+        <div class="chart"><canvas id="chBscTrend"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Biến động Tăng / Giảm Theo Tháng (MoM Delta) <span class="mut sm">(Cột = Điểm % so với tháng trước)</span></h2>
+        <div class="chart"><canvas id="chBscMoM"></canvas></div>
+      </div>
+    </div>
+
+    <!-- BẢNG 1: MA TRẬN ACTIVE RATE 2026 (THEO NGÀNH & THÁNG) -->
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0;font-size:14px;color:#facc15;display:flex;align-items:center;gap:6px">
+          <span>📊 Ma Trận Active Rate 2026 (Tổng Quan 10 Tháng)</span>
+        </h3>
+        <span class="mut sm">Hiển thị tỷ lệ % kèm mức tăng/giảm xanh đỏ so với tháng trước</span>
+      </div>
+      <div class="excel-table-wrap">
+        <div id="bscMatrixTableContainer" style="overflow-x:auto">Đang tải dữ liệu…</div>
+      </div>
+    </div>
+
+    <!-- BẢNG 2: THEO DÕI CHI TIẾT THEO TỪNG THÁNG (TIMELINE VIEW) -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>Chi Tiết Từng Tháng &amp; Đánh Giá Xu Hướng Biến Động</span>
+            <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+          </h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="text" id="bscSearch" placeholder="🔍 Lọc theo tháng..." oninput="onActiveRateSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
+          <div class="mut sm" id="bscTableCount">...</div>
+        </div>
+      </div>
+      <div class="wrap" style="max-height:650px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscTimelineTable" class="kpi-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 2, MỤC 3...) -->
+  <div class="card" style="padding:18px 20px;margin-bottom:16px;border:1.5px dashed var(--line);text-align:center;background:transparent">
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--mut)">
+      <span style="font-size:16px">➕</span>
+      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 2, Mục 3...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
+    </div>
+  </div>
+</div>
+
 <p class="mut sm" style="line-height:1.6;margin-top:16px">
   <b>Cách tính ngày công</b>: sáng = có checkin trước 12:30; chiều = có checkin từ 13:00 (12:30–13:00 là giờ nghỉ trưa, làm lố không tính).
   Có cả sáng và chiều = 1 công, một buổi = 0.5 công; riêng 1 record kéo dài từ sáng sang chiều (checkout cuối từ 13:30) vẫn là 1 công.
@@ -329,6 +423,7 @@
 <script src="js/tab_muctieu.js"></script>
 <script src="js/tab_kpi.js"></script>
 <script src="js/tab_phancung.js"></script>
+<script src="js/tab_baocaosc.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

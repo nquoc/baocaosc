@@ -9,6 +9,7 @@ const API_MUCTIEU_OFFLINE = API_BASE + '?sheet=muctieu&range=A1:H12';
 const API_MUCTIEU_ONLINE = API_BASE + '?sheet=muctieu&range=A14:H26';
 const API_KPI = API_BASE + '?sheet=kpi';
 const API_PHANCUNG = API_BASE + '?sheet=phancung';
+const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D12';
 
 // Cấu hình IndexedDB Smart Cache
 const DB_NAME = 'TeamCoacherDB';
@@ -19,6 +20,7 @@ const CACHE_KEY = 'baocaotong_data';
 const CACHE_KEY_MUCTIEU = 'muctieu_data';
 const CACHE_KEY_KPI = 'kpi_offline_data';
 const CACHE_KEY_PHANCUNG = 'phancung_data';
+const CACHE_KEY_BAOCAOSC = 'baocaosc_data';
 
 // Hằng số tính ngày công & bảng màu
 const SPLIT = 12 * 60 + 30; // 12:30
@@ -78,3 +80,8 @@ let KPI_SORT = { k: 'kpiFinal', dir: -1 };
 let PHANCUNG_STATE = { data: null, savedAt: 0, timeStr: '' };
 let PHANCUNG_SEARCH = '';
 let PHANCUNG_SORT = { k: 'total', dir: -1 };
+
+// Trạng thái Tab 6: BÁO CÁO SC
+let BAOCAOSC_STATE = { activeRate: null, savedAt: 0, timeStr: '' };
+let BAOCAOSC_SEARCH = '';
+let BAOCAOSC_SORT = { k: 'mNum', dir: 1 };

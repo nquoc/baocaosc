@@ -10,14 +10,16 @@ function switchTab(tab) {
   $('tabBtnTarget').className = 'tab-btn' + (tab === 'target' ? ' active' : '');
   $('tabBtnKpi').className = 'tab-btn' + (tab === 'kpi' ? ' active' : '');
   if ($('tabBtnPhanCung')) $('tabBtnPhanCung').className = 'tab-btn' + (tab === 'phancung' ? ' active' : '');
+  if ($('tabBtnBaoCaoSc')) $('tabBtnBaoCaoSc').className = 'tab-btn' + (tab === 'baocaosc' ? ' active' : '');
 
   $('overviewSection').style.display = tab === 'overview' ? 'block' : 'none';
   $('pivotSection').style.display = tab === 'pivot' ? 'block' : 'none';
   $('targetSection').style.display = tab === 'target' ? 'block' : 'none';
   $('kpiSection').style.display = tab === 'kpi' ? 'block' : 'none';
   if ($('phancungSection')) $('phancungSection').style.display = tab === 'phancung' ? 'block' : 'none';
+  if ($('baocaoscSection')) $('baocaoscSection').style.display = tab === 'baocaosc' ? 'block' : 'none';
 
-  $('filters').style.display = (tab === 'target' || tab === 'kpi' || tab === 'phancung') ? 'none' : 'flex';
+  $('filters').style.display = (tab === 'target' || tab === 'kpi' || tab === 'phancung' || tab === 'baocaosc') ? 'none' : 'flex';
 
   if (tab === 'pivot') {
     renderPivot();
@@ -38,6 +40,12 @@ function switchTab(tab) {
       loadPhanCung(false);
     } else {
       renderPhanCung();
+    }
+  } else if (tab === 'baocaosc') {
+    if (!BAOCAOSC_STATE.activeRate) {
+      loadBaoCaoSc(false);
+    } else {
+      renderBaoCaoSc();
     }
   } else {
     // Resize charts nếu cần
