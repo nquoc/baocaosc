@@ -667,6 +667,16 @@ body[data-theme="light"] .kpi-table th.kpi-final-th {
   border: 1px solid rgba(56, 189, 248, 0.25);
 }
 
+.bsc-w70 {
+  width: 70%;
+  max-width: 100%;
+}
+@media (max-width: 900px) {
+  .bsc-w70 {
+    width: 100% !important;
+  }
+}
+
 /* Toast Notification */
 .toast {
   position: fixed;

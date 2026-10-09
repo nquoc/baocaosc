@@ -302,14 +302,13 @@ function renderActiveRateTimelineTable(parsed) {
   thead += `<th onclick="sortActiveRate('retail')" style="text-align:right;min-width:160px;cursor:pointer;color:#38bdf8">Retail (Active Rate)${sortArrow('retail')}</th>`;
   thead += `<th onclick="sortActiveRate('fnb')" style="text-align:right;min-width:160px;cursor:pointer;color:#10b981">F&B (Active Rate)${sortArrow('fnb')}</th>`;
   thead += `<th onclick="sortActiveRate('booking')" style="text-align:right;min-width:160px;cursor:pointer;color:#c084fc">Booking (Active Rate)${sortArrow('booking')}</th>`;
-  thead += `<th onclick="sortActiveRate('avg')" class="kpi-final-th" style="text-align:right;min-width:170px;cursor:pointer">Trung Bình 3 Ngành${sortArrow('avg')}</th>`;
   thead += `<th style="text-align:center;min-width:160px">Đánh Giá Xu Hướng</th>`;
   thead += '</tr></thead>';
 
   // 2. TBODY
   let tbody = '<tbody>';
   if (!list.length) {
-    tbody += `<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--mut)">Không có dữ liệu phù hợp với tìm kiếm</td></tr>`;
+    tbody += `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--mut)">Không có dữ liệu phù hợp với tìm kiếm</td></tr>`;
   } else {
     list.forEach(m => {
       // Đánh giá xu hướng biến động của tháng
@@ -343,7 +342,6 @@ function renderActiveRateTimelineTable(parsed) {
       tbody += `<td style="text-align:right">${renderActiveRateCell(m.retail, m.diffRetail, m.isBase)}</td>`;
       tbody += `<td style="text-align:right">${renderActiveRateCell(m.fnb, m.diffFnb, m.isBase)}</td>`;
       tbody += `<td style="text-align:right">${renderActiveRateCell(m.booking, m.diffBooking, m.isBase)}</td>`;
-      tbody += `<td class="kpi-final-col" style="text-align:right">${renderActiveRateCell(m.avg, m.diffAvg, m.isBase)}</td>`;
       tbody += `<td style="text-align:center">${trendBadge}</td>`;
       tbody += '</tr>';
     });
@@ -358,7 +356,6 @@ function renderActiveRateTimelineTable(parsed) {
   tfoot += `<td style="text-align:right;color:#38bdf8;font-weight:800;font-size:13px">${parsed.statsRetail.avg.toFixed(2)}%</td>`;
   tfoot += `<td style="text-align:right;color:#10b981;font-weight:800;font-size:13px">${parsed.statsFnb.avg.toFixed(2)}%</td>`;
   tfoot += `<td style="text-align:right;color:#c084fc;font-weight:800;font-size:13px">${parsed.statsBooking.avg.toFixed(2)}%</td>`;
-  tfoot += `<td class="kpi-final-col" style="text-align:right;color:#facc15;font-size:14px">${parsed.statsAvg.avg.toFixed(2)}%</td>`;
   tfoot += `<td style="text-align:center;color:var(--acc);font-weight:700">${filledMonthsCount} Tháng 2026</td>`;
   tfoot += '</tr></tfoot>';
 
@@ -538,7 +535,7 @@ function exportActiveRateCsv() {
   lines.push([]);
 
   // Bảng Chi Tiết Theo Tháng
-  lines.push(['STT', 'Tháng', 'Retail (%)', 'Biến động Retail', 'F&B (%)', 'Biến động F&B', 'Booking (%)', 'Biến động Booking', 'Trung Bình 3 Ngành (%)', 'Biến động TB']);
+  lines.push(['STT', 'Tháng', 'Retail (%)', 'Biến động Retail', 'F&B (%)', 'Biến động F&B', 'Booking (%)', 'Biến động Booking']);
   parsed.months.forEach(m => {
     const formatDiff = d => d == null ? 'Mốc đầu' : (d > 0 ? `+${d.toFixed(2)}%` : `${d.toFixed(2)}%`);
     lines.push([
@@ -549,9 +546,7 @@ function exportActiveRateCsv() {
       m.fnb != null ? m.fnb.toFixed(2) + '%' : '–',
       formatDiff(m.diffFnb),
       m.booking != null ? m.booking.toFixed(2) + '%' : '–',
-      formatDiff(m.diffBooking),
-      m.avg != null ? m.avg.toFixed(2) + '%' : '–',
-      formatDiff(m.diffAvg)
+      formatDiff(m.diffBooking)
     ]);
   });
 
@@ -564,8 +559,6 @@ function exportActiveRateCsv() {
     parsed.statsFnb.avg.toFixed(2) + '%',
     '',
     parsed.statsBooking.avg.toFixed(2) + '%',
-    '',
-    parsed.statsAvg.avg.toFixed(2) + '%',
     ''
   ]);
 
