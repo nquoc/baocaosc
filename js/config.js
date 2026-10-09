@@ -9,7 +9,7 @@ const API_MUCTIEU_OFFLINE = API_BASE + '?sheet=muctieu&range=A1:H12';
 const API_MUCTIEU_ONLINE = API_BASE + '?sheet=muctieu&range=A14:H26';
 const API_KPI = API_BASE + '?sheet=kpi';
 const API_PHANCUNG = API_BASE + '?sheet=phancung';
-const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D12';
+const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14';
 
 // Cấu hình IndexedDB Smart Cache
 const DB_NAME = 'TeamCoacherDB';

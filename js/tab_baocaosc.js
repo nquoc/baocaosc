@@ -18,7 +18,7 @@ function parseActiveRateVal(val) {
 }
 
 /**
- * Chuẩn hóa dữ liệu thô từ sheet 'baocaotuan' range A2:D12
+ * Chuẩn hóa dữ liệu thô từ sheet 'baocaotuan' (range A2:D14)
  */
 function normalizeActiveRateData(rawData) {
   if (!Array.isArray(rawData) || rawData.length < 2) return null;
@@ -48,12 +48,12 @@ function normalizeActiveRateData(rawData) {
     else if (h.includes('booking') || h.includes('đặt chỗ')) colBooking = c;
   }
 
-  // Fallback thứ tự mặc định nếu không khớp tên: 0: Mục, 1: Retail, 2: F&B, 3: Booking
+  // Fallback thứ tự mặc định: 0: Mục, 1: Retail, 2: F&B, 3: Booking
   if (colRetail === -1) colRetail = 1;
   if (colFnb === -1) colFnb = 2;
   if (colBooking === -1) colBooking = 3;
 
-  // 2. Duyệt từng dòng tháng
+  // 2. Duyệt từng dòng tháng (chỉ lấy các dòng có tên tháng)
   const months = [];
   for (let r = headerRowIdx + 1; r < rawData.length; r++) {
     const row = rawData[r];
@@ -72,7 +72,7 @@ function normalizeActiveRateData(rawData) {
     const fnbVal = parseActiveRateVal(row[colFnb]);
     const bookingVal = parseActiveRateVal(row[colBooking]);
 
-    // Tính trung bình cộng 3 ngành của tháng
+    // Tính trung bình cộng 3 ngành của tháng (nếu có dữ liệu)
     const validVals = [retailVal, fnbVal, bookingVal].filter(v => v != null);
     const avgVal = validVals.length ? validVals.reduce((s, x) => s + x, 0) / validVals.length : null;
 
@@ -85,7 +85,6 @@ function normalizeActiveRateData(rawData) {
       fnb: fnbVal,
       booking: bookingVal,
       avg: avgVal,
-      // Biến động so với tháng trước (sẽ tính ở bước sau)
       diffRetail: null,
       diffFnb: null,
       diffBooking: null,
@@ -101,25 +100,25 @@ function normalizeActiveRateData(rawData) {
   months.forEach((m, idx) => { m.mIdx = idx; });
 
   // 3. Tính mức độ tăng / giảm so với tháng trước đó (MoM Delta)
+  let lastFilled = null;
   for (let i = 0; i < months.length; i++) {
     const cur = months[i];
-    if (i === 0) {
-      cur.isBase = true; // Tháng khởi điểm, không có tháng trước
-      cur.diffRetail = null;
-      cur.diffFnb = null;
-      cur.diffBooking = null;
-      cur.diffAvg = null;
-    } else {
-      const prev = months[i - 1];
+    const hasData = cur.retail != null || cur.fnb != null || cur.booking != null;
+
+    if (!lastFilled && hasData) {
+      cur.isBase = true; // Tháng có số liệu đầu tiên là mốc khởi điểm
+      lastFilled = cur;
+    } else if (lastFilled && hasData) {
       cur.isBase = false;
-      cur.diffRetail = (cur.retail != null && prev.retail != null) ? (cur.retail - prev.retail) : null;
-      cur.diffFnb = (cur.fnb != null && prev.fnb != null) ? (cur.fnb - prev.fnb) : null;
-      cur.diffBooking = (cur.booking != null && prev.booking != null) ? (cur.booking - prev.booking) : null;
-      cur.diffAvg = (cur.avg != null && prev.avg != null) ? (cur.avg - prev.avg) : null;
+      cur.diffRetail = (cur.retail != null && lastFilled.retail != null) ? (cur.retail - lastFilled.retail) : null;
+      cur.diffFnb = (cur.fnb != null && lastFilled.fnb != null) ? (cur.fnb - lastFilled.fnb) : null;
+      cur.diffBooking = (cur.booking != null && lastFilled.booking != null) ? (cur.booking - lastFilled.booking) : null;
+      cur.diffAvg = (cur.avg != null && lastFilled.avg != null) ? (cur.avg - lastFilled.avg) : null;
+      lastFilled = cur;
     }
   }
 
-  // 4. Thống kê tổng hợp cả năm cho từng ngành
+  // 4. Thống kê cả năm
   function calcStats(key) {
     const valid = months.filter(m => m[key] != null);
     if (!valid.length) return { avg: 0, min: 0, max: 0, latest: 0, latestDiff: 0, bestMonth: '–' };
@@ -131,16 +130,12 @@ function normalizeActiveRateData(rawData) {
       if (m[key] < minM[key]) minM = m;
       if (m[key] > maxM[key]) maxM = m;
     });
-    const latestM = valid[valid.length - 1];
     return {
       avg,
       min: minM[key],
       minMonth: minM.cleanLabel,
       max: maxM[key],
-      maxMonth: maxM.cleanLabel,
-      latest: latestM[key],
-      latestDiff: latestM[`diff${key.charAt(0).toUpperCase() + key.slice(1)}`],
-      latestLabel: latestM.cleanLabel
+      maxMonth: maxM.cleanLabel
     };
   }
 
@@ -149,14 +144,9 @@ function normalizeActiveRateData(rawData) {
   const statsBooking = calcStats('booking');
   const statsAvg = calcStats('avg');
 
-  // Tìm ngành có tỷ lệ Active trung bình cao nhất năm
-  const sectors = [
-    { key: 'retail', name: 'Retail', stat: statsRetail, color: '#38bdf8' },
-    { key: 'fnb', name: 'F&B', stat: statsFnb, color: '#10b981' },
-    { key: 'booking', name: 'Booking', stat: statsBooking, color: '#c084fc' }
-  ];
-  sectors.sort((a, b) => b.stat.avg - a.stat.avg);
-  const bestSector = sectors[0];
+  // Lấy tháng mới nhất có số liệu thực tế để hiển thị lên thẻ KPI
+  const monthsWithData = months.filter(m => m.retail != null || m.fnb != null || m.booking != null);
+  const latestMonth = monthsWithData.length ? monthsWithData[monthsWithData.length - 1] : months[months.length - 1];
 
   return {
     months,
@@ -164,9 +154,7 @@ function normalizeActiveRateData(rawData) {
     statsFnb,
     statsBooking,
     statsAvg,
-    bestSector,
-    sectors,
-    latestMonth: months[months.length - 1]
+    latestMonth
   };
 }
 
@@ -205,7 +193,7 @@ function renderActiveRateCell(val, diff, isBase = false) {
 
   // Giảm (< 0) -> ĐỎ
   if (diff < -0.0001) {
-    const diffTxt = `${diff.toFixed(2)}%`; // Đã có dấu trừ
+    const diffTxt = `${diff.toFixed(2)}%`;
     return `
       <div class="ar-cell">
         <span class="ar-val" style="color:#ef4444">${valTxt}</span>
@@ -222,7 +210,7 @@ function renderActiveRateCell(val, diff, isBase = false) {
 }
 
 /**
- * Hiển thị các thẻ tóm tắt KPI của Mục 1
+ * Hiển thị 3 thẻ KPI tóm tắt cho 3 ngành (Retail, F&B, Booking)
  */
 function renderBaoCaoScSummaryCards(parsed) {
   const box = $('bscSummaryCards');
@@ -247,281 +235,25 @@ function renderBaoCaoScSummaryCards(parsed) {
     return `<span style="color:var(--mut)">— Không đổi</span> so với ${prevLabel} (${prevVal.toFixed(2)}%)`;
   };
 
-  const prevM = parsed.months.length > 1 ? parsed.months[parsed.months.length - 2] : null;
+  const dataMonths = parsed.months.filter(m => m.retail != null || m.fnb != null || m.booking != null);
+  const latIdx = dataMonths.indexOf(lat);
+  const prevM = latIdx > 0 ? dataMonths[latIdx - 1] : null;
   const prevLabel = prevM ? prevM.cleanLabel : '';
 
   box.innerHTML =
-    K(`Retail (${esc(lat.cleanLabel)})`, lat.retail ? lat.retail.toFixed(2) + '%' : '–', prevM ? makeDiffSub(lat.diffRetail, prevM.retail, prevLabel) : 'Mốc đầu', 'color:#38bdf8') +
-    K(`F&B (${esc(lat.cleanLabel)})`, lat.fnb ? lat.fnb.toFixed(2) + '%' : '–', prevM ? makeDiffSub(lat.diffFnb, prevM.fnb, prevLabel) : 'Mốc đầu', 'color:#10b981') +
-    K(`Booking (${esc(lat.cleanLabel)})`, lat.booking ? lat.booking.toFixed(2) + '%' : '–', prevM ? makeDiffSub(lat.diffBooking, prevM.booking, prevLabel) : 'Mốc đầu', 'color:#c084fc') +
-    K(`Trung Bình 3 Ngành (${esc(lat.cleanLabel)})`, lat.avg ? lat.avg.toFixed(2) + '%' : '–', prevM ? makeDiffSub(lat.diffAvg, prevM.avg, prevLabel) : 'Mốc đầu', 'color:#facc15') +
-    K(`Ngành Dẫn Đầu 2026`, esc(parsed.bestSector.name), `Đạt TB <b>${parsed.bestSector.stat.avg.toFixed(2)}%</b> (Đỉnh: ${parsed.bestSector.stat.max.toFixed(2)}% tại ${parsed.bestSector.stat.maxMonth})`, `color:${parsed.bestSector.color}`);
+    K(`Retail (${esc(lat.cleanLabel)})`, lat.retail != null ? lat.retail.toFixed(2) + '%' : '–', prevM && prevM.retail != null ? makeDiffSub(lat.diffRetail, prevM.retail, prevLabel) : 'Mốc đầu', 'color:#38bdf8') +
+    K(`F&B (${esc(lat.cleanLabel)})`, lat.fnb != null ? lat.fnb.toFixed(2) + '%' : '–', prevM && prevM.fnb != null ? makeDiffSub(lat.diffFnb, prevM.fnb, prevLabel) : 'Mốc đầu', 'color:#10b981') +
+    K(`Booking (${esc(lat.cleanLabel)})`, lat.booking != null ? lat.booking.toFixed(2) + '%' : '–', prevM && prevM.booking != null ? makeDiffSub(lat.diffBooking, prevM.booking, prevLabel) : 'Mốc đầu', 'color:#c084fc');
 }
 
 /**
- * Vẽ Biểu đồ Chart.js cho Mục 1: Active Rate
+ * Placeholder cho hàm chart (đã lược bỏ biểu đồ theo yêu cầu)
  */
-function renderBaoCaoScCharts(parsed) {
-  if (!parsed || !window.Chart) return;
-  window._lastBscChartArgs = [parsed];
-
-  const isDark = (document.body.getAttribute('data-theme') || 'dark') === 'dark';
-  const gridColor = isDark ? 'rgba(148,163,184,0.12)' : 'rgba(0,0,0,0.06)';
-  const textColor = isDark ? '#94a3b8' : '#475569';
-
-  const labels = parsed.months.map(m => m.cleanLabel);
-  const dataRetail = parsed.months.map(m => m.retail);
-  const dataFnb = parsed.months.map(m => m.fnb);
-  const dataBooking = parsed.months.map(m => m.booking);
-  const dataAvg = parsed.months.map(m => m.avg);
-
-  // 1. Biểu đồ Đường: Xu hướng Active Rate 2026 của 3 ngành & Trung bình
-  const ctxTrend = $('chBscTrend');
-  if (ctxTrend) {
-    if (charts.bscTrend) charts.bscTrend.destroy();
-    charts.bscTrend = new Chart(ctxTrend, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Retail',
-            data: dataRetail,
-            borderColor: '#38bdf8',
-            backgroundColor: 'rgba(56, 189, 248, 0.1)',
-            borderWidth: 2.5,
-            pointBackgroundColor: '#38bdf8',
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            tension: 0.25
-          },
-          {
-            label: 'F&B',
-            data: dataFnb,
-            borderColor: '#10b981',
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            borderWidth: 2.5,
-            pointBackgroundColor: '#10b981',
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            tension: 0.25
-          },
-          {
-            label: 'Booking',
-            data: dataBooking,
-            borderColor: '#c084fc',
-            backgroundColor: 'rgba(192, 132, 252, 0.1)',
-            borderWidth: 2.5,
-            pointBackgroundColor: '#c084fc',
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            tension: 0.25
-          },
-          {
-            label: 'Trung Bình Chung',
-            data: dataAvg,
-            borderColor: '#f59e0b',
-            borderWidth: 2,
-            borderDash: [5, 4],
-            pointBackgroundColor: '#f59e0b',
-            pointRadius: 3.5,
-            pointHoverRadius: 5,
-            tension: 0.25,
-            fill: false
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: { color: textColor, font: { size: 12, weight: 'bold' }, padding: 14 }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const val = context.raw;
-                if (val == null) return ` ${context.dataset.label}: –`;
-                const mIdx = context.dataIndex;
-                const m = parsed.months[mIdx];
-                let diff = null;
-                if (context.datasetIndex === 0) diff = m.diffRetail;
-                else if (context.datasetIndex === 1) diff = m.diffFnb;
-                else if (context.datasetIndex === 2) diff = m.diffBooking;
-                else if (context.datasetIndex === 3) diff = m.diffAvg;
-
-                let diffStr = '';
-                if (diff != null) {
-                  diffStr = diff > 0 ? ` (▲ +${diff.toFixed(2)}%)` : (diff < 0 ? ` (▼ ${diff.toFixed(2)}%)` : ' (— 0%)');
-                } else {
-                  diffStr = ' (Mốc đầu)';
-                }
-                return ` ${context.dataset.label}: ${val.toFixed(2)}%${diffStr}`;
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { color: gridColor },
-            ticks: { color: textColor, font: { size: 11 } }
-          },
-          y: {
-            min: 55,
-            max: 85,
-            grid: { color: gridColor },
-            ticks: {
-              color: textColor,
-              callback: val => val + '%'
-            }
-          }
-        }
-      }
-    });
-  }
-
-  // 2. Biểu đồ Cột Biến Động MoM (Tháng sau vs Tháng trước của từng ngành)
-  const ctxMoM = $('chBscMoM');
-  if (ctxMoM) {
-    if (charts.bscMoM) charts.bscMoM.destroy();
-
-    // Lọc từ tháng 2 trở đi để thể hiện biến động
-    const momMonths = parsed.months.slice(1);
-    const momLabels = momMonths.map(m => m.cleanLabel);
-    const deltaRetail = momMonths.map(m => m.diffRetail || 0);
-    const deltaFnb = momMonths.map(m => m.diffFnb || 0);
-    const deltaBooking = momMonths.map(m => m.diffBooking || 0);
-
-    charts.bscMoM = new Chart(ctxMoM, {
-      type: 'bar',
-      data: {
-        labels: momLabels,
-        datasets: [
-          {
-            label: 'Retail (Δ điểm %)',
-            data: deltaRetail,
-            backgroundColor: deltaRetail.map(v => v >= 0 ? 'rgba(56, 189, 248, 0.75)' : 'rgba(239, 68, 68, 0.65)'),
-            borderColor: deltaRetail.map(v => v >= 0 ? '#38bdf8' : '#ef4444'),
-            borderWidth: 1,
-            borderRadius: 4
-          },
-          {
-            label: 'F&B (Δ điểm %)',
-            data: deltaFnb,
-            backgroundColor: deltaFnb.map(v => v >= 0 ? 'rgba(16, 185, 129, 0.75)' : 'rgba(239, 68, 68, 0.65)'),
-            borderColor: deltaFnb.map(v => v >= 0 ? '#10b981' : '#ef4444'),
-            borderWidth: 1,
-            borderRadius: 4
-          },
-          {
-            label: 'Booking (Δ điểm %)',
-            data: deltaBooking,
-            backgroundColor: deltaBooking.map(v => v >= 0 ? 'rgba(192, 132, 252, 0.75)' : 'rgba(239, 68, 68, 0.65)'),
-            borderColor: deltaBooking.map(v => v >= 0 ? '#c084fc' : '#ef4444'),
-            borderWidth: 1,
-            borderRadius: 4
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: { color: textColor, font: { size: 12, weight: 'bold' } }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const v = context.raw || 0;
-                const sign = v > 0 ? '+' : '';
-                return ` ${context.dataset.label}: ${sign}${v.toFixed(2)}%`;
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { color: gridColor },
-            ticks: { color: textColor, font: { size: 11 } }
-          },
-          y: {
-            grid: { color: gridColor },
-            ticks: {
-              color: textColor,
-              callback: val => (val > 0 ? '+' : '') + val.toFixed(1) + '%'
-            }
-          }
-        }
-      }
-    });
-  }
-}
+function renderBaoCaoScCharts() {}
 
 /**
- * BẢNG 1: MA TRẬN ACTIVE RATE 2026 (NGANG: NGÀNH × CÁC THÁNG)
- * Format bảng ngang chuẩn Excel, hiển thị toàn bộ 10 tháng và các badge xanh/đỏ tăng giảm
- */
-function renderActiveRateMatrixTable(parsed) {
-  const container = $('bscMatrixTableContainer');
-  if (!container || !parsed) return;
-
-  let html = '<table class="excel-table">';
-  html += '<thead><tr>';
-  html += '<th style="text-align:left;min-width:140px;background:#fef08a;color:#854d0e;font-weight:800">Ngành Kinh Doanh</th>';
-
-  parsed.months.forEach(m => {
-    html += `<th style="text-align:right;min-width:115px;background:#fef08a;color:#854d0e;font-weight:700">${esc(m.cleanLabel)}</th>`;
-  });
-
-  html += '<th style="text-align:right;min-width:120px;background:#fde047;color:#713f12;font-weight:800">Trung Bình Năm</th>';
-  html += '<th style="text-align:right;min-width:130px;background:#fde047;color:#713f12;font-weight:800">Đạt Đỉnh (Cao Nhất)</th>';
-  html += '</tr></thead><tbody>';
-
-  const rows = [
-    { key: 'retail', name: 'Retail', stat: parsed.statsRetail, color: '#38bdf8' },
-    { key: 'fnb', name: 'F&B', stat: parsed.statsFnb, color: '#10b981' },
-    { key: 'booking', name: 'Booking', stat: parsed.statsBooking, color: '#c084fc' }
-  ];
-
-  rows.forEach(r => {
-    html += '<tr>';
-    html += `<td class="bold text-left" style="color:${r.color};font-size:13px">${esc(r.name)}</td>`;
-
-    parsed.months.forEach(m => {
-      const val = m[r.key];
-      const diffKey = `diff${r.name.replace(/[^a-zA-Z]/g, '')}`;
-      const diff = m[diffKey] !== undefined ? m[diffKey] : m[`diff${r.key.charAt(0).toUpperCase() + r.key.slice(1)}`];
-      html += `<td class="text-right">${renderActiveRateCell(val, diff, m.isBase)}</td>`;
-    });
-
-    html += `<td class="bold text-right" style="color:${r.color};font-size:13px">${r.stat.avg.toFixed(2)}%</td>`;
-    html += `<td class="text-right" style="color:var(--tx-heading);font-weight:600">${r.stat.max.toFixed(2)}% <span class="mut sm">(${r.stat.maxMonth})</span></td>`;
-    html += '</tr>';
-  });
-
-  // Hàng Highlight: Trung Bình Chung Toàn Ngành
-  html += '<tr style="border-top:2px solid var(--line);background:rgba(250,204,21,0.06);font-weight:800">';
-  html += '<td class="text-left" style="color:#facc15;font-size:13.5px">★ TRUNG BÌNH CHUNG</td>';
-
-  parsed.months.forEach(m => {
-    html += `<td class="text-right">${renderActiveRateCell(m.avg, m.diffAvg, m.isBase)}</td>`;
-  });
-
-  html += `<td class="bold text-right" style="color:#facc15;font-size:13.5px">${parsed.statsAvg.avg.toFixed(2)}%</td>`;
-  html += `<td class="text-right" style="color:#facc15">${parsed.statsAvg.max.toFixed(2)}% <span class="mut sm">(${parsed.statsAvg.maxMonth})</span></td>`;
-  html += '</tr>';
-
-  html += '</tbody></table>';
-  container.innerHTML = html;
-}
-
-/**
- * BẢNG 2: THEO DÕI CHI TIẾT THEO TỪNG THÁNG (DỌC - TIMELINE VIEW)
- * Có tìm kiếm, sắp xếp theo cột và đánh giá xu hướng tổng quát
+ * BẢNG CHI TIẾT THEO TỪNG THÁNG (TIMELINE VIEW)
+ * Có tìm kiếm, sắp xếp theo cột và đánh giá xu hướng biến động
  */
 function renderActiveRateTimelineTable(parsed) {
   const tbl = $('bscTimelineTable');
@@ -570,7 +302,7 @@ function renderActiveRateTimelineTable(parsed) {
   thead += `<th onclick="sortActiveRate('retail')" style="text-align:right;min-width:160px;cursor:pointer;color:#38bdf8">Retail (Active Rate)${sortArrow('retail')}</th>`;
   thead += `<th onclick="sortActiveRate('fnb')" style="text-align:right;min-width:160px;cursor:pointer;color:#10b981">F&B (Active Rate)${sortArrow('fnb')}</th>`;
   thead += `<th onclick="sortActiveRate('booking')" style="text-align:right;min-width:160px;cursor:pointer;color:#c084fc">Booking (Active Rate)${sortArrow('booking')}</th>`;
-  thead += `<th onclick="sortActiveRate('avg')" class="kpi-final-th" style="text-align:right;min-width:170px;cursor:pointer">Trung Bình Chung${sortArrow('avg')}</th>`;
+  thead += `<th onclick="sortActiveRate('avg')" class="kpi-final-th" style="text-align:right;min-width:170px;cursor:pointer">Trung Bình 3 Ngành${sortArrow('avg')}</th>`;
   thead += `<th style="text-align:center;min-width:160px">Đánh Giá Xu Hướng</th>`;
   thead += '</tr></thead>';
 
@@ -582,7 +314,11 @@ function renderActiveRateTimelineTable(parsed) {
     list.forEach(m => {
       // Đánh giá xu hướng biến động của tháng
       let trendBadge = '';
-      if (m.isBase) {
+      const hasAnyData = m.retail != null || m.fnb != null || m.booking != null;
+
+      if (!hasAnyData) {
+        trendBadge = '<span style="color:var(--mut);font-size:11px">Chưa có số liệu</span>';
+      } else if (m.isBase) {
         trendBadge = '<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(59,130,246,0.14);color:#60a5fa">Khởi điểm 2026</span>';
       } else {
         const upCount = [m.diffRetail, m.diffFnb, m.diffBooking].filter(d => d != null && d > 0.0001).length;
@@ -615,6 +351,7 @@ function renderActiveRateTimelineTable(parsed) {
   tbody += '</tbody>';
 
   // 3. TFOOT (Hàng TRUNG BÌNH CẢ NĂM)
+  const filledMonthsCount = parsed.months.filter(m => m.retail != null || m.fnb != null || m.booking != null).length;
   let tfoot = '<tfoot><tr>';
   tfoot += '<td style="text-align:center">★</td>';
   tfoot += '<td class="sc-name" style="text-align:left;color:var(--acc)">TRUNG BÌNH CẢ NĂM</td>';
@@ -622,14 +359,14 @@ function renderActiveRateTimelineTable(parsed) {
   tfoot += `<td style="text-align:right;color:#10b981;font-weight:800;font-size:13px">${parsed.statsFnb.avg.toFixed(2)}%</td>`;
   tfoot += `<td style="text-align:right;color:#c084fc;font-weight:800;font-size:13px">${parsed.statsBooking.avg.toFixed(2)}%</td>`;
   tfoot += `<td class="kpi-final-col" style="text-align:right;color:#facc15;font-size:14px">${parsed.statsAvg.avg.toFixed(2)}%</td>`;
-  tfoot += '<td style="text-align:center;color:var(--acc);font-weight:700">10 Tháng 2026</td>';
+  tfoot += `<td style="text-align:center;color:var(--acc);font-weight:700">${filledMonthsCount} Tháng 2026</td>`;
   tfoot += '</tr></tfoot>';
 
   tbl.innerHTML = thead + tbody + tfoot;
 }
 
 /**
- * Điều phối sự kiện sắp xếp bảng
+ * Sắp xếp bảng
  */
 function sortActiveRate(key) {
   if (BAOCAOSC_SORT.k === key) {
@@ -667,13 +404,11 @@ function renderBaoCaoSc() {
   }
 
   renderBaoCaoScSummaryCards(parsed);
-  renderBaoCaoScCharts(parsed);
-  renderActiveRateMatrixTable(parsed);
   renderActiveRateTimelineTable(parsed);
 }
 
 /**
- * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp
+ * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (?sheet=baocaotuan&range=A2:D14)
  */
 async function loadBaoCaoSc(forceReload = false) {
   const btn = $('btnReloadBaoCaoSc');
@@ -718,7 +453,6 @@ async function loadBaoCaoSc(forceReload = false) {
           showToast(`⚡ Đã tải tức thì Báo Cáo SC từ bộ nhớ đệm (${timeLabel}).`, true);
           return;
         } else {
-          // Hiển thị tạm cache cũ và tải ngầm
           BAOCAOSC_STATE = cached;
           renderBaoCaoSc();
           if (badge) {
@@ -732,7 +466,7 @@ async function loadBaoCaoSc(forceReload = false) {
     }
   }
 
-  // 2. Tải API trực tiếp (?sheet=baocaotuan&range=A2:D12)
+  // 2. Tải API trực tiếp (?sheet=baocaotuan&range=A2:D14)
   const cacheBusterUrl = API_BAOCAOSC_ACTIVE_RATE + (API_BAOCAOSC_ACTIVE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   try {
     const res = await safeFetchJson(cacheBusterUrl, 2);
@@ -798,28 +532,17 @@ function exportActiveRateCsv() {
 
   const lines = [];
 
-  // 1. Tiêu đề
+  // Tiêu đề
   lines.push(['BÁO CÁO SC - MỤC 1: ACTIVE RATE NĂM 2026']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
-  // 2. Bảng Ma Trận Ngang
-  lines.push(['MA TRẬN ACTIVE RATE THEO NGÀNH & THÁNG']);
-  lines.push(['Ngành Kinh Doanh', ...parsed.months.map(m => m.cleanLabel), 'Trung Bình Năm', 'Đạt Đỉnh']);
-  parsed.sectors.forEach(s => {
-    const vals = parsed.months.map(m => (m[s.key] != null ? m[s.key].toFixed(2) + '%' : '–'));
-    lines.push([s.name, ...vals, s.stat.avg.toFixed(2) + '%', `${s.stat.max.toFixed(2)}% (${s.stat.maxMonth})`]);
-  });
-  const avgVals = parsed.months.map(m => (m.avg != null ? m.avg.toFixed(2) + '%' : '–'));
-  lines.push(['TRUNG BÌNH CHUNG', ...avgVals, parsed.statsAvg.avg.toFixed(2) + '%', `${parsed.statsAvg.max.toFixed(2)}% (${parsed.statsAvg.maxMonth})`]);
-  lines.push([]);
-
-  // 3. Bảng Dọc Chi Tiết Theo Tháng (Kèm MoM Delta)
-  lines.push(['CHI TIẾT ACTIVE RATE THEO THÁNG & BIẾN ĐỘNG SO VỚI THÁNG TRƯỚC']);
-  lines.push(['Tháng', 'Retail (%)', 'Biến động Retail', 'F&B (%)', 'Biến động F&B', 'Booking (%)', 'Biến động Booking', 'Trung Bình (%)', 'Biến động TB']);
+  // Bảng Chi Tiết Theo Tháng
+  lines.push(['STT', 'Tháng', 'Retail (%)', 'Biến động Retail', 'F&B (%)', 'Biến động F&B', 'Booking (%)', 'Biến động Booking', 'Trung Bình 3 Ngành (%)', 'Biến động TB']);
   parsed.months.forEach(m => {
     const formatDiff = d => d == null ? 'Mốc đầu' : (d > 0 ? `+${d.toFixed(2)}%` : `${d.toFixed(2)}%`);
     lines.push([
+      m.mNum,
       m.cleanLabel,
       m.retail != null ? m.retail.toFixed(2) + '%' : '–',
       formatDiff(m.diffRetail),
@@ -831,6 +554,20 @@ function exportActiveRateCsv() {
       formatDiff(m.diffAvg)
     ]);
   });
+
+  // Footer Trung bình
+  lines.push([
+    '★',
+    'TRUNG BÌNH CẢ NĂM',
+    parsed.statsRetail.avg.toFixed(2) + '%',
+    '',
+    parsed.statsFnb.avg.toFixed(2) + '%',
+    '',
+    parsed.statsBooking.avg.toFixed(2) + '%',
+    '',
+    parsed.statsAvg.avg.toFixed(2) + '%',
+    ''
+  ]);
 
   const csvContent = '\ufeff' + lines.map(row => {
     return row.map(cell => {
