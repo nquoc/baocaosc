@@ -625,7 +625,7 @@ body[data-theme="light"] .kpi-table th.kpi-final-th {
 .ar-cell {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 7px;
   width: 100%;
 }
@@ -677,6 +677,37 @@ body[data-theme="light"] .kpi-table th.kpi-final-th {
   .bsc-centered-block {
     width: 100% !important;
   }
+}
+
+/* Tab Báo Cáo SC: Header màu đen chữ in đậm, tất cả các cell căn giữa */
+#bscTimelineTable, #bscCareTable {
+  width: 100%;
+}
+#bscTimelineTable th, #bscCareTable th {
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+  border-bottom: 2px solid var(--line) !important;
+  user-select: none;
+  font-size: 13px;
+}
+#bscTimelineTable th:hover, #bscCareTable th:hover {
+  background: #18181b !important;
+  color: #38bdf8 !important;
+}
+#bscTimelineTable th:nth-child(2), #bscCareTable th:nth-child(2),
+#bscTimelineTable th:first-child, #bscCareTable th:first-child {
+  background: #000000 !important;
+}
+#bscTimelineTable td, #bscCareTable td {
+  text-align: center !important;
+}
+#bscTimelineTable td.sc-name, #bscCareTable td.sc-name {
+  text-align: center !important;
+}
+#bscTimelineTable tfoot td, #bscCareTable tfoot td {
+  text-align: center !important;
 }
 
 /* Toast Notification */

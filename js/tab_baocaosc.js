@@ -297,11 +297,11 @@ function renderActiveRateTimelineTable(parsed) {
   let thead = '<thead><tr>';
   const sortArrow = key => (BAOCAOSC_SORT.k === key ? (BAOCAOSC_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
 
-  thead += `<th onclick="sortActiveRate('mNum')" style="width:60px;cursor:pointer">STT${sortArrow('mNum')}</th>`;
-  thead += `<th onclick="sortActiveRate('mNum')" style="text-align:left;min-width:140px;cursor:pointer">Thời Gian (Tháng)${sortArrow('mNum')}</th>`;
-  thead += `<th onclick="sortActiveRate('retail')" style="text-align:right;min-width:160px;cursor:pointer;color:#38bdf8">Retail (Active Rate)${sortArrow('retail')}</th>`;
-  thead += `<th onclick="sortActiveRate('fnb')" style="text-align:right;min-width:160px;cursor:pointer;color:#10b981">F&B (Active Rate)${sortArrow('fnb')}</th>`;
-  thead += `<th onclick="sortActiveRate('booking')" style="text-align:right;min-width:160px;cursor:pointer;color:#c084fc">Booking (Active Rate)${sortArrow('booking')}</th>`;
+  thead += `<th onclick="sortActiveRate('mNum')" style="width:60px;cursor:pointer;text-align:center">STT${sortArrow('mNum')}</th>`;
+  thead += `<th onclick="sortActiveRate('mNum')" style="min-width:140px;cursor:pointer;text-align:center">Thời Gian (Tháng)${sortArrow('mNum')}</th>`;
+  thead += `<th onclick="sortActiveRate('retail')" style="min-width:160px;cursor:pointer;text-align:center">Retail (Active Rate)${sortArrow('retail')}</th>`;
+  thead += `<th onclick="sortActiveRate('fnb')" style="min-width:160px;cursor:pointer;text-align:center">F&B (Active Rate)${sortArrow('fnb')}</th>`;
+  thead += `<th onclick="sortActiveRate('booking')" style="min-width:160px;cursor:pointer;text-align:center">Booking (Active Rate)${sortArrow('booking')}</th>`;
   thead += `<th style="text-align:center;min-width:160px">Đánh Giá Xu Hướng</th>`;
   thead += '</tr></thead>';
 
@@ -337,10 +337,10 @@ function renderActiveRateTimelineTable(parsed) {
 
       tbody += '<tr>';
       tbody += `<td style="color:var(--mut);text-align:center">${m.mNum}</td>`;
-      tbody += `<td class="sc-name" style="text-align:left;font-weight:700">${esc(m.cleanLabel)}</td>`;
-      tbody += `<td style="text-align:right">${renderActiveRateCell(m.retail, m.diffRetail, m.isBase)}</td>`;
-      tbody += `<td style="text-align:right">${renderActiveRateCell(m.fnb, m.diffFnb, m.isBase)}</td>`;
-      tbody += `<td style="text-align:right">${renderActiveRateCell(m.booking, m.diffBooking, m.isBase)}</td>`;
+      tbody += `<td class="sc-name" style="text-align:center;font-weight:700">${esc(m.cleanLabel)}</td>`;
+      tbody += `<td style="text-align:center">${renderActiveRateCell(m.retail, m.diffRetail, m.isBase)}</td>`;
+      tbody += `<td style="text-align:center">${renderActiveRateCell(m.fnb, m.diffFnb, m.isBase)}</td>`;
+      tbody += `<td style="text-align:center">${renderActiveRateCell(m.booking, m.diffBooking, m.isBase)}</td>`;
       tbody += `<td style="text-align:center">${trendBadge}</td>`;
       tbody += '</tr>';
     });
@@ -351,10 +351,10 @@ function renderActiveRateTimelineTable(parsed) {
   const filledMonthsCount = parsed.months.filter(m => m.retail != null || m.fnb != null || m.booking != null).length;
   let tfoot = '<tfoot><tr>';
   tfoot += '<td style="text-align:center">★</td>';
-  tfoot += '<td class="sc-name" style="text-align:left;color:var(--acc)">TRUNG BÌNH CẢ NĂM</td>';
-  tfoot += `<td style="text-align:right;color:#38bdf8;font-weight:800;font-size:13px">${parsed.statsRetail.avg.toFixed(2)}%</td>`;
-  tfoot += `<td style="text-align:right;color:#10b981;font-weight:800;font-size:13px">${parsed.statsFnb.avg.toFixed(2)}%</td>`;
-  tfoot += `<td style="text-align:right;color:#c084fc;font-weight:800;font-size:13px">${parsed.statsBooking.avg.toFixed(2)}%</td>`;
+  tfoot += '<td class="sc-name" style="text-align:center;color:var(--acc)">TRUNG BÌNH CẢ NĂM</td>';
+  tfoot += `<td style="text-align:center;color:#38bdf8;font-weight:800;font-size:13px">${parsed.statsRetail.avg.toFixed(2)}%</td>`;
+  tfoot += `<td style="text-align:center;color:#10b981;font-weight:800;font-size:13px">${parsed.statsFnb.avg.toFixed(2)}%</td>`;
+  tfoot += `<td style="text-align:center;color:#c084fc;font-weight:800;font-size:13px">${parsed.statsBooking.avg.toFixed(2)}%</td>`;
   tfoot += `<td style="text-align:center;color:var(--acc);font-weight:700">${filledMonthsCount} Tháng 2026</td>`;
   tfoot += '</tr></tfoot>';
 
@@ -511,11 +511,11 @@ function renderBaoCaoScCareTable(parsedCare) {
   let thead = '<thead><tr>';
   const sortArrow = key => (BAOCAOSC_CARE_SORT.k === key ? (BAOCAOSC_CARE_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
 
-  thead += `<th onclick="sortCareRate('name')" style="text-align:left;min-width:140px;cursor:pointer">Ngành Hàng${sortArrow('name')}</th>`;
-  thead += `<th onclick="sortCareRate('kyMoi')" style="text-align:right;min-width:140px;cursor:pointer;color:#38bdf8">Ký Mới (Gian Hàng)${sortArrow('kyMoi')}</th>`;
-  thead += `<th onclick="sortCareRate('share')" style="text-align:right;min-width:120px;cursor:pointer">Tỷ Trọng Ký Mới${sortArrow('share')}</th>`;
-  thead += `<th onclick="sortCareRate('inactive')" style="text-align:right;min-width:140px;cursor:pointer;color:#f59e0b">Tỷ Lệ Inactive${sortArrow('inactive')}</th>`;
-  thead += `<th onclick="sortCareRate('scCham')" style="text-align:right;min-width:140px;cursor:pointer;color:#c084fc">Tỷ Lệ SC Chăm${sortArrow('scCham')}</th>`;
+  thead += `<th onclick="sortCareRate('name')" style="min-width:140px;cursor:pointer;text-align:center">Ngành Hàng${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortCareRate('kyMoi')" style="min-width:140px;cursor:pointer;text-align:center">Ký Mới (Gian Hàng)${sortArrow('kyMoi')}</th>`;
+  thead += `<th onclick="sortCareRate('share')" style="min-width:120px;cursor:pointer;text-align:center">Tỷ Trọng Ký Mới${sortArrow('share')}</th>`;
+  thead += `<th onclick="sortCareRate('inactive')" style="min-width:140px;cursor:pointer;text-align:center">Tỷ Lệ Inactive${sortArrow('inactive')}</th>`;
+  thead += `<th onclick="sortCareRate('scCham')" style="min-width:140px;cursor:pointer;text-align:center">Tỷ Lệ SC Chăm${sortArrow('scCham')}</th>`;
   thead += '</tr></thead>';
 
   let tbody = '<tbody>';
@@ -524,11 +524,11 @@ function renderBaoCaoScCareTable(parsedCare) {
     const badgeScCham = it.scCham != null ? `<span class="ar-badge" style="background:rgba(192,132,252,0.16);color:#c084fc">${it.scCham.toFixed(2)}%</span>` : '–';
 
     tbody += '<tr>';
-    tbody += `<td class="sc-name" style="text-align:left;font-weight:700">${esc(it.name)}</td>`;
-    tbody += `<td style="text-align:right;font-weight:700;color:#38bdf8">${n0(it.kyMoi)}</td>`;
-    tbody += `<td style="text-align:right;font-weight:600">${it.share.toFixed(2)}%</td>`;
-    tbody += `<td style="text-align:right">${badgeInactive}</td>`;
-    tbody += `<td style="text-align:right">${badgeScCham}</td>`;
+    tbody += `<td class="sc-name" style="text-align:center;font-weight:700">${esc(it.name)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700;color:#38bdf8">${n0(it.kyMoi)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:600">${it.share.toFixed(2)}%</td>`;
+    tbody += `<td style="text-align:center">${badgeInactive}</td>`;
+    tbody += `<td style="text-align:center">${badgeScCham}</td>`;
     tbody += '</tr>';
   });
   tbody += '</tbody>';
@@ -537,11 +537,11 @@ function renderBaoCaoScCareTable(parsedCare) {
   if (parsedCare.totalRow) {
     const tot = parsedCare.totalRow;
     tfoot += '<tfoot><tr>';
-    tfoot += '<td class="sc-name" style="text-align:left;color:var(--acc)">TỔNG TOÀN BỘ</td>';
-    tfoot += `<td style="text-align:right;color:#38bdf8;font-weight:800;font-size:14px">${n0(tot.kyMoi)}</td>`;
-    tfoot += `<td style="text-align:right;color:var(--acc);font-weight:800">100%</td>`;
-    tfoot += `<td style="text-align:right;color:#f59e0b;font-weight:800">${tot.inactive ? tot.inactive.toFixed(2) + '%' : '–'}</td>`;
-    tfoot += `<td style="text-align:right;color:#c084fc;font-weight:800">${tot.scCham ? tot.scCham.toFixed(2) + '%' : '–'}</td>`;
+    tfoot += '<td class="sc-name" style="text-align:center;color:var(--acc)">TỔNG TOÀN BỘ</td>';
+    tfoot += `<td style="text-align:center;color:#38bdf8;font-weight:800;font-size:14px">${n0(tot.kyMoi)}</td>`;
+    tfoot += `<td style="text-align:center;color:var(--acc);font-weight:800">100%</td>`;
+    tfoot += `<td style="text-align:center;color:#f59e0b;font-weight:800">${tot.inactive ? tot.inactive.toFixed(2) + '%' : '–'}</td>`;
+    tfoot += `<td style="text-align:center;color:#c084fc;font-weight:800">${tot.scCham ? tot.scCham.toFixed(2) + '%' : '–'}</td>`;
     tfoot += '</tr></tfoot>';
   }
 
