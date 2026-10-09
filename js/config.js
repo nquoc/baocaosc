@@ -2,9 +2,9 @@
  * config.js - Các cấu hình chung, API endpoints, hằng số và trạng thái toàn cục
  */
 
-// Google Apps Script API endpoints
-const API = 'https://script.google.com/macros/s/AKfycbwfHAYA6-39-yn_HDHHvbYxkBu_HXP29j7lG3vK3XRN6txlJ36kH0EsBCILeqXH2Z1kBw/exec?sheet=baocaotong';
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwfHAYA6-39-yn_HDHHvbYxkBu_HXP29j7lG3vK3XRN6txlJ36kH0EsBCILeqXH2Z1kBw/exec';
+// Google Apps Script API endpoints (Bảo mật bằng Secret Key)
+const API_BASE = 'https://script.google.com/macros/s/AKfycbzBneKTnuVmEJD0ra4MVxrbGvH_Wh2labnSOm-rNxIz6TRR2nF2NpunBKXXnU-uMWPguQ/exec';
+const API = API_BASE + '?sheet=baocaotong';
 const API_MUCTIEU_OFFLINE = API_BASE + '?sheet=muctieu&range=A1:H12';
 const API_MUCTIEU_ONLINE = API_BASE + '?sheet=muctieu&range=A14:H26';
 const API_KPI = API_BASE + '?sheet=kpi';
@@ -12,6 +12,31 @@ const API_PHANCUNG = API_BASE + '?sheet=phancung';
 const API_PHANCUNG_OCT = API_BASE + '?sheet=opp'; // Endpoint cho Mục 2: Chi Tiết Phần Cứng Tháng 10
 const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14';
 const API_BAOCAOSC_CARE_RATE = API_BASE + '?sheet=baocaotuan&range=F2:I6';
+
+// Quản lý Khóa Xác thực (Session Auth Key)
+const AUTH_STORAGE_KEY = 'tc_auth_token';
+const AUTH_REMEMBER_KEY = 'tc_auth_remember';
+
+function getAuthKey() {
+  return sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY) || '';
+}
+
+function setAuthKey(key, remember = false) {
+  sessionStorage.setItem(AUTH_STORAGE_KEY, key);
+  if (remember) {
+    localStorage.setItem(AUTH_STORAGE_KEY, key);
+    localStorage.setItem(AUTH_REMEMBER_KEY, '1');
+  } else {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(AUTH_REMEMBER_KEY);
+  }
+}
+
+function clearAuthKey() {
+  sessionStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem(AUTH_REMEMBER_KEY);
+}
 
 // Cấu hình IndexedDB Smart Cache
 const DB_NAME = 'TeamCoacherDB';

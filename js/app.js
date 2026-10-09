@@ -279,6 +279,129 @@ async function initData() {
   loadLive(false);
 }
 
-// Khởi chạy giao diện và nạp dữ liệu khi script sẵn sàng
-initTheme();
-initData();
+/* ==========================================================================
+   HỆ THỐNG XÁC THỰC BẢO MẬT (LOGIN GATE & LOGOUT)
+   ========================================================================== */
+
+function togglePasswordVisibility() {
+  const inp = $('loginPassInput');
+  const btn = document.querySelector('.login-eye-btn');
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    if (btn) btn.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    if (btn) btn.textContent = '👁️';
+  }
+}
+
+function showLoginGate(errMsg = '') {
+  const gate = $('loginGate');
+  const logoutBtn = $('btnLogoutBtn');
+  const errBox = $('loginErrMsg');
+  const inp = $('loginPassInput');
+
+  if (gate) gate.style.display = 'flex';
+  if (logoutBtn) logoutBtn.style.display = 'none';
+
+  if (errBox) {
+    if (errMsg) {
+      errBox.textContent = '⚠️ ' + errMsg;
+      errBox.style.display = 'block';
+    } else {
+      errBox.style.display = 'none';
+    }
+  }
+  if (inp) {
+    inp.value = '';
+    setTimeout(() => inp.focus(), 150);
+  }
+}
+
+function hideLoginGate() {
+  const gate = $('loginGate');
+  const logoutBtn = $('btnLogoutBtn');
+  if (gate) gate.style.display = 'none';
+  if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+}
+
+async function handleLoginSubmit(e) {
+  if (e) e.preventDefault();
+  const input = $('loginPassInput');
+  const btn = $('btnLoginSubmit');
+  const txt = $('loginBtnTxt');
+  const spin = $('loginSpinner');
+  const errBox = $('loginErrMsg');
+  const rememberCheck = $('loginRememberCheck');
+
+  const pass = String(input ? input.value : '').trim();
+  if (!pass) return;
+
+  if (btn) btn.disabled = true;
+  if (txt) txt.style.display = 'none';
+  if (spin) spin.style.display = 'inline-block';
+  if (errBox) errBox.style.display = 'none';
+
+  try {
+    // Gửi yêu cầu kiểm tra mật khẩu trực tiếp tới Google Apps Script API
+    const testUrl = `${API_BASE}?sheet=opp&key=${encodeURIComponent(pass)}&limit=1&_t=${Date.now()}`;
+    const res = await fetch(testUrl, { cache: 'no-store' });
+    const json = await res.json();
+
+    if (json && json.status === 'success') {
+      // ĐĂNG NHẬP THÀNH CÔNG!
+      const remember = rememberCheck ? rememberCheck.checked : true;
+      setAuthKey(pass, remember);
+      hideLoginGate();
+      showToast('Đăng nhập thành công! Đang đồng bộ số liệu...', true);
+      // Tải dữ liệu toàn bộ dashboard
+      initData();
+    } else {
+      throw new Error(json.message || 'Mật khẩu không chính xác!');
+    }
+  } catch (err) {
+    console.warn('Xác thực thất bại:', err);
+    if (errBox) {
+      errBox.textContent = '⚠️ ' + (err.message && err.message.includes('Từ chối') ? err.message : 'Mật khẩu truy cập không chính xác. Vui lòng thử lại!');
+      errBox.style.display = 'block';
+    }
+    if (input) {
+      input.classList.remove('login-shake');
+      void input.offsetWidth;
+      input.classList.add('login-shake');
+      input.focus();
+      input.select();
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+    if (txt) txt.style.display = 'inline-block';
+    if (spin) spin.style.display = 'none';
+  }
+}
+
+async function handleLogout() {
+  clearAuthKey();
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).clear();
+  } catch (e) {}
+
+  showLoginGate();
+  showToast('Đã đăng xuất và khóa an toàn hệ thống.', true);
+}
+
+function checkAuthAndStart() {
+  initTheme();
+  const savedKey = getAuthKey();
+  if (savedKey) {
+    hideLoginGate();
+    initData();
+  } else {
+    showLoginGate();
+  }
+}
+
+// Khởi chạy hệ thống sau khi kiểm tra xác thực
+checkAuthAndStart();

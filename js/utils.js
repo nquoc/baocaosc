@@ -134,13 +134,26 @@ async function setCachedData(data) {
 }
 
 /**
+ * Tự động gắn Khóa bảo mật (Secret Key) vào URL API nếu chưa có
+ */
+function appendAuthKey(url) {
+  if (!url) return url;
+  const key = typeof getAuthKey === 'function' ? getAuthKey() : '';
+  if (!key) return url;
+  if (url.includes('key=') || url.includes('token=')) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return url + sep + 'key=' + encodeURIComponent(key);
+}
+
+/**
  * Tải JSON an toàn từ Google Apps Script, tự động nhận diện trang lỗi HTML và thử lại (Chống lỗi Unexpected token '<')
  */
 async function safeFetchJson(url, maxRetries = 2) {
+  const authedUrl = appendAuthKey(url);
   let lastErr = null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const res = await fetch(url, { cache: 'no-store' });
+      const res = await fetch(authedUrl, { cache: 'no-store' });
       const text = await res.text();
       const trimmed = text.trim();
 
@@ -150,9 +163,24 @@ async function safeFetchJson(url, maxRetries = 2) {
       }
 
       const json = JSON.parse(text);
+
+      // Nếu server trả về lỗi từ chối truy cập (403 / sai mật khẩu)
+      if (json && json.status === 'error' && (json.code === 403 || String(json.message).includes('Từ chối truy cập'))) {
+        if (typeof showLoginGate === 'function') {
+          showLoginGate('Mật khẩu bảo mật đã bị thay đổi hoặc không hợp lệ. Vui lòng đăng nhập lại!');
+        }
+        if (typeof clearAuthKey === 'function') {
+          clearAuthKey();
+        }
+        throw new Error(json.message || 'Từ chối truy cập: Sai mật khẩu bảo mật.');
+      }
+
       return json;
     } catch (err) {
       lastErr = err;
+      if (err.message && err.message.includes('Từ chối truy cập')) {
+        throw err;
+      }
       if (attempt < maxRetries) {
         // Chờ 1.2s rồi tự động thử lại
         await new Promise(r => setTimeout(r, 1200));

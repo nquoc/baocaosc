@@ -7,6 +7,39 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
+<!-- ==================== MÀN HÌNH ĐĂNG NHẬP / KHÓA BẢO MẬT ==================== -->
+<div id="loginGate" class="login-gate-overlay" style="display:none">
+  <div class="login-box">
+    <div class="login-icon-badge">🔒</div>
+    <h2 class="login-title">TeamCoacher Dashboard</h2>
+    <p class="login-desc">Hệ thống báo cáo &amp; số liệu nội bộ bảo mật của doanh nghiệp.<br>Vui lòng nhập mật khẩu truy cập để mở khóa.</p>
+
+    <form id="loginForm" onsubmit="handleLoginSubmit(event)" autocomplete="off">
+      <div class="login-input-group">
+        <input type="password" id="loginPassInput" placeholder="Nhập mật khẩu truy cập…" required autofocus autocomplete="current-password" />
+        <button type="button" class="login-eye-btn" onclick="togglePasswordVisibility()" title="Ẩn/Hiện mật khẩu">👁️</button>
+      </div>
+
+      <div class="login-remember">
+        <input type="checkbox" id="loginRememberCheck" checked />
+        <label for="loginRememberCheck">Ghi nhớ đăng nhập trên thiết bị này</label>
+      </div>
+
+      <div id="loginErrMsg" class="login-err-box" style="display:none"></div>
+
+      <button type="submit" id="btnLoginSubmit" class="btn-login-submit">
+        <span id="loginBtnTxt">🔓 Mở Khóa Dashboard</span>
+        <span id="loginSpinner" style="display:none">⏳ Đang xác thực…</span>
+      </button>
+    </form>
+
+    <div class="login-footer-note">
+      <span>🛡️ Dữ liệu được bảo vệ bằng mã hóa trực tiếp với máy chủ Google Apps Script</span>
+    </div>
+  </div>
+</div>
+
 <header>
   <div>
     <h1>Báo cáo tổng hợp SC</h1>
@@ -14,6 +47,7 @@
   </div>
   <div class="header-actions">
     <span id="src" class="badge b-load">Đang tải…</span>
+    <button id="btnLogoutBtn" onclick="handleLogout()" class="btn-logout" title="Đăng xuất và khóa bảo mật Dashboard" style="display:none">🔒 Khóa</button>
     <button id="themeToggleBtn" onclick="toggleTheme()" class="btn-theme" title="Chuyển chế độ Sáng / Tối">🌙 Tối</button>
     <button id="btnReloadApi" onclick="loadLive()">⟳ Tải lại API</button>
     <button onclick="resetFilters()">Đặt lại bộ lọc</button>
