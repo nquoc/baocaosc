@@ -59,38 +59,49 @@ function normalizePhanCungData(rawData) {
     return null;
   }
 
-  // Tháng 1 -> Tháng 12 (cols 2 -> 13)
+  // 1. Nhận diện các cột tháng (Tháng 1 -> Tháng 12) từ Row 2 hoặc Row 10
+  const monthCols = [];
   const monthLabels = [];
-  for (let c = 2; c <= 13; c++) {
-    const rawName = String(rawData[1][c] || '').trim();
-    monthLabels.push(rawName || `Tháng ${c - 1}`);
-  }
-
-  // Row 2: KPI tháng
-  const kpiMonths = [];
-  for (let c = 2; c <= 13; c++) {
-    kpiMonths.push(parsePcNumber(rawData[2][c]));
-  }
-
-  // Row 3: Đạt tháng
-  const datMonths = [];
-  for (let c = 2; c <= 13; c++) {
-    datMonths.push(parsePcNumber(rawData[3][c]));
-  }
-
-  // Row 4: % Đạt tháng
-  const pctMonths = [];
-  for (let c = 2; c <= 13; c++) {
-    let p = parsePcPct(rawData[4][c]);
-    if (p === 0 && kpiMonths[c - 2] > 0 && datMonths[c - 2] > 0) {
-      p = (datMonths[c - 2] / kpiMonths[c - 2]) * 100;
+  const row2 = rawData[1] || [];
+  for (let c = 0; c < row2.length; c++) {
+    const s = String(row2[c] || '').trim();
+    if (/^Tháng\s+\d+$/i.test(s)) {
+      monthCols.push(c);
+      monthLabels.push(s);
     }
-    pctMonths.push(p);
   }
 
-  // Quý (Q1..Q4)
-  // Q1: col 2; Q2: col 5; Q3: col 8; Q4: col 11
-  const qCols = [2, 5, 8, 11];
+  // Fallback nếu không khớp regex
+  if (monthCols.length === 0) {
+    const startCol = rawData[1][2] === 'Tháng' ? 3 : 2;
+    for (let c = startCol; c < startCol + 12; c++) {
+      monthCols.push(c);
+      monthLabels.push(String(rawData[1][c] || `Tháng ${c - startCol + 1}`).trim());
+    }
+  }
+
+  // 2. Row 3: KPI tháng
+  const kpiMonths = monthCols.map(c => parsePcNumber(rawData[2][c]));
+
+  // Row 4: Đạt tháng
+  const datMonths = monthCols.map(c => parsePcNumber(rawData[3][c]));
+
+  // Row 5: % Đạt tháng
+  const pctMonths = monthCols.map((c, mIdx) => {
+    let p = parsePcPct(rawData[4][c]);
+    if (p === 0 && kpiMonths[mIdx] > 0 && datMonths[mIdx] > 0) {
+      p = (datMonths[mIdx] / kpiMonths[mIdx]) * 100;
+    }
+    return p;
+  });
+
+  // 3. Quý (Q1..Q4): Cột đầu tiên của mỗi quý
+  const qCols = [
+    monthCols[0],
+    monthCols[3],
+    monthCols[6],
+    monthCols[9]
+  ];
   const quarters = [
     { name: 'Quý 1 (T1-T3)', months: [0, 1, 2] },
     { name: 'Quý 2 (T4-T6)', months: [3, 4, 5] },
@@ -104,7 +115,6 @@ function normalizePhanCungData(rawData) {
     let kpiQ = parsePcNumber(rawData[6][c]);
     let pctQ = parsePcPct(rawData[7][c]);
 
-    // Nếu sheet để trống Q4 nhưng có tháng 10..12
     if (datQ === 0) {
       datQ = q.months.reduce((s, mIdx) => s + (datMonths[mIdx] || 0), 0);
     }
@@ -120,8 +130,20 @@ function normalizePhanCungData(rawData) {
     q.pct = pctQ;
   });
 
-  // Table 2: Danh sách Sale & Kênh SC (Rows 10 -> hết bảng)
-  // Row 10: Header ['Stt', 'Sale', 'Tháng 1' .. 'Tháng 12', 'Tổng Doanh Số']
+  // 4. Table 2: Nhận diện cột Level và Tổng Doanh Số từ Row 10 (Header)
+  const headerRow = rawData[9] || [];
+  let levelCol = -1;
+  let totalCol = headerRow.length - 1;
+
+  for (let c = 0; c < headerRow.length; c++) {
+    const h = String(headerRow[c] || '').trim().toLowerCase();
+    if (h === 'level' || h.includes('định mức')) {
+      levelCol = c;
+    } else if (h.includes('tổng doanh số') || h === 'tổng') {
+      totalCol = c;
+    }
+  }
+
   const items = [];
   let grandTotalRow = null;
 
@@ -132,11 +154,9 @@ function normalizePhanCungData(rawData) {
     const name = String(row[1] || '').trim();
     if (!name) continue;
 
-    const rowMonths = [];
-    for (let c = 2; c <= 13; c++) {
-      rowMonths.push(parsePcNumber(row[c]));
-    }
-    const total = parsePcNumber(row[14]);
+    const level = levelCol !== -1 ? parsePcNumber(row[levelCol]) : null;
+    const rowMonths = monthCols.map(c => parsePcNumber(row[c]));
+    const total = parsePcNumber(row[totalCol]);
 
     const isGrandTotal = name.toUpperCase() === 'TỔNG';
     const isChannel = name.startsWith('SC ') || name.includes('SC');
@@ -144,6 +164,7 @@ function normalizePhanCungData(rawData) {
     const item = {
       stt: (stt != null && !isNaN(stt)) ? stt : null,
       name,
+      level,
       type: isGrandTotal ? 'total' : (isChannel ? 'channel' : 'sale'),
       months: rowMonths,
       total,
@@ -182,6 +203,7 @@ function normalizePhanCungData(rawData) {
   const scPct = grandTotal > 0 ? (scTotal / grandTotal) * 100 : 0;
 
   return {
+    hasLevel: levelCol !== -1,
     monthLabels,
     kpiMonths,
     datMonths,
@@ -471,6 +493,9 @@ function renderSaleDetailTable(parsed) {
     if (k === 'name') {
       return dir * a.name.localeCompare(b.name, 'vi');
     }
+    if (k === 'level') {
+      return dir * ((a.level || 0) - (b.level || 0));
+    }
     if (k.startsWith('m')) {
       const mIdx = parseInt(k.slice(1), 10);
       return dir * ((a.months[mIdx] || 0) - (b.months[mIdx] || 0));
@@ -481,13 +506,15 @@ function renderSaleDetailTable(parsed) {
     return 0;
   });
 
-  
   // 1. THEAD
   let thead = '<thead><tr>';
   const sortArrow = key => (PHANCUNG_SORT.k === key ? (PHANCUNG_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
 
   thead += `<th onclick="sortPhanCung('stt')" style="width:45px;cursor:pointer">STT${sortArrow('stt')}</th>`;
   thead += `<th onclick="sortPhanCung('name')" style="text-align:left;min-width:180px;cursor:pointer">Nhân Sự / Kênh SC${sortArrow('name')}</th>`;
+  if (parsed.hasLevel) {
+    thead += `<th onclick="sortPhanCung('level')" style="text-align:right;min-width:120px;cursor:pointer">Định Mức / Level${sortArrow('level')}</th>`;
+  }
 
   parsed.monthLabels.forEach((m, idx) => {
     thead += `<th onclick="sortPhanCung('m${idx}')" style="text-align:right;cursor:pointer">${esc(m)}${sortArrow('m' + idx)}</th>`;
@@ -499,8 +526,9 @@ function renderSaleDetailTable(parsed) {
 
   // 2. TBODY
   let tbody = '<tbody>';
+  const totalCols = (parsed.hasLevel ? 1 : 0) + parsed.monthLabels.length + 4;
   if (!list.length) {
-    tbody += `<tr><td colspan="16" style="padding:24px;text-align:center;color:var(--mut)">Không có dữ liệu phù hợp với tìm kiếm</td></tr>`;
+    tbody += `<tr><td colspan="${totalCols}" style="padding:24px;text-align:center;color:var(--mut)">Không có dữ liệu phù hợp với tìm kiếm</td></tr>`;
   } else {
     list.forEach((it, idx) => {
       const isChannel = it.type === 'channel';
@@ -513,6 +541,11 @@ function renderSaleDetailTable(parsed) {
       tbody += `<tr style="${rowBg}">`;
       tbody += `<td style="color:var(--mut);text-align:center">${it.stt != null ? it.stt : '–'}</td>`;
       tbody += `<td class="sc-name" style="text-align:left">${esc(it.name)}${badgeType}</td>`;
+
+      if (parsed.hasLevel) {
+        const lvlTxt = it.level > 0 ? formatVNDShort(it.level) : '<span style="color:var(--mut);opacity:0.5">–</span>';
+        tbody += `<td style="text-align:right;font-weight:600;color:var(--tx-heading)">${lvlTxt}</td>`;
+      }
 
       it.months.forEach(val => {
         const txt = val > 0 ? formatVND(val) : '<span style="color:var(--mut);opacity:0.6">–</span>';
@@ -533,6 +566,10 @@ function renderSaleDetailTable(parsed) {
     tfoot += '<tfoot><tr>';
     tfoot += '<td style="text-align:center">★</td>';
     tfoot += '<td class="sc-name" style="text-align:left;color:var(--acc)">TỔNG TOÀN BỘ</td>';
+    if (parsed.hasLevel) {
+      const gtLvl = gt.level > 0 ? formatVNDShort(gt.level) : '–';
+      tfoot += `<td style="text-align:right;color:#facc15;font-weight:800">${gtLvl}</td>`;
+    }
     gt.months.forEach(val => {
       tfoot += `<td style="text-align:right;color:var(--tx-heading)">${val > 0 ? esc(formatVND(val)) : '–'}</td>`;
     });
@@ -733,13 +770,23 @@ function exportPhanCungCsv() {
 
   // 3. Header Bảng Chi Tiết Sale
   lines.push(['DOANH SỐ CHI TIẾT THEO NHÂN SỰ SALE & KÊNH SC']);
-  lines.push(['STT', 'Nhân Sự / Kênh SC', ...parsed.monthLabels, 'Tổng Doanh Số', 'Tỷ Trọng (%)']);
+  const t2Headers = ['STT', 'Nhân Sự / Kênh SC'];
+  if (parsed.hasLevel) t2Headers.push('Định Mức / Level');
+  t2Headers.push(...parsed.monthLabels, 'Tổng Doanh Số', 'Tỷ Trọng (%)');
+  lines.push(t2Headers);
+
   parsed.items.forEach(it => {
-    lines.push([it.stt !== '' ? it.stt : '', it.name, ...it.months, it.total, it.pct.toFixed(2) + '%']);
+    const row = [it.stt != null ? it.stt : '', it.name];
+    if (parsed.hasLevel) row.push(it.level > 0 ? it.level : '');
+    row.push(...it.months, it.total, it.pct.toFixed(2) + '%');
+    lines.push(row);
   });
   if (parsed.grandTotalRow) {
     const gt = parsed.grandTotalRow;
-    lines.push(['', gt.name, ...gt.months, gt.total, '100%']);
+    const row = ['', gt.name];
+    if (parsed.hasLevel) row.push(gt.level > 0 ? gt.level : '');
+    row.push(...gt.months, gt.total, '100%');
+    lines.push(row);
   }
 
   const csvContent = '\ufeff' + lines.map(row => {
