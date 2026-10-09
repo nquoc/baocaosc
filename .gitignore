@@ -1,0 +1,9 @@
+# Scratch & temporary test files
+scratch/
+__pycache__/
+*.pyc
+
+# OS generated files
+desktop.ini
+Thumbs.db
+.DS_Store

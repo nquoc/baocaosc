@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo cáo tổng hợp SC</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <div>
+    <h1>Báo cáo tổng hợp SC</h1>
+    <div class="mut sm">Nguồn: Google Apps Script API (sheet <b>baocaotong</b>) · Ngày công: sáng + chiều = <b>1</b>, một buổi = <b>0.5</b> · ATC = 1 record</div>
+  </div>
+  <div class="header-actions">
+    <span id="src" class="badge b-load">Đang tải…</span>
+    <button id="themeToggleBtn" onclick="toggleTheme()" class="btn-theme" title="Chuyển chế độ Sáng / Tối">🌙 Tối</button>
+    <button id="btnReloadApi" onclick="loadLive()">⟳ Tải lại API</button>
+    <button onclick="resetFilters()">Đặt lại bộ lọc</button>
+    <button onclick="exportCsv()">⬇ Xuất CSV (SC)</button>
+  </div>
+</header>
+
+<!-- NAVIGATION TABS -->
+<div class="tabs-nav">
+  <button id="tabBtnOverview" class="tab-btn active" onclick="switchTab('overview')">
+    📊 Báo Cáo Hiệu Suất & Team Coacher
+  </button>
+  <button id="tabBtnPivot" class="tab-btn" onclick="switchTab('pivot')">
+    🗂️ Chi tiết ATC/ngày
+  </button>
+  <button id="tabBtnTarget" class="tab-btn" onclick="switchTab('target')">
+    🎯 Mục Tiêu
+  </button>
+  <button id="tabBtnKpi" class="tab-btn" onclick="switchTab('kpi')">
+    📈 KPI Team Offline
+  </button>
+  <button id="tabBtnPhanCung" class="tab-btn" onclick="switchTab('phancung')">
+    💻 DS Phần Cứng
+  </button>
+</div>
+
+<!-- GLOBAL FILTERS -->
+<div class="card filters" id="filters">
+  <label>Coacher: <span id="coachPills" style="display:flex;gap:6px;flex-wrap:wrap"></span></label>
+  <label>Tháng: <select id="fMonth" style="font-weight:700;color:#38bdf8"></select></label>
+  <label>Từ <input type="date" id="fFrom"> đến <input type="date" id="fTo"></label>
+  <label>SC: <select id="fSc"></select></label>
+  <label>Trạng thái: <select id="fStatus"><option value="all">Tất cả</option><option value="active">Đang làm</option><option value="left">Đã nghỉ</option></select></label>
+  <label>Mục tiêu ATC/công: <input type="number" id="fTarget" value="6" min="0" step="0.5" style="width:70px"></label>
+  <label>Tối thiểu <input type="number" id="fMin" value="5" min="1" style="width:55px"> ngày/SC mới xếp hạng</label>
+</div>
+
+<!-- ==================== TAB 1: OVERVIEW DASHBOARD ==================== -->
+<div id="overviewSection">
+  <div class="grid kpis" id="kpis"></div>
+
+  <div class="card" style="margin-bottom:14px">
+    <h2>Bảng so sánh các team Coacher <span class="mut sm">(xanh = tốt nhất, đỏ = thấp nhất · bấm vào tên Coacher để xem chi tiết team)</span></h2>
+    <div class="wrap"><table id="coachTbl"></table></div>
+  </div>
+
+  <!-- BẢNG CHI TIẾT TEAM CỦA COACHER (Hiển thị khi lọc hoặc chọn Coacher) -->
+  <div class="card" id="coachTeamCard" style="margin-bottom:14px;border:1px solid #3b82f640">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div>
+        <h2 style="margin:0;font-size:15px;display:flex;align-items:center;gap:8px">
+          <span class="dot" id="coachTeamDot" style="width:10px;height:10px"></span>
+          <span>Bảng chi tiết team của Coacher: <b id="coachTeamTitle" style="color:var(--acc)">...</b></span>
+        </h2>
+        <div class="mut sm" style="margin-top:3px">Danh sách nhân sự SC thuộc team · Bấm tiêu đề cột để sắp xếp</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div id="coachTeamTabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        <button onclick="exportCoachTeamCsv()" style="font-size:12px;padding:4px 10px">⬇ Xuất CSV Team</button>
+      </div>
+    </div>
+    <div class="wrap"><table id="coachTeamTbl"></table></div>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:14px">
+    <div class="card"><h2>ATC / ngày công theo team <span class="mut sm">(đường đỏ = mục tiêu)</span></h2><div class="chart"><canvas id="chBar"></canvas></div></div>
+    <div class="card"><h2>Radar so sánh các chỉ số <span class="mut sm">(100 = team cao nhất từng chỉ số)</span></h2><div class="chart"><canvas id="chRadar"></canvas></div></div>
+    <div class="card"><h2>ATC / công theo ngày</h2><div class="chart"><canvas id="chTrend"></canvas></div></div>
+    <div class="card"><h2>Cơ cấu nguồn data theo team <span class="mut sm">(% ATC)</span></h2><div class="chart"><canvas id="chSrc"></canvas></div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <h2>Chi tiết từng SC <span class="mut sm">(bấm tiêu đề cột để sắp xếp)</span></h2>
+    <div class="wrap"><table id="scTbl"></table></div>
+  </div>
+</div>
+
+<!-- ==================== TAB 2: PIVOT MATRIX ==================== -->
+<div id="pivotSection" style="display:none">
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">📊</span>
+        <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Chi tiết ATC/ngày (Người xử lý × Ngày)</h2>
+      </div>
+      <div class="mut sm" style="font-size:12px">
+        Kết quả (Đếm [Retailer ID]): <b id="pvSummaryAtc" style="color:var(--tx);font-size:14px">0</b> / <b id="pvSummaryHours" style="color:var(--ok);font-size:14px">0 giờ</b>
+      </div>
+    </div>
+
+    <!-- Quick controls for Pivot -->
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span id="pvSubinfo" class="mut sm">Đang hiển thị...</span>
+        <span style="color:#60a5fa;font-size:11px">💡 Bấm vào ô bất kỳ để xem danh sách ATC chi tiết</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input type="text" id="pvSearch" placeholder="🔍 Tìm tên nhân sự..." oninput="renderPivot()" style="width:190px;font-size:12px;padding:4px 9px">
+        <button onclick="setPivotDaysRange('month')" style="font-size:12px;padding:4px 9px">Cả tháng</button>
+        <button onclick="setPivotDaysRange('7d')" style="font-size:12px;padding:4px 9px">7 ngày gần nhất</button>
+        <button onclick="setPivotDaysRange('all')" style="font-size:12px;padding:4px 9px">Tất cả ngày</button>
+        <button onclick="exportPivotCsv()" style="font-size:12px;padding:4px 10px;background:#2563eb;color:#fff;border-color:#3b82f6">⬇ Xuất CSV Chi tiết ATC/ngày</button>
+      </div>
+    </div>
+
+    <!-- Pivot Matrix Table with sticky headers and scroll -->
+    <div class="wrap" style="max-height:750px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+      <table id="pivotTbl" class="pivot-table"></table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 3: MỤC TIÊU (OFFLINE & ONLINE) ==================== -->
+<div id="targetSection" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+    <div>
+      <h2 style="margin:0;font-size:16px;color:var(--tx-heading);display:flex;align-items:center;gap:8px">
+        <span>🎯 Báo Cáo Mục Tiêu & Tiến Độ Tháng (Team Offline & Online)</span>
+      </h2>
+      <div class="mut sm" style="margin-top:4px">Nguồn dữ liệu: Google Apps Script API (sheet <b>muctieu</b>) · Đồng bộ trực tiếp Google Sheets</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span id="targetSrcBadge" class="badge b-load">Đang tải…</span>
+      <button id="btnReloadTarget" onclick="loadMuctieu(true)">⟳ Tải lại Mục Tiêu</button>
+      <button onclick="exportMuctieuCsv('offline')">⬇ Xuất CSV Offline</button>
+      <button onclick="exportMuctieuCsv('online')">⬇ Xuất CSV Online</button>
+    </div>
+  </div>
+
+  <!-- BẢNG 1: TEAM OFFLINE -->
+  <div class="card" style="margin-bottom:18px;padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 style="margin:0;font-size:14px;color:#facc15;display:flex;align-items:center;gap:6px">
+        <span>🏢 Báo cáo Team Offline</span>
+        <span class="mut sm" style="font-weight:400">(Range A1:H12)</span>
+      </h3>
+    </div>
+    <div class="excel-table-wrap">
+      <div id="offlineTblContainer" style="overflow-x:auto">Đang tải dữ liệu…</div>
+    </div>
+  </div>
+
+  <!-- BẢNG 2: TEAM ONLINE -->
+  <div class="card" style="margin-bottom:18px;padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 style="margin:0;font-size:14px;color:#38bdf8;display:flex;align-items:center;gap:6px">
+        <span>🌐 Báo cáo Team Online</span>
+        <span class="mut sm" style="font-weight:400">(Range A14:H26)</span>
+      </h3>
+    </div>
+    <div class="excel-table-wrap">
+      <div id="onlineTblContainer" style="overflow-x:auto">Đang tải dữ liệu…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 4: KPI TEAM OFFLINE ==================== -->
+<div id="kpiSection" style="display:none">
+  <!-- Top bar -->
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+    <div>
+      <h2 style="margin:0;font-size:16px;color:var(--tx-heading);display:flex;align-items:center;gap:8px">
+        <span>📈 Báo Cáo KPI Team Offline</span>
+      </h2>
+      <div class="mut sm" style="margin-top:4px">Nguồn dữ liệu: Google Apps Script API (sheet <b>kpi</b>) · Công thức: <b>KPI tổng = 70% Điểm tổng + 30% Addon</b></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span id="kpiSrcBadge" class="badge b-load">Đang tải…</span>
+      <button id="btnReloadKpi" onclick="loadKpi(true)">⟳ Tải lại KPI</button>
+      <button onclick="exportKpiCsv()" style="background:#2563eb;color:#fff;border-color:#3b82f6">⬇ Xuất CSV KPI</button>
+    </div>
+  </div>
+
+  <!-- Filters & Search -->
+  <div class="card" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px;padding:12px 16px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-weight:700;color:var(--tx);font-size:12px">Lọc Coacher:</span>
+      <span id="kpiCoachPills" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <input type="text" id="kpiSearch" placeholder="🔍 Tìm tên nhân sự SC..." oninput="renderKpi()" style="width:220px;font-size:12px;padding:5px 10px">
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid kpis" id="kpiSummaryCards" style="margin-bottom:14px"></div>
+
+  <!-- Table Card -->
+  <div class="card" style="padding:14px 16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+        <span>Danh Sách Đánh Giá KPI Nhân Sự</span>
+        <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+      </h3>
+      <div class="mut sm" id="kpiTableCount">...</div>
+    </div>
+    <div class="wrap" style="max-height:750px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+      <table id="kpiTable" class="kpi-table"></table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB 5: DS PHẦN CỨNG ==================== -->
+<div id="phancungSection" style="display:none">
+  <!-- Top bar -->
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+    <div>
+      <h2 style="margin:0;font-size:16px;color:var(--tx-heading);display:flex;align-items:center;gap:8px">
+        <span>💻 Báo Cáo Doanh Số & KPI Phần Cứng 2026</span>
+      </h2>
+      <div class="mut sm" style="margin-top:4px">Nguồn dữ liệu: Google Apps Script API (sheet <b>phancung</b>) · Đồng bộ tự động Google Sheets</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span id="phancungSrcBadge" class="badge b-load">Đang tải…</span>
+      <button id="btnReloadPhanCung" onclick="loadPhanCung(true)">⟳ Tải lại DS Phần Cứng</button>
+      <button onclick="exportPhanCungCsv()" style="background:#2563eb;color:#fff;border-color:#3b82f6">⬇ Xuất CSV Phần Cứng</button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid kpis" id="pcSummaryCards" style="margin-bottom:14px"></div>
+
+  <!-- Charts -->
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card">
+      <h2>Doanh số Thực Đạt vs Chỉ Tiêu KPI (12 Tháng) <span class="mut sm">(Cột = Thực Đạt, Đường = KPI)</span></h2>
+      <div class="chart"><canvas id="chPcMonth"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Cơ cấu Doanh số Theo Nhân Sự & Kênh SC <span class="mut sm">(% đóng góp)</span></h2>
+      <div class="chart"><canvas id="chPcShare"></canvas></div>
+    </div>
+  </div>
+
+  <!-- BẢNG 1: BÁO CÁO KPI & THỰC ĐẠT (THÁNG & QUÝ) -->
+  <div class="card" style="margin-bottom:16px;padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 style="margin:0;font-size:14px;color:#facc15;display:flex;align-items:center;gap:6px">
+        <span>📊 Tiến Độ Hoàn Thành KPI Theo Tháng & Theo Quý (2026)</span>
+      </h3>
+    </div>
+    <div class="excel-table-wrap">
+      <div id="pcMonthTableContainer" style="overflow-x:auto">Đang tải dữ liệu…</div>
+    </div>
+  </div>
+
+  <!-- BẢNG 2: CHI TIẾT DOANH SỐ THEO NHÂN SỰ SALE & KÊNH SC -->
+  <div class="card" style="padding:14px 16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+          <span>Danh Sách Doanh Số Theo Nhân Sự Sale & Kênh SC</span>
+          <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+        </h3>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="text" id="pcSearch" placeholder="🔍 Tìm nhân sự hoặc kênh..." oninput="onPhanCungSearch(this.value)" style="width:220px;font-size:12px;padding:5px 10px">
+        <div class="mut sm" id="pcTableCount">...</div>
+      </div>
+    </div>
+    <div class="wrap" style="max-height:750px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+      <table id="pcSaleTable" class="kpi-table"></table>
+    </div>
+  </div>
+</div>
+
+<p class="mut sm" style="line-height:1.6;margin-top:16px">
+  <b>Cách tính ngày công</b>: sáng = có checkin trước 12:30; chiều = có checkin từ 13:00 (12:30–13:00 là giờ nghỉ trưa, làm lố không tính).
+  Có cả sáng và chiều = 1 công, một buổi = 0.5 công; riêng 1 record kéo dài từ sáng sang chiều (checkout cuối từ 13:30) vẫn là 1 công.
+  Giờ làm = tổng khoảng checkin→checkout đã gộp (ca lỗi: checkout sang ngày khác hoặc &gt; 8 giờ → vẫn tính 1 ATC, bỏ phần thời gian).
+  Trường hợp A: sáng+chiều · B: làm lố giờ nghỉ trưa · C: 1 record kéo dài sáng→chiều · D: chỉ sáng, checkout qua 12:30 · E: chỉ sáng · F: chỉ chiều.
+  <b>Chỉ số Impact</b>: được tính từ cột <i>số KH tư vấn</i> (giá trị 1 = có Impact, 0 = không có Impact). "Addon" lấy từ cột <i>Addon</i>.
+</p>
+
+<!-- ==================== MODAL 1: DANH SÁCH CHI TIẾT (N DÒNG) ==================== -->
+<div id="cardListModal" class="modal-backdrop" style="display:none" onclick="handleBackdropClick(event, 'cardListModal')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h3 id="mTitle">Danh sách chi tiết</h3>
+        <div id="mSubtitle" class="mut sm" style="margin-top:3px">...</div>
+      </div>
+      <button class="modal-close" onclick="closeModals()">✕</button>
+    </div>
+    <div class="modal-body" id="mCardList"></div>
+  </div>
+</div>
+
+<!-- ==================== MODAL 2: CHI TIẾT RECORD ĐẦY ĐỦ (24 TRƯỜNG) ==================== -->
+<div id="recordDetailModal" class="modal-backdrop" style="display:none" onclick="handleBackdropClick(event, 'recordDetailModal')">
+  <div class="modal-box modal-box-lg">
+    <div class="modal-head">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="pill on" onclick="backToCardList()" style="font-size:11px;padding:3px 10px;background:#1e3a8a">⬅ Quay lại danh sách</button>
+        <h3 style="margin:0;font-size:14px">Chi tiết Record: Retailer ID <span id="rRetailerId" style="color:var(--acc)">...</span></h3>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button onclick="copyRecordData()" style="font-size:11px;padding:3px 9px">📋 Copy JSON</button>
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="rDetailBody"></div>
+  </div>
+</div>
+
+<!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
+<script src="chart.umd.min.js"></script>
+<script src="snapshot.js"></script>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/tab_overview.js"></script>
+<script src="js/tab_pivot.js"></script>
+<script src="js/tab_muctieu.js"></script>
+<script src="js/tab_kpi.js"></script>
+<script src="js/tab_phancung.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
