@@ -624,6 +624,7 @@ function renderPhanCung() {
   renderKpiMonthTable(parsed);
   renderKpiQuarterTable(parsed);
   renderSaleDetailTable(parsed);
+  renderPhanCungOct();
 }
 
 /**
@@ -801,5 +802,47 @@ function exportPhanCungCsv() {
   a.href = URL.createObjectURL(blob);
   a.download = `doanh_so_phan_cung_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
-  showToast('Đã xuất thành công file CSV Doanh số Phần Cứng!', true);
+  showToast('Đã xuất thành công file CSV Doanh số Phần Cứng (Mục 1)!', true);
+}
+
+/* ==========================================================================
+   MỤC 2: CHI TIẾT PHẦN CỨNG THÁNG 10 (SẴN SÀNG KẾT NỐI API)
+   ========================================================================== */
+
+/**
+ * Render Mục 2: Chi Tiết Phần Cứng Tháng 10
+ */
+function renderPhanCungOct() {
+  const container = $('pcOctContainer');
+  const cardsBox = $('pcOctSummaryCards');
+  if (!container) return;
+
+  // Khi chưa có API hoặc chưa có dữ liệu: Giữ khung thông báo chờ kết nối
+  if (!PHANCUNG_OCT_STATE.data) {
+    if (cardsBox) cardsBox.style.display = 'none';
+    return;
+  }
+
+  // Khi đã có dữ liệu từ API Tháng 10: Sẵn sàng kích hoạt render
+  // (Sẽ triển khai parser & render bảng chi tiết ngay khi có link API)
+}
+
+/**
+ * Tải dữ liệu Mục 2 từ API Tháng 10 (IndexedDB Smart Cache + Fetch trực tiếp)
+ */
+async function loadPhanCungOct(forceReload = false) {
+  if (!API_PHANCUNG_OCT) {
+    showToast('Đang chờ cấu hình link API cho Mục 2 (Chi Tiết Phần Cứng Tháng 10).', false);
+    return;
+  }
+}
+
+/**
+ * Xuất file CSV Mục 2: Chi Tiết Phần Cứng Tháng 10
+ */
+function exportPhanCungOctCsv() {
+  if (!PHANCUNG_OCT_STATE.data) {
+    showToast('Chưa có dữ liệu API Tháng 10 để xuất CSV!', false);
+    return;
+  }
 }

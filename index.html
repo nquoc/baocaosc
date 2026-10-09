@@ -225,60 +225,107 @@
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:14px">
     <div>
       <h2 style="margin:0;font-size:16px;color:var(--tx-heading);display:flex;align-items:center;gap:8px">
-        <span>💻 Báo Cáo Doanh Số & KPI Phần Cứng 2026</span>
+        <span>💻 Báo Cáo Doanh Số &amp; KPI Phần Cứng</span>
       </h2>
       <div class="mut sm" style="margin-top:4px">Nguồn dữ liệu: Google Apps Script API (sheet <b>phancung</b>) · Đồng bộ tự động Google Sheets</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span id="phancungSrcBadge" class="badge b-load">Đang tải…</span>
       <button id="btnReloadPhanCung" onclick="loadPhanCung(true)">⟳ Tải lại DS Phần Cứng</button>
-      <button onclick="exportPhanCungCsv()" style="background:#2563eb;color:#fff;border-color:#3b82f6">⬇ Xuất CSV Phần Cứng</button>
+      <button onclick="exportPhanCungCsv()" style="background:#2563eb;color:#fff;border-color:#3b82f6">⬇ Xuất CSV Mục 1</button>
+      <button id="btnExportPcOct" onclick="exportPhanCungOctCsv()" style="background:#059669;color:#fff;border-color:#10b981" title="Sẵn sàng xuất CSV khi nạp API Tháng 10">⬇ Xuất CSV Mục 2 (T10)</button>
     </div>
   </div>
 
-  <!-- Summary Cards -->
-  <div class="grid kpis" id="pcSummaryCards" style="margin-bottom:14px"></div>
+  <!-- ==================== MỤC 1: BÁO CÁO DOANH SỐ & KPI PHẦN CỨNG 2026 ==================== -->
+  <div id="pcSecYear" style="margin-bottom:28px">
+    <!-- Tiêu đề phân đoạn Mục 1 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#2563eb;color:#ffffff;letter-spacing:0.5px">MỤC 1</span>
+        <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Báo Cáo Doanh Số &amp; KPI Phần Cứng 2026</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Nguồn: Sheet <b>phancung</b> · Tiến độ 12 tháng &amp; 4 Quý
+      </div>
+    </div>
 
-  <!-- Charts -->
-  <div class="grid g2" style="margin-bottom:16px">
-    <div class="card">
-      <h2>Doanh số Thực Đạt vs Chỉ Tiêu KPI (12 Tháng) <span class="mut sm">(Cột = Thực Đạt, Đường = KPI)</span></h2>
-      <div class="chart"><canvas id="chPcMonth"></canvas></div>
-    </div>
-    <div class="card">
-      <h2>Cơ cấu Doanh số Theo Nhân Sự & Kênh SC <span class="mut sm">(% đóng góp)</span></h2>
-      <div class="chart"><canvas id="chPcShare"></canvas></div>
-    </div>
-  </div>
+    <!-- Summary Cards -->
+    <div class="grid kpis" id="pcSummaryCards" style="margin-bottom:14px"></div>
 
-  <!-- BẢNG 1: BÁO CÁO KPI & THỰC ĐẠT (THÁNG & QUÝ) -->
-  <div class="card" style="margin-bottom:16px;padding:16px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <h3 style="margin:0;font-size:14px;color:#facc15;display:flex;align-items:center;gap:6px">
-        <span>📊 Tiến Độ Hoàn Thành KPI Theo Tháng & Theo Quý (2026)</span>
-      </h3>
+    <!-- Charts -->
+    <div class="grid g2" style="margin-bottom:16px">
+      <div class="card">
+        <h2>Doanh số Thực Đạt vs Chỉ Tiêu KPI (12 Tháng) <span class="mut sm">(Cột = Thực Đạt, Đường = KPI)</span></h2>
+        <div class="chart"><canvas id="chPcMonth"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Cơ cấu Doanh số Theo Nhân Sự & Kênh SC <span class="mut sm">(% đóng góp)</span></h2>
+        <div class="chart"><canvas id="chPcShare"></canvas></div>
+      </div>
     </div>
-    <div class="excel-table-wrap">
-      <div id="pcMonthTableContainer" style="overflow-x:auto">Đang tải dữ liệu…</div>
-    </div>
-  </div>
 
-  <!-- BẢNG 2: CHI TIẾT DOANH SỐ THEO NHÂN SỰ SALE & KÊNH SC -->
-  <div class="card" style="padding:14px 16px;margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-      <div>
-        <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-          <span>Danh Sách Doanh Số Theo Nhân Sự Sale & Kênh SC</span>
-          <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+    <!-- BẢNG 1: BÁO CÁO KPI & THỰC ĐẠT (THÁNG & QUÝ) -->
+    <div class="card" style="margin-bottom:16px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0;font-size:14px;color:#facc15;display:flex;align-items:center;gap:6px">
+          <span>📊 Tiến Độ Hoàn Thành KPI Theo Tháng & Theo Quý (2026)</span>
         </h3>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input type="text" id="pcSearch" placeholder="🔍 Tìm nhân sự hoặc kênh..." oninput="onPhanCungSearch(this.value)" style="width:220px;font-size:12px;padding:5px 10px">
-        <div class="mut sm" id="pcTableCount">...</div>
+      <div class="excel-table-wrap">
+        <div id="pcMonthTableContainer" style="overflow-x:auto">Đang tải dữ liệu…</div>
       </div>
     </div>
-    <div class="wrap" style="max-height:750px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-      <table id="pcSaleTable" class="kpi-table"></table>
+
+    <!-- BẢNG 2: CHI TIẾT DOANH SỐ THEO NHÂN SỰ SALE & KÊNH SC -->
+    <div class="card" style="padding:14px 16px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>Danh Sách Doanh Số Theo Nhân Sự Sale & Kênh SC</span>
+            <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+          </h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="text" id="pcSearch" placeholder="🔍 Tìm nhân sự hoặc kênh..." oninput="onPhanCungSearch(this.value)" style="width:220px;font-size:12px;padding:5px 10px">
+          <div class="mut sm" id="pcTableCount">...</div>
+        </div>
+      </div>
+      <div class="wrap" style="max-height:750px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="pcSaleTable" class="kpi-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MỤC 2: CHI TIẾT PHẦN CỨNG THÁNG 10 ==================== -->
+  <div id="pcSecOct" style="margin-top:24px">
+    <!-- Tiêu đề phân đoạn Mục 2 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#10b981;color:#ffffff;letter-spacing:0.5px">MỤC 2</span>
+        <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Chi Tiết Phần Cứng Tháng 10</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Trạng thái: <span style="color:#f59e0b;font-weight:700">⏳ Đang chờ link / range API Google Sheets</span>
+      </div>
+    </div>
+
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 2 (THÁNG 10) -->
+    <div class="grid kpis" id="pcOctSummaryCards" style="margin-bottom:14px;display:none"></div>
+
+    <!-- KHUNG CHỜ API / BẢNG CHI TIẾT MỤC 2 -->
+    <div id="pcOctContainer">
+      <div class="card" style="padding:28px 24px;border:1.5px dashed var(--line);background:transparent;text-align:center;border-radius:12px;margin-bottom:16px">
+        <div style="font-size:38px;margin-bottom:8px">🔌</div>
+        <h3 style="margin:0 0 6px 0;font-size:16px;color:var(--tx-heading)">Sẵn Sàng Nạp Dữ Liệu "Chi Tiết Phần Cứng Tháng 10"</h3>
+        <p class="mut sm" style="max-width:580px;margin:0 auto 16px auto;line-height:1.6">
+          Em đã tạo sẵn cấu trúc <b>Mục nhỏ 2: Chi Tiết Phần Cứng Tháng 10</b> (sẵn sàng cho Thẻ KPI tóm tắt, Bảng chi tiết, Bộ lọc tìm kiếm, Sắp xếp cột và Xuất CSV).<br>
+          Ngay khi anh gửi đường dẫn <b>API mới (hoặc tên sheet &amp; range)</b>, hệ thống sẽ kết nối và hiển thị dữ liệu lên ngay!
+        </p>
+        <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:99px;background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-weight:700;font-size:12.5px">
+          <span>⏳ Đang chờ anh gửi API để kết nối...</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
