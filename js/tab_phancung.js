@@ -1021,7 +1021,7 @@ function renderPhanCungOctSummaryCards(parsedOct) {
 }
 
 /**
- * Render bảng ma trận Pivot: Dòng là Tình trạng, Cột là Nhóm
+ * Render bảng ma trận Pivot: Dòng là Nhóm, Cột là Tình trạng
  */
 function renderPhanCungOctPivotTable(parsedOct) {
   const tbl = $('pcOctPivotTable');
@@ -1029,28 +1029,30 @@ function renderPhanCungOctPivotTable(parsedOct) {
 
   const { statuses, groups, matrix, statusTotals, groupTotals, grandTotal } = parsedOct;
 
-  // 1. THEAD
+  // 1. THEAD (Cột là Tình trạng)
   let thead = '<thead><tr>';
-  thead += '<th style="min-width:160px">TÌNH TRẠNG</th>';
-  groups.forEach(gp => {
-    const meta = getShortGroupName(gp);
-    thead += `<th title="${esc(gp)}" style="min-width:145px;padding:9px 6px">
-      <div style="font-weight:800;font-size:13px;line-height:1.3">${esc(meta.title)}</div>
-      ${meta.sub ? `<div style="font-size:10.5px;font-weight:600;opacity:0.75;margin-top:2px">${esc(meta.sub)}</div>` : ''}
+  thead += '<th style="min-width:180px;text-align:center">NHÓM / NHÂN SỰ</th>';
+  statuses.forEach(st => {
+    thead += `<th style="min-width:150px;padding:9px 8px;text-align:center">
+      <div>${getOctStatusBadge(st)}</div>
     </th>`;
   });
-  thead += '<th class="kpi-final-col" style="min-width:150px;color:#38bdf8">TỔNG CỘNG</th>';
+  thead += '<th class="kpi-final-col" style="min-width:150px;color:#38bdf8;text-align:center">TỔNG CỘNG</th>';
   thead += '</tr></thead>';
 
-  // 2. TBODY
+  // 2. TBODY (Dòng là Nhóm)
   let tbody = '<tbody>';
-  statuses.forEach(st => {
+  groups.forEach(gp => {
+    const meta = getShortGroupName(gp);
     tbody += '<tr>';
-    // Cột 1: Tình trạng
-    tbody += `<td class="sc-name" style="text-align:center">${getOctStatusBadge(st)}</td>`;
+    // Cột 1: Tên Nhóm
+    tbody += `<td class="sc-name" title="${esc(gp)}" style="text-align:center;padding:10px 8px">
+      <div style="font-weight:800;font-size:13px;color:var(--tx-heading)">${esc(meta.title)}</div>
+      ${meta.sub ? `<div style="font-size:10.5px;font-weight:600;opacity:0.75;margin-top:2px;color:var(--mut)">${esc(meta.sub)}</div>` : ''}
+    </td>`;
 
-    // Các cột Nhóm
-    groups.forEach(gp => {
+    // Các cột Tình trạng
+    statuses.forEach(st => {
       const cell = matrix[st]?.[gp] || { count: 0, val: 0 };
       const safeSt = st.replace(/'/g, "\\'");
       const safeGp = gp.replace(/'/g, "\\'");
@@ -1058,23 +1060,23 @@ function renderPhanCungOctPivotTable(parsedOct) {
       tbody += `<td ${clickAttr}>${formatPivotCell(cell.count, cell.val)}</td>`;
     });
 
-    // Cột Tổng cộng theo Tình trạng
-    const stTot = statusTotals[st] || { count: 0, val: 0 };
-    const safeStTot = st.replace(/'/g, "\\'");
-    const clickStTot = stTot.count > 0 ? `onclick="openPhanCungOctCellModal('${safeStTot}', '')" style="cursor:pointer" title="Bấm để xem tất cả ${stTot.count} đơn ${esc(st)}"` : '';
-    tbody += `<td class="kpi-final-col" style="font-weight:700" ${clickStTot}>${formatPivotCell(stTot.count, stTot.val)}</td>`;
+    // Cột Tổng cộng của từng Nhóm
+    const gpTot = groupTotals[gp] || { count: 0, val: 0 };
+    const safeGpTot = gp.replace(/'/g, "\\'");
+    const clickGpTot = gpTot.count > 0 ? `onclick="openPhanCungOctCellModal('', '${safeGpTot}')" style="cursor:pointer" title="Bấm để xem tất cả ${gpTot.count} đơn của nhóm"` : '';
+    tbody += `<td class="kpi-final-col" style="font-weight:700" ${clickGpTot}>${formatPivotCell(gpTot.count, gpTot.val)}</td>`;
     tbody += '</tr>';
   });
   tbody += '</tbody>';
 
-  // 3. TFOOT (Hàng Tổng cộng)
+  // 3. TFOOT (Hàng Tổng cộng theo từng Tình trạng)
   let tfoot = '<tfoot><tr>';
   tfoot += '<td class="sc-name" style="color:var(--acc);font-weight:800;text-align:center">TỔNG CỘNG</td>';
-  groups.forEach(gp => {
-    const gpTot = groupTotals[gp] || { count: 0, val: 0 };
-    const safeGpTot = gp.replace(/'/g, "\\'");
-    const clickGpTot = gpTot.count > 0 ? `onclick="openPhanCungOctCellModal('', '${safeGpTot}')" style="cursor:pointer" title="Bấm để xem tất cả ${gpTot.count} đơn của nhóm"` : '';
-    tfoot += `<td style="font-weight:800" ${clickGpTot}>${formatPivotCell(gpTot.count, gpTot.val)}</td>`;
+  statuses.forEach(st => {
+    const stTot = statusTotals[st] || { count: 0, val: 0 };
+    const safeSt = st.replace(/'/g, "\\'");
+    const clickStTot = stTot.count > 0 ? `onclick="openPhanCungOctCellModal('${safeSt}', '')" style="cursor:pointer" title="Bấm để xem tất cả ${stTot.count} đơn ${esc(st)}"` : '';
+    tfoot += `<td style="font-weight:800" ${clickStTot}>${formatPivotCell(stTot.count, stTot.val)}</td>`;
   });
   const clickAll = grandTotal.count > 0 ? `onclick="openPhanCungOctCellModal('', '')" style="cursor:pointer" title="Bấm để xem toàn bộ ${grandTotal.count} đơn tháng 10"` : '';
   tfoot += `<td class="kpi-final-col" style="color:#38bdf8;font-weight:800;background:rgba(56,189,248,0.12)" ${clickAll}>${formatPivotCell(grandTotal.count, grandTotal.val)}</td>`;
@@ -1203,7 +1205,7 @@ async function loadPhanCungOct(forceReload = false) {
 }
 
 /**
- * Xuất file CSV Mục 2: Ma Trận Tình Trạng x Nhóm + Danh Sách 164 Đơn Chi Tiết
+ * Xuất file CSV Mục 2: Ma Trận Nhóm x Tình Trạng + Danh Sách 164 Đơn Chi Tiết
  */
 function exportPhanCungOctCsv() {
   if (!PHANCUNG_OCT_STATE.data) {
@@ -1218,35 +1220,33 @@ function exportPhanCungOctCsv() {
 
   const lines = [];
 
-  // Phần 1: BẢNG MA TRẬN PIVOT TÌNH TRẠNG × NHÓM
-  lines.push(['BÁO CÁO PHẦN CỨNG THÁNG 10 - MA TRẬN TÌNH TRẠNG x NHÓM']);
+  // Phần 1: BẢNG MA TRẬN PIVOT NHÓM × TÌNH TRẠNG
+  lines.push(['BÁO CÁO PHẦN CỨNG THÁNG 10 - MA TRẬN NHÓM x TÌNH TRẠNG']);
   lines.push(['Thời gian xuất:', new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
-  // Header dòng ma trận
-  const matrixHeaders = ['Tình Trạng', ...parsed.groups.map(g => {
-    const meta = getShortGroupName(g);
-    return meta.sub ? `${meta.title} (${meta.sub})` : meta.title;
-  }), 'TỔNG CỘNG'];
+  // Header dòng ma trận (Cột là Tình trạng)
+  const matrixHeaders = ['Nhóm / Nhân Sự', ...parsed.statuses, 'TỔNG CỘNG'];
   lines.push(matrixHeaders);
 
-  // Các dòng tình trạng
-  parsed.statuses.forEach(st => {
-    const row = [st];
-    parsed.groups.forEach(gp => {
+  // Các dòng Nhóm
+  parsed.groups.forEach(gp => {
+    const meta = getShortGroupName(gp);
+    const row = [meta.sub ? `${meta.title} (${meta.sub})` : meta.title];
+    parsed.statuses.forEach(st => {
       const cell = parsed.matrix[st]?.[gp] || { count: 0, val: 0 };
       row.push(`SL: ${cell.count} / ${cell.val.toLocaleString('vi-VN')} đ`);
     });
-    const stTot = parsed.statusTotals[st] || { count: 0, val: 0 };
-    row.push(`SL: ${stTot.count} / ${stTot.val.toLocaleString('vi-VN')} đ`);
+    const gpTot = parsed.groupTotals[gp] || { count: 0, val: 0 };
+    row.push(`SL: ${gpTot.count} / ${gpTot.val.toLocaleString('vi-VN')} đ`);
     lines.push(row);
   });
 
   // Dòng TỔNG CỘNG
   const footRow = ['TỔNG CỘNG'];
-  parsed.groups.forEach(gp => {
-    const gpTot = parsed.groupTotals[gp] || { count: 0, val: 0 };
-    footRow.push(`SL: ${gpTot.count} / ${gpTot.val.toLocaleString('vi-VN')} đ`);
+  parsed.statuses.forEach(st => {
+    const stTot = parsed.statusTotals[st] || { count: 0, val: 0 };
+    footRow.push(`SL: ${stTot.count} / ${stTot.val.toLocaleString('vi-VN')} đ`);
   });
   footRow.push(`SL: ${parsed.grandTotal.count} / ${parsed.grandTotal.val.toLocaleString('vi-VN')} đ`);
   lines.push(footRow);
