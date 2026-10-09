@@ -12,7 +12,7 @@
 <div id="loginGate" class="login-gate-overlay" style="display:none">
   <div class="login-box">
     <div class="login-icon-badge">🔒</div>
-    <h2 class="login-title">TeamCoacher Dashboard</h2>
+    <h2 class="login-title">Báo Cáo Tổng Hợp SC</h2>
     <p class="login-desc">Hệ thống báo cáo &amp; số liệu nội bộ bảo mật của doanh nghiệp.<br>Vui lòng nhập mật khẩu truy cập để mở khóa.</p>
 
     <form id="loginForm" onsubmit="handleLoginSubmit(event)" autocomplete="off">
@@ -32,10 +32,17 @@
         <span id="loginBtnTxt">🔓 Mở Khóa Dashboard</span>
         <span id="loginSpinner" style="display:none">⏳ Đang xác thực…</span>
       </button>
+
+      <!-- HINT MẬT KHẨU THỬ NGHIỆM -->
+      <div style="margin-top:14px;padding:9px 12px;border-radius:9px;background:rgba(56,189,248,0.12);border:1.5px dashed rgba(56,189,248,0.35);font-size:12px;color:#38bdf8;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="fillTestPassword()" title="Bấm vào đây để tự điền mật khẩu">
+        <span>🔑</span>
+        <span>Mật khẩu thử nghiệm: <b style="color:#ffffff;letter-spacing:1px;font-size:13px;background:rgba(0,0,0,0.35);padding:2px 7px;border-radius:5px">SC@2026</b></span>
+        <span style="font-size:11px;opacity:0.8">(Bấm để tự điền)</span>
+      </div>
     </form>
 
     <div class="login-footer-note">
-      <span>🛡️ Dữ liệu được bảo vệ bằng mã hóa trực tiếp với máy chủ Google Apps Script</span>
+      <span>🛡️ Đang ở chế độ thử nghiệm nội bộ — Sau khi test xong sẽ chuyển sang chế độ private bảo mật.</span>
     </div>
   </div>
 </div>

@@ -296,6 +296,14 @@ function togglePasswordVisibility() {
   }
 }
 
+function fillTestPassword() {
+  const inp = $('loginPassInput');
+  if (inp) {
+    inp.value = 'SC@2026';
+    inp.focus();
+  }
+}
+
 function showLoginGate(errMsg = '') {
   const gate = $('loginGate');
   const logoutBtn = $('btnLogoutBtn');
