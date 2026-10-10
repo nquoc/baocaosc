@@ -2,9 +2,24 @@
  * app.js - Điều hướng tab, lắng nghe sự kiện bộ lọc, khởi tạo luồng dữ liệu chính và Smart Cache
  */
 
-/* ---------- Chuyển đổi Tab ---------- */
+/* ---------- Chuyển đổi & Lưu vết Tab (F5 giữ nguyên tab hiện tại) ---------- */
+const VALID_TABS = ['overview', 'pivot', 'target', 'kpi', 'phancung', 'baocaosc'];
+
 function switchTab(tab) {
+  if (!VALID_TABS.includes(tab)) {
+    tab = 'overview';
+  }
   activeTab = tab;
+
+  // Lưu trạng thái tab vào sessionStorage, localStorage & URL hash để khi F5 vẫn giữ tab này
+  try {
+    sessionStorage.setItem('tc_active_tab', tab);
+    localStorage.setItem('tc_active_tab', tab);
+    if (window.location.hash !== '#' + tab) {
+      history.replaceState(null, '', '#' + tab);
+    }
+  } catch (e) {}
+
   $('tabBtnOverview').className = 'tab-btn' + (tab === 'overview' ? ' active' : '');
   $('tabBtnPivot').className = 'tab-btn' + (tab === 'pivot' ? ' active' : '');
   $('tabBtnTarget').className = 'tab-btn' + (tab === 'target' ? ' active' : '');
@@ -42,7 +57,7 @@ function switchTab(tab) {
       renderPhanCung();
     }
   } else if (tab === 'baocaosc') {
-    if (!BAOCAOSC_STATE.activeRate) {
+    if (!BAOCAOSC_STATE.activeRate || !BAOCAOSC_STATE.provinceImpact || !BAOCAOSC_STATE.headcountRegion) {
       loadBaoCaoSc(false);
     } else {
       renderBaoCaoSc();
@@ -52,6 +67,29 @@ function switchTab(tab) {
     Object.values(charts).forEach(c => c && c.resize && c.resize());
   }
 }
+
+/**
+ * Khôi phục tab trước đó khi F5 hoặc mở lại trình duyệt
+ */
+function restoreActiveTab() {
+  const hash = (window.location.hash || '').replace(/^#/, '').trim();
+  const saved = sessionStorage.getItem('tc_active_tab') || localStorage.getItem('tc_active_tab');
+  const targetTab = VALID_TABS.includes(hash)
+    ? hash
+    : (VALID_TABS.includes(saved) ? saved : 'overview');
+
+  if (targetTab && targetTab !== 'overview') {
+    switchTab(targetTab);
+  }
+}
+
+// Lắng nghe khi người dùng bấm nút Back/Forward trên trình duyệt
+window.addEventListener('hashchange', () => {
+  const hash = (window.location.hash || '').replace(/^#/, '').trim();
+  if (VALID_TABS.includes(hash) && hash !== activeTab) {
+    switchTab(hash);
+  }
+});
 
 /* ---------- Lắng nghe sự kiện bộ lọc ---------- */
 if ($('fSc')) $('fSc').onchange = e => { S.sc = e.target.value; render(); };
@@ -365,6 +403,7 @@ async function handleLoginSubmit(e) {
       showToast('Đăng nhập thành công! Đang đồng bộ số liệu...', true);
       // Tải dữ liệu toàn bộ dashboard
       initData();
+      restoreActiveTab();
     } else {
       throw new Error(json.message || 'Mật khẩu không chính xác!');
     }
@@ -391,6 +430,9 @@ async function handleLoginSubmit(e) {
 async function handleLogout() {
   clearAuthKey();
   try {
+    sessionStorage.removeItem('tc_active_tab');
+    localStorage.removeItem('tc_active_tab');
+    history.replaceState(null, '', window.location.pathname);
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).clear();
@@ -406,6 +448,7 @@ function checkAuthAndStart() {
   if (savedKey) {
     hideLoginGate();
     initData();
+    restoreActiveTab();
   } else {
     showLoginGate();
   }

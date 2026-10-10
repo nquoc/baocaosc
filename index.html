@@ -394,6 +394,8 @@
         <button id="btnReloadBaoCaoSc" onclick="loadBaoCaoSc(true)">⟳ Tải lại Báo Cáo SC</button>
         <button onclick="exportActiveRateCsv()" style="background:#059669;border-color:#10b981;color:#fff">⬇ Xuất CSV Mục 1</button>
         <button onclick="exportCareRateCsv()" style="background:#0284c7;border-color:#0ea5e9;color:#fff">⬇ Xuất CSV Mục 2</button>
+        <button onclick="exportProvinceImpactCsv()" style="background:#d97706;border-color:#f59e0b;color:#fff">⬇ Xuất CSV Mục 3</button>
+        <button onclick="exportHeadcountCsv()" style="background:#7c3aed;border-color:#8b5cf6;color:#fff">⬇ Xuất CSV Mục 4</button>
       </div>
     </div>
   </div>
@@ -466,11 +468,98 @@
     </div>
   </div>
 
-  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 3, MỤC 4...) -->
+  <!-- ==================== MỤC 3: IMPACT THEO TỈNH THÀNH PHỐ ==================== -->
+  <div id="bscSecProvinceImpact" class="bsc-centered-block" style="margin-top:24px">
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 3 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#d97706;color:#ffffff;letter-spacing:0.5px">MỤC 3</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Impact Theo Tỉnh / Thành Phố (T7 – T12)</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Nguồn: Sheet <b>baocaotuan</b> (phạm vi K2:Q19) · So sánh với tháng trước: <span style="color:#10b981;font-weight:700">▲ Tăng</span> · <span style="color:#ef4444;font-weight:700">▼ Giảm</span>
+      </div>
+    </div>
+
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 3 -->
+    <div class="grid kpis" id="bscProvinceSummaryCards" style="margin-bottom:16px"></div>
+
+    <!-- BẢNG CHI TIẾT MỤC 3 -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📊 Bảng Chi Tiết Tỷ Lệ Impact Theo Tỉnh Thành (T7 – T12)</span>
+            <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+          </h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="text" id="bscProvinceSearch" placeholder="🔍 Tìm tỉnh thành..." oninput="onProvinceImpactSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
+          <div class="mut sm" id="bscProvinceTableCount">...</div>
+        </div>
+      </div>
+      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscProvinceTable" class="kpi-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MỤC 4: QUÂN SỐ ĐỘI NGŨ SC ==================== -->
+  <div id="bscSecHeadcount" class="bsc-centered-block" style="margin-top:24px">
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 4 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#8b5cf6;color:#ffffff;letter-spacing:0.5px">MỤC 4</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Quân Số Đội Ngũ SC (Theo Miền, Vị Trí &amp; Tỉnh Thành)</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Nguồn: Sheet <b>baocaotuan</b> (phạm vi U2:AA5 &amp; U7:V24)
+      </div>
+    </div>
+
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 4 -->
+    <div class="grid kpis" id="bscHeadcountSummaryCards" style="margin-bottom:16px"></div>
+
+    <!-- BẢNG 1: PHÂN BỔ QUÂN SỐ THEO MIỀN & VỊ TRÍ -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>👥 Bảng 1: Phân Bổ Quân Số Theo Miền &amp; Vị Trí</span>
+            <span class="mut sm" style="font-weight:400">(Online · Offline · Sale Phần Cứng · Quản Lý · Thử Việc)</span>
+          </h3>
+        </div>
+      </div>
+      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscHeadcountRegionTable" class="kpi-table"></table>
+      </div>
+    </div>
+
+    <!-- BẢNG 2: PHÂN BỔ QUÂN SỐ THEO TỈNH THÀNH / KHU VỰC -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📍 Bảng 2: Phân Bổ Quân Số Theo Khu Vực / Tỉnh Thành</span>
+            <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+          </h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="text" id="bscHeadcountProvinceSearch" placeholder="🔍 Tìm khu vực..." oninput="onHeadcountProvinceSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
+          <div class="mut sm" id="bscHeadcountProvinceCount">...</div>
+        </div>
+      </div>
+      <div class="wrap" style="max-height:600px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscHeadcountProvinceTable" class="kpi-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 5...) -->
   <div class="card bsc-centered-block" style="padding:18px 20px;margin-bottom:16px;border:1.5px dashed var(--line);text-align:center;background:transparent">
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--mut)">
       <span style="font-size:16px">➕</span>
-      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 3, Mục 4...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
+      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 5...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
     </div>
   </div>
 </div>

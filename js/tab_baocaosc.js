@@ -569,7 +569,7 @@ function sortCareRate(key) {
    ========================================================================== */
 
 /**
- * Điều phối render toàn bộ Tab BÁO CÁO SC (Mục 1 & Mục 2)
+ * Điều phối render toàn bộ Tab BÁO CÁO SC (Mục 1, Mục 2, Mục 3 & Mục 4)
  */
 function renderBaoCaoSc() {
   if (BAOCAOSC_STATE.activeRate) {
@@ -587,10 +587,26 @@ function renderBaoCaoSc() {
       renderBaoCaoScCareTable(parsedCare);
     }
   }
+
+  if (BAOCAOSC_STATE.provinceImpact) {
+    const parsedProvince = normalizeProvinceImpactData(BAOCAOSC_STATE.provinceImpact);
+    if (parsedProvince) {
+      renderBaoCaoScProvinceSummaryCards(parsedProvince);
+      renderProvinceImpactTable(parsedProvince);
+    }
+  }
+
+  if (BAOCAOSC_STATE.headcountRegion || BAOCAOSC_STATE.headcountProvince) {
+    const parsedRegion = BAOCAOSC_STATE.headcountRegion ? normalizeHeadcountRegionData(BAOCAOSC_STATE.headcountRegion) : null;
+    const parsedProvince = BAOCAOSC_STATE.headcountProvince ? normalizeHeadcountProvinceData(BAOCAOSC_STATE.headcountProvince) : null;
+    renderBaoCaoScHeadcountSummaryCards(parsedRegion, parsedProvince);
+    if (parsedRegion) renderHeadcountRegionTable(parsedRegion);
+    if (parsedProvince) renderHeadcountProvinceTable(parsedProvince);
+  }
 }
 
 /**
- * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1 + Mục 2 song song)
+ * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1, Mục 2, Mục 3 & Mục 4 song song)
  */
 async function loadBaoCaoSc(forceReload = false) {
   const btn = $('btnReloadBaoCaoSc');
@@ -616,7 +632,7 @@ async function loadBaoCaoSc(forceReload = false) {
         req.onerror = () => resolve(null);
       });
 
-      if (cached && cached.activeRate && Array.isArray(cached.activeRate) && cached.activeRate.length >= 2) {
+      if (cached && cached.activeRate && Array.isArray(cached.activeRate) && cached.activeRate.length >= 2 && cached.provinceImpact && cached.headcountRegion && cached.headcountProvince) {
         const ageMs = Date.now() - (cached.savedAt || 0);
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
@@ -648,14 +664,20 @@ async function loadBaoCaoSc(forceReload = false) {
     }
   }
 
-  // 2. Tải API trực tiếp song song (Mục 1 range A2:D14 + Mục 2 range F2:I6)
+  // 2. Tải API trực tiếp song song (Mục 1 range A2:D14 + Mục 2 range F2:I6 + Mục 3 range K2:Q19 + Mục 4 range U2:AA5 & U7:V24)
   const urlActive = API_BAOCAOSC_ACTIVE_RATE + (API_BAOCAOSC_ACTIVE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlCare = API_BAOCAOSC_CARE_RATE + (API_BAOCAOSC_CARE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlProvince = API_BAOCAOSC_PROVINCE_IMPACT + (API_BAOCAOSC_PROVINCE_IMPACT.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlHeadcountRegion = API_BAOCAOSC_HEADCOUNT_REGION + (API_BAOCAOSC_HEADCOUNT_REGION.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlHeadcountProvince = API_BAOCAOSC_HEADCOUNT_PROVINCE + (API_BAOCAOSC_HEADCOUNT_PROVINCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
 
   try {
-    const [resActive, resCare] = await Promise.all([
+    const [resActive, resCare, resProvince, resHeadcountRegion, resHeadcountProvince] = await Promise.all([
       safeFetchJson(urlActive, 2),
-      safeFetchJson(urlCare, 2)
+      safeFetchJson(urlCare, 2),
+      safeFetchJson(urlProvince, 2),
+      safeFetchJson(urlHeadcountRegion, 2),
+      safeFetchJson(urlHeadcountProvince, 2)
     ]);
 
     if (resActive.status !== 'success' || !Array.isArray(resActive.data) || resActive.data.length < 2) {
@@ -668,6 +690,9 @@ async function loadBaoCaoSc(forceReload = false) {
     BAOCAOSC_STATE = {
       activeRate: resActive.data,
       careRate: resCare && resCare.data ? resCare.data : null,
+      provinceImpact: resProvince && resProvince.data ? resProvince.data : null,
+      headcountRegion: resHeadcountRegion && resHeadcountRegion.data ? resHeadcountRegion.data : null,
+      headcountProvince: resHeadcountProvince && resHeadcountProvince.data ? resHeadcountProvince.data : null,
       savedAt: Date.now(),
       timeStr: timeStr
     };
@@ -684,7 +709,7 @@ async function loadBaoCaoSc(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1 & Mục 2) lúc ${timeStr}!`, true);
+    showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1, 2, 3 & 4) lúc ${timeStr}!`, true);
   } catch (err) {
     console.error('Lỗi khi tải Báo Cáo SC:', err);
     if (BAOCAOSC_STATE.activeRate) {
@@ -830,4 +855,833 @@ function exportCareRateCsv() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('Đã xuất file CSV Chăm Khách New (Mục 2) thành công!', true);
+}
+
+/* ==========================================================================
+   MỤC 3: IMPACT THEO TỈNH THÀNH PHỐ (SHEET 'baocaotuan', RANGE K2:Q19)
+   ========================================================================== */
+
+function parseProvinceImpactVal(val) {
+  if (val == null || val === '' || val === '-') return null;
+  if (typeof val === 'number') {
+    if (isNaN(val)) return null;
+    return (val >= -1 && val <= 1 && val !== 0) ? (val * 100) : (val === 0 ? 0 : val);
+  }
+  const s = String(val).replace(/%/g, '').trim();
+  if (!s) return null;
+  const n = parseFloat(s.replace(/,/g, '.'));
+  if (isNaN(n)) return null;
+  return (n >= -1 && n <= 1 && n !== 0) ? (n * 100) : (n === 0 ? 0 : n);
+}
+
+/**
+ * Chuẩn hóa dữ liệu thô từ sheet 'baocaotuan' (range K2:Q19)
+ */
+function normalizeProvinceImpactData(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const headerRow = rawData[0] || [];
+  let colName = 0, colT7 = 1, colT8 = 2, colT9 = 3, colT10 = 4, colT11 = 5, colT12 = 6;
+
+  headerRow.forEach((h, idx) => {
+    const s = String(h || '').trim().toLowerCase();
+    if (s.includes('tỉnh')) colName = idx;
+    else if (s === 't7' || s.includes('tháng 7')) colT7 = idx;
+    else if (s === 't8' || s.includes('tháng 8')) colT8 = idx;
+    else if (s === 't9' || s.includes('tháng 9')) colT9 = idx;
+    else if (s === 't10' || s.includes('tháng 10')) colT10 = idx;
+    else if (s === 't11' || s.includes('tháng 11')) colT11 = idx;
+    else if (s === 't12' || s.includes('tháng 12')) colT12 = idx;
+  });
+
+  const MONTH_DEFS = [
+    { key: 't7', label: 'T7', name: 'Tháng 7' },
+    { key: 't8', label: 'T8', name: 'Tháng 8' },
+    { key: 't9', label: 'T9', name: 'Tháng 9' },
+    { key: 't10', label: 'T10', name: 'Tháng 10' },
+    { key: 't11', label: 'T11', name: 'Tháng 11' },
+    { key: 't12', label: 'T12', name: 'Tháng 12' }
+  ];
+
+  const computeRowMonths = (item) => {
+    let lastVal = null;
+    let lastLabel = null;
+    item.months = {};
+
+    MONTH_DEFS.forEach(m => {
+      const val = item[m.key];
+      if (val != null) {
+        if (lastVal != null) {
+          item.months[m.key] = {
+            val: val,
+            diff: val - lastVal,
+            prevVal: lastVal,
+            prevLabel: lastLabel
+          };
+        } else {
+          item.months[m.key] = {
+            val: val,
+            diff: null,
+            prevVal: null,
+            prevLabel: null
+          };
+        }
+        lastVal = val;
+        lastLabel = m.label;
+      } else {
+        item.months[m.key] = {
+          val: null,
+          diff: null,
+          prevVal: null,
+          prevLabel: null
+        };
+      }
+    });
+  };
+
+  const provinces = [];
+  let totalRow = null;
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+
+    const name = String(row[colName] || '').trim();
+    if (!name) continue;
+
+    const isTotal = name.toLowerCase() === 'total' || name.toLowerCase().includes('tổng');
+
+    const item = {
+      name: isTotal ? 'Total' : name,
+      t7: parseProvinceImpactVal(row[colT7]),
+      t8: parseProvinceImpactVal(row[colT8]),
+      t9: parseProvinceImpactVal(row[colT9]),
+      t10: parseProvinceImpactVal(row[colT10]),
+      t11: parseProvinceImpactVal(row[colT11]),
+      t12: parseProvinceImpactVal(row[colT12])
+    };
+
+    computeRowMonths(item);
+
+    if (isTotal) {
+      totalRow = item;
+    } else {
+      item.id = provinces.length + 1;
+      provinces.push(item);
+    }
+  }
+
+  // Thống kê tóm tắt KPI
+  const validT10 = provinces.filter(p => p.t10 != null);
+  let topT10 = null;
+  if (validT10.length) {
+    topT10 = validT10.reduce((max, p) => (p.t10 > max.t10 ? p : max), validT10[0]);
+  }
+
+  // So sánh T10 với tháng trước
+  const validDiffT10 = provinces.filter(p => p.months && p.months.t10 && p.months.t10.diff != null);
+  let topIncrease = null;
+  let topDecrease = null;
+
+  const positiveDiffs = validDiffT10.filter(p => p.months.t10.diff > 0);
+  if (positiveDiffs.length) {
+    topIncrease = positiveDiffs.reduce((max, p) => (p.months.t10.diff > max.months.t10.diff ? p : max), positiveDiffs[0]);
+  }
+
+  const negativeDiffs = validDiffT10.filter(p => p.months.t10.diff < 0);
+  if (negativeDiffs.length) {
+    topDecrease = negativeDiffs.reduce((min, p) => (p.months.t10.diff < min.months.t10.diff ? p : min), negativeDiffs[0]);
+  }
+
+  return {
+    headers: headerRow,
+    provinces,
+    totalRow,
+    topT10,
+    topIncrease,
+    topDecrease
+  };
+}
+
+/**
+ * Hiển thị các thẻ KPI tóm tắt Mục 3
+ */
+function renderBaoCaoScProvinceSummaryCards(parsed) {
+  const box = $('bscProvinceSummaryCards');
+  if (!box || !parsed) return;
+
+  const K = (label, val, sub, color = '') => `
+    <div class="card kpi">
+      <div class="l">${label}</div>
+      <div class="v" style="${color}">${val}</div>
+      <div class="s">${sub}</div>
+    </div>`;
+
+  const tot = parsed.totalRow;
+  const totVal = tot && tot.t10 != null ? tot.t10.toFixed(2) + '%' : '–';
+  const totT10 = tot && tot.months && tot.months.t10;
+  let totSub = 'Trung bình toàn quốc';
+  if (totT10 && totT10.diff != null) {
+    if (totT10.diff > 0.0001) {
+      totSub = `<b style="color:#10b981">▲ +${totT10.diff.toFixed(2)}%</b> so với ${totT10.prevLabel}`;
+    } else if (totT10.diff < -0.0001) {
+      totSub = `<b style="color:#ef4444">▼ ${totT10.diff.toFixed(2)}%</b> so với ${totT10.prevLabel}`;
+    } else {
+      totSub = `<b style="color:var(--mut)">— 0.00%</b> so với ${totT10.prevLabel}`;
+    }
+  }
+
+  const top10 = parsed.topT10;
+  const top10Val = top10 && top10.t10 != null ? top10.t10.toFixed(2) + '%' : '–';
+  const top10Sub = top10 ? `Tỉnh: <b style="color:var(--tx)">${esc(top10.name)}</b>` : '–';
+
+  const topUp = parsed.topIncrease;
+  const topUpM = topUp && topUp.months && topUp.months.t10;
+  const topUpVal = topUpM && topUpM.diff != null ? `+${topUpM.diff.toFixed(2)}%` : '–';
+  const topUpSub = topUp && topUpM ? `Tỉnh: <b style="color:var(--tx)">${esc(topUp.name)}</b> (T10: ${topUp.t10 != null ? topUp.t10.toFixed(2) + '%' : '–'} · ${topUpM.prevLabel}: ${topUpM.prevVal.toFixed(2)}%)` : '–';
+
+  const topDown = parsed.topDecrease;
+  const topDownM = topDown && topDown.months && topDown.months.t10;
+  const topDownVal = topDownM && topDownM.diff != null ? `${topDownM.diff.toFixed(2)}%` : '–';
+  const topDownSub = topDown && topDownM ? `Tỉnh: <b style="color:var(--tx)">${esc(topDown.name)}</b> (T10: ${topDown.t10 != null ? topDown.t10.toFixed(2) + '%' : '–'} · ${topDownM.prevLabel}: ${topDownM.prevVal.toFixed(2)}%)` : '–';
+
+  box.innerHTML =
+    K('Toàn Quốc (T10)', totVal, totSub, 'color:#38bdf8') +
+    K('Top 1 Impact T10', top10Val, top10Sub, 'color:#10b981') +
+    K('Tăng Trưởng Tốt Nhất', topUpVal, topUpSub, 'color:#34d399') +
+    K('Giảm Sâu Nhất', topDownVal, topDownSub, 'color:#ef4444');
+}
+
+/**
+ * Hiển thị 1 ô dữ liệu tháng có kèm icon so sánh với tháng trước
+ */
+function renderProvinceMonthCell(monthInfo) {
+  if (!monthInfo || monthInfo.val == null) {
+    return `<span style="color:var(--mut);opacity:0.6">—</span>`;
+  }
+
+  const { val, diff, prevVal, prevLabel } = monthInfo;
+  let color = 'var(--tx)';
+  if (val >= 70) color = '#10b981';
+  else if (val < 50) color = '#f59e0b';
+
+  let iconHtml = '';
+  if (diff != null) {
+    if (diff > 0.0001) {
+      const tooltip = `Tăng +${diff.toFixed(2)}% so với ${prevLabel} (${prevVal.toFixed(2)}%)`;
+      iconHtml = `<span title="${tooltip}" style="color:#10b981;font-size:11px;font-weight:800;margin-left:3px;cursor:help;display:inline-block">▲</span>`;
+    } else if (diff < -0.0001) {
+      const tooltip = `Giảm ${diff.toFixed(2)}% so với ${prevLabel} (${prevVal.toFixed(2)}%)`;
+      iconHtml = `<span title="${tooltip}" style="color:#ef4444;font-size:11px;font-weight:800;margin-left:3px;cursor:help;display:inline-block">▼</span>`;
+    } else {
+      const tooltip = `Không đổi (0.00%) so với ${prevLabel} (${prevVal.toFixed(2)}%)`;
+      iconHtml = `<span title="${tooltip}" style="color:var(--mut);font-size:11px;font-weight:800;margin-left:3px;cursor:help;display:inline-block">—</span>`;
+    }
+  }
+
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;gap:2px;white-space:nowrap"><span style="font-weight:700;color:${color}">${val.toFixed(2)}%</span>${iconHtml}</span>`;
+}
+
+/**
+ * Hiển thị bảng chi tiết Mục 3: Impact Theo Tỉnh Thành (8 cột: STT + Tỉnh + T7..T12)
+ */
+function renderProvinceImpactTable(parsed) {
+  const tbl = $('bscProvinceTable');
+  if (!tbl || !parsed) return;
+
+  const countBox = $('bscProvinceTableCount');
+  let list = [...parsed.provinces];
+
+  // Tìm kiếm theo tên tỉnh
+  if (BAOCAOSC_PROVINCE_SEARCH) {
+    const q = BAOCAOSC_PROVINCE_SEARCH.toLowerCase();
+    list = list.filter(p => p.name.toLowerCase().includes(q));
+  }
+
+  if (countBox) {
+    countBox.textContent = `Hiển thị ${list.length} / ${parsed.provinces.length} tỉnh/thành`;
+  }
+
+  // Sắp xếp
+  const { k, dir } = BAOCAOSC_PROVINCE_SORT;
+  list.sort((a, b) => {
+    if (k === 'id') {
+      return dir * ((a.id || 0) - (b.id || 0));
+    }
+    if (k === 'name') {
+      return dir * a.name.localeCompare(b.name, 'vi');
+    }
+    if (k in a) {
+      return dir * ((a[k] != null ? a[k] : -9999) - (b[k] != null ? b[k] : -9999));
+    }
+    return 0;
+  });
+
+  const sortArrow = key => (BAOCAOSC_PROVINCE_SORT.k === key ? (BAOCAOSC_PROVINCE_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
+
+  // THEAD (8 CỘT)
+  let thead = '<thead><tr>';
+  thead += `<th onclick="sortProvinceImpact('id')" style="width:50px;text-align:center;cursor:pointer">STT${sortArrow('id')}</th>`;
+  thead += `<th onclick="sortProvinceImpact('name')" style="min-width:140px;cursor:pointer;text-align:center">Tỉnh / Thành Phố${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortProvinceImpact('t7')" style="min-width:105px;cursor:pointer;text-align:center">Tháng 7${sortArrow('t7')}</th>`;
+  thead += `<th onclick="sortProvinceImpact('t8')" style="min-width:105px;cursor:pointer;text-align:center">Tháng 8${sortArrow('t8')}</th>`;
+  thead += `<th onclick="sortProvinceImpact('t9')" style="min-width:105px;cursor:pointer;text-align:center">Tháng 9${sortArrow('t9')}</th>`;
+  thead += `<th onclick="sortProvinceImpact('t10')" style="min-width:105px;cursor:pointer;text-align:center">Tháng 10${sortArrow('t10')}</th>`;
+  thead += `<th onclick="sortProvinceImpact('t11')" style="min-width:105px;cursor:pointer;text-align:center">Tháng 11${sortArrow('t11')}</th>`;
+  thead += `<th onclick="sortProvinceImpact('t12')" style="min-width:105px;cursor:pointer;text-align:center">Tháng 12${sortArrow('t12')}</th>`;
+  thead += '</tr></thead>';
+
+  // TBODY
+  let tbody = '<tbody>';
+  if (!list.length) {
+    tbody += `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--mut)">Không có dữ liệu phù hợp với tìm kiếm</td></tr>`;
+  } else {
+    list.forEach((p, idx) => {
+      tbody += '<tr>';
+      tbody += `<td style="color:var(--mut);text-align:center">${idx + 1}</td>`;
+      tbody += `<td class="sc-name" style="text-align:center;font-weight:700">${esc(p.name)}</td>`;
+      tbody += `<td style="text-align:center">${renderProvinceMonthCell(p.months.t7)}</td>`;
+      tbody += `<td style="text-align:center">${renderProvinceMonthCell(p.months.t8)}</td>`;
+      tbody += `<td style="text-align:center">${renderProvinceMonthCell(p.months.t9)}</td>`;
+      tbody += `<td style="text-align:center">${renderProvinceMonthCell(p.months.t10)}</td>`;
+      tbody += `<td style="text-align:center">${renderProvinceMonthCell(p.months.t11)}</td>`;
+      tbody += `<td style="text-align:center">${renderProvinceMonthCell(p.months.t12)}</td>`;
+      tbody += '</tr>';
+    });
+  }
+  tbody += '</tbody>';
+
+  // TFOOT (Total Row - 8 Cột)
+  let tfoot = '';
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    tfoot += '<tfoot><tr>';
+    tfoot += '<td style="text-align:center">★</td>';
+    tfoot += '<td class="sc-name" style="text-align:center;color:var(--acc);font-weight:800">TOÀN QUỐC (TOTAL)</td>';
+    tfoot += `<td style="text-align:center">${renderProvinceMonthCell(tot.months.t7)}</td>`;
+    tfoot += `<td style="text-align:center">${renderProvinceMonthCell(tot.months.t8)}</td>`;
+    tfoot += `<td style="text-align:center">${renderProvinceMonthCell(tot.months.t9)}</td>`;
+    tfoot += `<td style="text-align:center">${renderProvinceMonthCell(tot.months.t10)}</td>`;
+    tfoot += `<td style="text-align:center">${renderProvinceMonthCell(tot.months.t11)}</td>`;
+    tfoot += `<td style="text-align:center">${renderProvinceMonthCell(tot.months.t12)}</td>`;
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * Sắp xếp bảng Mục 3
+ */
+function sortProvinceImpact(key) {
+  if (BAOCAOSC_PROVINCE_SORT.k === key) {
+    BAOCAOSC_PROVINCE_SORT.dir = -BAOCAOSC_PROVINCE_SORT.dir;
+  } else {
+    BAOCAOSC_PROVINCE_SORT.k = key;
+    BAOCAOSC_PROVINCE_SORT.dir = (key === 'name' || key === 'id') ? 1 : -1;
+  }
+  if (BAOCAOSC_STATE.provinceImpact) {
+    const parsed = normalizeProvinceImpactData(BAOCAOSC_STATE.provinceImpact);
+    renderProvinceImpactTable(parsed);
+  }
+}
+
+/**
+ * Tìm kiếm tỉnh thành ở Mục 3
+ */
+function onProvinceImpactSearch(val) {
+  BAOCAOSC_PROVINCE_SEARCH = String(val || '').trim();
+  if (BAOCAOSC_STATE.provinceImpact) {
+    const parsed = normalizeProvinceImpactData(BAOCAOSC_STATE.provinceImpact);
+    renderProvinceImpactTable(parsed);
+  }
+}
+
+/**
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 3
+ */
+function exportProvinceImpactCsv() {
+  if (!BAOCAOSC_STATE.provinceImpact) {
+    showToast('Chưa có dữ liệu Mục 3 để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizeProvinceImpactData(BAOCAOSC_STATE.provinceImpact);
+  if (!parsed) return;
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 3: IMPACT THEO TỈNH THÀNH PHỐ (T7 - T12)']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+
+  lines.push(['STT', 'Tỉnh / Thành Phố', 'Tháng 7 (%)', 'Tháng 8 (%)', 'Tháng 9 (%)', 'Tháng 10 (%)', 'Tháng 11 (%)', 'Tháng 12 (%)']);
+
+  const fmt = mInfo => {
+    if (!mInfo || mInfo.val == null) return '–';
+    let s = mInfo.val.toFixed(2) + '%';
+    if (mInfo.diff != null) {
+      if (mInfo.diff > 0.0001) s += ` (+${mInfo.diff.toFixed(2)}%)`;
+      else if (mInfo.diff < -0.0001) s += ` (${mInfo.diff.toFixed(2)}%)`;
+      else s += ' (0.00%)';
+    }
+    return s;
+  };
+
+  parsed.provinces.forEach((p, idx) => {
+    lines.push([
+      idx + 1,
+      p.name,
+      fmt(p.months.t7),
+      fmt(p.months.t8),
+      fmt(p.months.t9),
+      fmt(p.months.t10),
+      fmt(p.months.t11),
+      fmt(p.months.t12)
+    ]);
+  });
+
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    lines.push([
+      '★',
+      'TOÀN QUỐC (TOTAL)',
+      fmt(tot.months.t7),
+      fmt(tot.months.t8),
+      fmt(tot.months.t9),
+      fmt(tot.months.t10),
+      fmt(tot.months.t11),
+      fmt(tot.months.t12)
+    ]);
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_Impact_TinhThanh_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Impact Theo Tỉnh Thành (Mục 3) thành công!', true);
+}
+
+/* ==========================================================================
+   MỤC 4: QUÂN SỐ ĐỘI NGŨ SC (SHEET 'baocaotuan', U2:AA5 & U7:V24)
+   ========================================================================== */
+
+/**
+ * Chuẩn hóa dữ liệu thô Bảng 1: Quân số theo Miền & Vị trí (range U2:AA5)
+ * Header: ['Miền', 'ONLINE', 'OFFLINE', 'SalePhần cứng', 'Quản lý', 'Tổng Miền', 'Thử việc']
+ */
+function normalizeHeadcountRegionData(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const headerRow = rawData[0] || [];
+  let colRegion = 0, colOnline = 1, colOffline = 2, colSalePC = 3, colManager = 4, colTotal = 5, colProbation = 6;
+
+  headerRow.forEach((h, idx) => {
+    const s = String(h || '').trim().toLowerCase();
+    if (s.includes('tổng')) colTotal = idx;
+    else if (s.includes('miền')) colRegion = idx;
+    else if (s.includes('online')) colOnline = idx;
+    else if (s.includes('offline')) colOffline = idx;
+    else if (s.includes('sale') || s.includes('phần cứng')) colSalePC = idx;
+    else if (s.includes('quản lý') || s.includes('ql')) colManager = idx;
+    else if (s.includes('thử việc')) colProbation = idx;
+  });
+
+  const parseNum = val => {
+    if (val == null || val === '' || val === '-') return 0;
+    const n = parseInt(String(val).replace(/[^0-9-]/g, ''), 10);
+    return isNaN(n) ? 0 : n;
+  };
+
+  const regions = [];
+  let totalRow = null;
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+
+    const name = String(row[colRegion] || '').trim();
+    if (!name) continue;
+
+    const isTotal = name.toLowerCase().includes('toàn quốc') || name.toLowerCase().includes('tổng') || name.toLowerCase() === 'total';
+
+    const item = {
+      name: isTotal ? 'Toàn Quốc' : name,
+      online: parseNum(row[colOnline]),
+      offline: parseNum(row[colOffline]),
+      salePC: parseNum(row[colSalePC]),
+      manager: parseNum(row[colManager]),
+      total: parseNum(row[colTotal]),
+      probation: parseNum(row[colProbation])
+    };
+
+    if (isTotal) {
+      totalRow = item;
+    } else {
+      item.id = regions.length + 1;
+      regions.push(item);
+    }
+  }
+
+  return {
+    headers: headerRow,
+    regions,
+    totalRow
+  };
+}
+
+/**
+ * Chuẩn hóa dữ liệu thô Bảng 2: Quân số theo Tỉnh thành / Khu vực (range U7:V24)
+ * Header: ['Khu vực', 'Số lượng']
+ */
+function normalizeHeadcountProvinceData(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const headerRow = rawData[0] || [];
+  let colName = 0, colCount = 1;
+
+  headerRow.forEach((h, idx) => {
+    const s = String(h || '').trim().toLowerCase();
+    if (s.includes('khu vực') || s.includes('tỉnh')) colName = idx;
+    else if (s.includes('số lượng') || s.includes('quân số') || s.includes('sl')) colCount = idx;
+  });
+
+  const parseNum = val => {
+    if (val == null || val === '' || val === '-') return 0;
+    const n = parseInt(String(val).replace(/[^0-9-]/g, ''), 10);
+    return isNaN(n) ? 0 : n;
+  };
+
+  const provinces = [];
+  let totalRow = null;
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+
+    const name = String(row[colName] || '').trim();
+    if (!name) continue;
+
+    const isTotal = name.toLowerCase() === 'tổng' || name.toLowerCase().includes('tổng cộng') || name.toLowerCase() === 'total';
+
+    const item = {
+      name: isTotal ? 'Tổng Cộng' : name,
+      count: parseNum(row[colCount])
+    };
+
+    if (isTotal) {
+      totalRow = item;
+    } else {
+      item.id = provinces.length + 1;
+      provinces.push(item);
+    }
+  }
+
+  // Tính tổng số lượng từ các tỉnh nếu chưa có totalRow
+  const calculatedTotal = provinces.reduce((sum, p) => sum + p.count, 0);
+  const totalCount = totalRow && totalRow.count > 0 ? totalRow.count : calculatedTotal;
+
+  // Tính % tỷ trọng cho từng tỉnh
+  provinces.forEach(p => {
+    p.pct = totalCount > 0 ? (p.count / totalCount) * 100 : 0;
+  });
+
+  // Tỉnh có quân số đông nhất
+  let maxProvince = null;
+  if (provinces.length) {
+    maxProvince = provinces.reduce((max, p) => (p.count > max.count ? p : max), provinces[0]);
+  }
+
+  return {
+    headers: headerRow,
+    provinces,
+    totalRow: totalRow || { name: 'Tổng Cộng', count: calculatedTotal },
+    totalCount,
+    maxProvince
+  };
+}
+
+/**
+ * Hiển thị các thẻ KPI tóm tắt Mục 4
+ */
+function renderBaoCaoScHeadcountSummaryCards(parsedRegion, parsedProvince) {
+  const box = $('bscHeadcountSummaryCards');
+  if (!box) return;
+
+  const K = (label, val, sub, color = '') => `
+    <div class="card kpi">
+      <div class="l">${label}</div>
+      <div class="v" style="${color}">${val}</div>
+      <div class="s">${sub}</div>
+    </div>`;
+
+  let totVal = '–', totSub = '–';
+  let offVal = '–', offSub = '–';
+  let onlVal = '–', onlSub = '–';
+  let otherVal = '–', otherSub = '–';
+
+  if (parsedRegion && parsedRegion.totalRow) {
+    const tot = parsedRegion.totalRow;
+    const mb = parsedRegion.regions.find(r => r.name.toLowerCase().includes('bắc'));
+    const mn = parsedRegion.regions.find(r => r.name.toLowerCase().includes('nam'));
+
+    totVal = `${tot.total} nhân sự`;
+    totSub = `Miền Bắc: <b style="color:var(--tx)">${mb ? mb.total : '–'}</b> · Miền Nam: <b style="color:var(--tx)">${mn ? mn.total : '–'}</b>`;
+
+    const offPct = tot.total > 0 ? ((tot.offline / tot.total) * 100).toFixed(1) + '%' : '–';
+    offVal = `${tot.offline} nhân sự`;
+    offSub = `Tỷ trọng: <b style="color:#10b981">${offPct}</b> (Bắc: ${mb ? mb.offline : '–'} · Nam: ${mn ? mn.offline : '–'})`;
+
+    const onlPct = tot.total > 0 ? ((tot.online / tot.total) * 100).toFixed(1) + '%' : '–';
+    onlVal = `${tot.online} nhân sự`;
+    onlSub = `Tỷ trọng: <b style="color:#0ea5e9">${onlPct}</b> (Bắc: ${mb ? mb.online : '–'} · Nam: ${mn ? mn.online : '–'})`;
+
+    otherVal = `${tot.probation} Thử Việc`;
+    otherSub = `Quản lý: <b style="color:var(--tx)">${tot.manager}</b> · Sale Phần cứng: <b style="color:var(--tx)">${tot.salePC}</b>`;
+  } else if (parsedProvince && parsedProvince.totalRow) {
+    totVal = `${parsedProvince.totalCount} nhân sự`;
+    totSub = `Phân bổ tại ${parsedProvince.provinces.length} khu vực / tỉnh thành`;
+    if (parsedProvince.maxProvince) {
+      offVal = `${parsedProvince.maxProvince.count} nhân sự`;
+      offSub = `Khu vực đông nhất: <b style="color:var(--tx)">${esc(parsedProvince.maxProvince.name)}</b>`;
+    }
+  }
+
+  box.innerHTML =
+    K('Tổng Quân Số Toàn Quốc', totVal, totSub, 'color:#8b5cf6') +
+    K('Lực Lượng OFFLINE', offVal, offSub, 'color:#10b981') +
+    K('Lực Lượng ONLINE', onlVal, onlSub, 'color:#0ea5e9') +
+    K('Hỗ Trợ & Thử Việc', otherVal, otherSub, 'color:#f59e0b');
+}
+
+/**
+ * Hiển thị Bảng 1: Quân số theo Miền & Vị trí (U2:AA5)
+ */
+function renderHeadcountRegionTable(parsedRegion) {
+  const tbl = $('bscHeadcountRegionTable');
+  if (!tbl || !parsedRegion) return;
+
+  // THEAD
+  let thead = '<thead><tr>';
+  thead += `<th style="width:50px;text-align:center">STT</th>`;
+  thead += `<th style="min-width:140px;text-align:center">Phân Vùng Miền</th>`;
+  thead += `<th style="min-width:90px;text-align:center">ONLINE</th>`;
+  thead += `<th style="min-width:90px;text-align:center">OFFLINE</th>`;
+  thead += `<th style="min-width:115px;text-align:center">Sale Phần Cứng</th>`;
+  thead += `<th style="min-width:95px;text-align:center">Quản Lý</th>`;
+  thead += `<th style="min-width:110px;text-align:center">Tổng Miền</th>`;
+  thead += `<th style="min-width:95px;text-align:center">Thử Việc</th>`;
+  thead += '</tr></thead>';
+
+  const fmtNum = v => `<span style="font-weight:700;color:var(--tx)">${v}</span>`;
+
+  // TBODY
+  let tbody = '<tbody>';
+  parsedRegion.regions.forEach((r, idx) => {
+    tbody += '<tr>';
+    tbody += `<td style="color:var(--mut);text-align:center">${idx + 1}</td>`;
+    tbody += `<td class="sc-name" style="text-align:center;font-weight:700">${esc(r.name)}</td>`;
+    tbody += `<td style="text-align:center">${fmtNum(r.online)}</td>`;
+    tbody += `<td style="text-align:center">${fmtNum(r.offline)}</td>`;
+    tbody += `<td style="text-align:center">${fmtNum(r.salePC)}</td>`;
+    tbody += `<td style="text-align:center">${fmtNum(r.manager)}</td>`;
+    tbody += `<td style="text-align:center"><span style="font-weight:800;color:#38bdf8">${r.total}</span></td>`;
+    tbody += `<td style="text-align:center"><span style="font-weight:700;color:#f59e0b">${r.probation}</span></td>`;
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  // TFOOT (Toàn Quốc)
+  let tfoot = '';
+  if (parsedRegion.totalRow) {
+    const tot = parsedRegion.totalRow;
+    tfoot += '<tfoot><tr>';
+    tfoot += '<td style="text-align:center">★</td>';
+    tfoot += '<td class="sc-name" style="text-align:center;color:var(--acc);font-weight:800">TOÀN QUỐC (TOTAL)</td>';
+    tfoot += `<td style="text-align:center"><span style="font-weight:800;color:#0ea5e9">${tot.online}</span></td>`;
+    tfoot += `<td style="text-align:center"><span style="font-weight:800;color:#10b981">${tot.offline}</span></td>`;
+    tfoot += `<td style="text-align:center">${fmtNum(tot.salePC)}</td>`;
+    tfoot += `<td style="text-align:center">${fmtNum(tot.manager)}</td>`;
+    tfoot += `<td style="text-align:center"><span style="font-weight:900;font-size:14px;color:#38bdf8">${tot.total}</span></td>`;
+    tfoot += `<td style="text-align:center"><span style="font-weight:800;color:#f59e0b">${tot.probation}</span></td>`;
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * Hiển thị Bảng 2: Quân số theo Tỉnh Thành / Khu Vực (U7:V24)
+ */
+function renderHeadcountProvinceTable(parsedProvince) {
+  const tbl = $('bscHeadcountProvinceTable');
+  if (!tbl || !parsedProvince) return;
+
+  const countBox = $('bscHeadcountProvinceCount');
+  let list = [...parsedProvince.provinces];
+
+  // Tìm kiếm theo tên khu vực
+  if (BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH) {
+    const q = BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH.toLowerCase();
+    list = list.filter(p => p.name.toLowerCase().includes(q));
+  }
+
+  if (countBox) {
+    countBox.textContent = `Hiển thị ${list.length} / ${parsedProvince.provinces.length} khu vực`;
+  }
+
+  // Sắp xếp
+  const { k, dir } = BAOCAOSC_HEADCOUNT_PROVINCE_SORT;
+  list.sort((a, b) => {
+    if (k === 'id') return dir * ((a.id || 0) - (b.id || 0));
+    if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
+    if (k === 'count' || k === 'pct') return dir * (a.count - b.count);
+    return 0;
+  });
+
+  const sortArrow = key => (BAOCAOSC_HEADCOUNT_PROVINCE_SORT.k === key ? (BAOCAOSC_HEADCOUNT_PROVINCE_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
+
+  // THEAD (3 CỘT: STT + Khu Vực + Quân Số & Tỷ Trọng)
+  let thead = '<thead><tr>';
+  thead += `<th onclick="sortHeadcountProvince('id')" style="width:50px;text-align:center;cursor:pointer">STT${sortArrow('id')}</th>`;
+  thead += `<th onclick="sortHeadcountProvince('name')" style="min-width:160px;text-align:center;cursor:pointer">Khu Vực / Tỉnh Thành${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortHeadcountProvince('count')" style="min-width:140px;text-align:center;cursor:pointer">Quân Số (% Tỷ Trọng)${sortArrow('count')}</th>`;
+  thead += '</tr></thead>';
+
+  // TBODY
+  let tbody = '<tbody>';
+  if (!list.length) {
+    tbody += `<tr><td colspan="3" style="padding:24px;text-align:center;color:var(--mut)">Không có khu vực phù hợp với tìm kiếm</td></tr>`;
+  } else {
+    list.forEach((p, idx) => {
+      const pctVal = p.pct != null ? p.pct : 0;
+
+      tbody += '<tr>';
+      tbody += `<td style="color:var(--mut);text-align:center">${idx + 1}</td>`;
+      tbody += `<td class="sc-name" style="text-align:center;font-weight:700">${esc(p.name)}</td>`;
+      tbody += `<td style="text-align:center">
+        <span style="font-weight:800;font-size:13px;color:${p.count > 0 ? 'var(--tx)' : 'var(--mut)'}">${p.count}</span>
+        <span style="font-weight:600;font-size:12px;color:var(--mut);margin-left:4px">(${pctVal.toFixed(2)}%)</span>
+      </td>`;
+      tbody += '</tr>';
+    });
+  }
+  tbody += '</tbody>';
+
+  // TFOOT (Tổng)
+  let tfoot = '';
+  if (parsedProvince.totalRow) {
+    tfoot += '<tfoot><tr>';
+    tfoot += '<td style="text-align:center">★</td>';
+    tfoot += '<td class="sc-name" style="text-align:center;color:var(--acc);font-weight:800">TỔNG CỘNG (16 TỈNH THÀNH)</td>';
+    tfoot += `<td style="text-align:center">
+      <span style="font-weight:900;font-size:14px;color:var(--acc)">${parsedProvince.totalCount}</span>
+      <span style="font-weight:700;font-size:12px;color:var(--acc);margin-left:4px">(100.00%)</span>
+    </td>`;
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * Sắp xếp bảng Bảng 2 Mục 4
+ */
+function sortHeadcountProvince(key) {
+  if (BAOCAOSC_HEADCOUNT_PROVINCE_SORT.k === key) {
+    BAOCAOSC_HEADCOUNT_PROVINCE_SORT.dir = -BAOCAOSC_HEADCOUNT_PROVINCE_SORT.dir;
+  } else {
+    BAOCAOSC_HEADCOUNT_PROVINCE_SORT.k = key;
+    BAOCAOSC_HEADCOUNT_PROVINCE_SORT.dir = (key === 'name' || key === 'id') ? 1 : -1;
+  }
+  if (BAOCAOSC_STATE.headcountProvince) {
+    const parsed = normalizeHeadcountProvinceData(BAOCAOSC_STATE.headcountProvince);
+    renderHeadcountProvinceTable(parsed);
+  }
+}
+
+/**
+ * Tìm kiếm khu vực ở Bảng 2 Mục 4
+ */
+function onHeadcountProvinceSearch(val) {
+  BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH = String(val || '').trim();
+  if (BAOCAOSC_STATE.headcountProvince) {
+    const parsed = normalizeHeadcountProvinceData(BAOCAOSC_STATE.headcountProvince);
+    renderHeadcountProvinceTable(parsed);
+  }
+}
+
+/**
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 4
+ */
+function exportHeadcountCsv() {
+  if (!BAOCAOSC_STATE.headcountRegion && !BAOCAOSC_STATE.headcountProvince) {
+    showToast('Chưa có dữ liệu Mục 4 để xuất CSV!', false);
+    return;
+  }
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 4: QUÂN SỐ ĐỘI NGŨ SC']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+
+  // Phần 1: Theo Miền & Vị trí
+  if (BAOCAOSC_STATE.headcountRegion) {
+    const parsedRegion = normalizeHeadcountRegionData(BAOCAOSC_STATE.headcountRegion);
+    if (parsedRegion) {
+      lines.push(['--- BẢNG 1: PHÂN BỔ QUÂN SỐ THEO MIỀN & VỊ TRÍ ---']);
+      lines.push(['STT', 'Phân Vùng Miền', 'ONLINE', 'OFFLINE', 'Sale Phần Cứng', 'Quản Lý', 'Tổng Miền', 'Thử Việc']);
+      parsedRegion.regions.forEach((r, idx) => {
+        lines.push([idx + 1, r.name, r.online, r.offline, r.salePC, r.manager, r.total, r.probation]);
+      });
+      if (parsedRegion.totalRow) {
+        const tot = parsedRegion.totalRow;
+        lines.push(['★', 'TOÀN QUỐC', tot.online, tot.offline, tot.salePC, tot.manager, tot.total, tot.probation]);
+      }
+      lines.push([]);
+    }
+  }
+
+  // Phần 2: Theo Tỉnh thành / Khu vực
+  if (BAOCAOSC_STATE.headcountProvince) {
+    const parsedProvince = normalizeHeadcountProvinceData(BAOCAOSC_STATE.headcountProvince);
+    if (parsedProvince) {
+      lines.push(['--- BẢNG 2: PHÂN BỔ QUÂN SỐ THEO TỈNH THÀNH / KHU VỰC ---']);
+      lines.push(['STT', 'Khu Vực / Tỉnh Thành', 'Quân Số (% Tỷ Trọng)']);
+      parsedProvince.provinces.forEach((p, idx) => {
+        lines.push([idx + 1, p.name, `${p.count} (${p.pct != null ? p.pct.toFixed(2) : '0.00'}%)`]);
+      });
+      if (parsedProvince.totalRow) {
+        lines.push(['★', 'TỔNG CỘNG', `${parsedProvince.totalCount} (100.00%)`]);
+      }
+    }
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_QuanSo_Headcount_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Quân Số Đội Ngũ SC (Mục 4) thành công!', true);
 }

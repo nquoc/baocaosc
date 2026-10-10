@@ -680,10 +680,10 @@ body[data-theme="light"] .kpi-table th.kpi-final-th {
 }
 
 /* Tab Báo Cáo SC & Mục 2 Phần Cứng: Header màu đen chữ in đậm, tất cả các cell căn giữa */
-#bscTimelineTable, #bscCareTable, #pcOctPivotTable {
+#bscTimelineTable, #bscCareTable, #pcOctPivotTable, #bscProvinceTable, #bscHeadcountRegionTable, #bscHeadcountProvinceTable {
   width: 100%;
 }
-#bscTimelineTable th, #bscCareTable th, #pcOctPivotTable th {
+#bscTimelineTable th, #bscCareTable th, #pcOctPivotTable th, #bscProvinceTable th, #bscHeadcountRegionTable th, #bscHeadcountProvinceTable th {
   background: #000000 !important;
   color: #ffffff !important;
   font-weight: 800 !important;
@@ -692,21 +692,21 @@ body[data-theme="light"] .kpi-table th.kpi-final-th {
   user-select: none;
   font-size: 13px;
 }
-#bscTimelineTable th:hover, #bscCareTable th:hover, #pcOctPivotTable th:hover {
+#bscTimelineTable th:hover, #bscCareTable th:hover, #pcOctPivotTable th:hover, #bscProvinceTable th:hover, #bscHeadcountRegionTable th:hover, #bscHeadcountProvinceTable th:hover {
   background: #18181b !important;
   color: #38bdf8 !important;
 }
-#bscTimelineTable th:nth-child(2), #bscCareTable th:nth-child(2), #pcOctPivotTable th:nth-child(2),
-#bscTimelineTable th:first-child, #bscCareTable th:first-child, #pcOctPivotTable th:first-child {
+#bscTimelineTable th:nth-child(2), #bscCareTable th:nth-child(2), #pcOctPivotTable th:nth-child(2), #bscProvinceTable th:nth-child(2), #bscHeadcountRegionTable th:nth-child(2), #bscHeadcountProvinceTable th:nth-child(2),
+#bscTimelineTable th:first-child, #bscCareTable th:first-child, #pcOctPivotTable th:first-child, #bscProvinceTable th:first-child, #bscHeadcountRegionTable th:first-child, #bscHeadcountProvinceTable th:first-child {
   background: #000000 !important;
 }
-#bscTimelineTable td, #bscCareTable td, #pcOctPivotTable td {
+#bscTimelineTable td, #bscCareTable td, #pcOctPivotTable td, #bscProvinceTable td, #bscHeadcountRegionTable td, #bscHeadcountProvinceTable td {
   text-align: center !important;
 }
-#bscTimelineTable td.sc-name, #bscCareTable td.sc-name, #pcOctPivotTable td.sc-name {
+#bscTimelineTable td.sc-name, #bscCareTable td.sc-name, #pcOctPivotTable td.sc-name, #bscProvinceTable td.sc-name, #bscHeadcountRegionTable td.sc-name, #bscHeadcountProvinceTable td.sc-name {
   text-align: center !important;
 }
-#bscTimelineTable tfoot td, #bscCareTable tfoot td, #pcOctPivotTable tfoot td {
+#bscTimelineTable tfoot td, #bscCareTable tfoot td, #pcOctPivotTable tfoot td, #bscProvinceTable tfoot td, #bscHeadcountRegionTable tfoot td, #bscHeadcountProvinceTable tfoot td {
   text-align: center !important;
 }
 

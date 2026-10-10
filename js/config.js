@@ -12,6 +12,9 @@ const API_PHANCUNG = API_BASE + '?sheet=phancung';
 const API_PHANCUNG_OCT = API_BASE + '?sheet=opp'; // Endpoint cho Mục 2: Chi Tiết Phần Cứng Tháng 10
 const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14';
 const API_BAOCAOSC_CARE_RATE = API_BASE + '?sheet=baocaotuan&range=F2:I6';
+const API_BAOCAOSC_PROVINCE_IMPACT = API_BASE + '?sheet=baocaotuan&range=K2:Q19'; // Mục 3: Impact Theo Tỉnh Thành Phố
+const API_BAOCAOSC_HEADCOUNT_REGION = API_BASE + '?sheet=baocaotuan&range=U2:AA5'; // Mục 4: Quân số theo Miền & Vị trí
+const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:V24'; // Mục 4: Quân số theo Tỉnh thành
 
 // Quản lý Khóa Xác thực (Session Auth Key)
 const AUTH_STORAGE_KEY = 'tc_auth_token';
@@ -115,7 +118,11 @@ let PHANCUNG_OCT_SEARCH = '';
 let PHANCUNG_OCT_SORT = { k: 'total', dir: -1 };
 
 // Trạng thái Tab 6: BÁO CÁO SC
-let BAOCAOSC_STATE = { activeRate: null, careRate: null, savedAt: 0, timeStr: '' };
+let BAOCAOSC_STATE = { activeRate: null, careRate: null, provinceImpact: null, headcountRegion: null, headcountProvince: null, savedAt: 0, timeStr: '' };
 let BAOCAOSC_SEARCH = '';
 let BAOCAOSC_SORT = { k: 'mNum', dir: 1 };
 let BAOCAOSC_CARE_SORT = { k: 'kyMoi', dir: -1 };
+let BAOCAOSC_PROVINCE_SEARCH = '';
+let BAOCAOSC_PROVINCE_SORT = { k: 't10', dir: -1 };
+let BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH = '';
+let BAOCAOSC_HEADCOUNT_PROVINCE_SORT = { k: 'count', dir: -1 };
