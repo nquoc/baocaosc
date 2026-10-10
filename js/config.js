@@ -74,7 +74,7 @@ let ALL_HEADERS = [];
 let CURRENT_MODAL_LIST = [];
 let CURRENT_RECORD = null;
 let activeTab = 'overview';
-let activeCoachTeam = null;
+let activeCoachTeam = 'all';
 let coachTeamSort = { k: 'atcPerDay', dir: -1 };
 
 // Trạng thái Bảng Chất Lượng SC Theo Tỉnh Thành (Tab 1)

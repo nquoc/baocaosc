@@ -191,6 +191,7 @@ function buildCoachPills() {
   allBtn.onclick = () => {
     COACHES.forEach(c => S.coach.add(c));
     S.sc = 'all';
+    activeCoachTeam = 'all';
     buildCoachPills();
     buildScSelect();
     render();
@@ -360,13 +361,24 @@ function renderCoachTeamSection(rows, byCoach) {
   }
   card.style.display = 'block';
 
-  if (!activeCoachTeam || !availableCoaches.includes(activeCoachTeam)) {
-    activeCoachTeam = availableCoaches[0];
+  if (!activeCoachTeam || (activeCoachTeam !== 'all' && !availableCoaches.includes(activeCoachTeam))) {
+    activeCoachTeam = 'all';
   }
 
-  // Render tabs chuyển nhanh giữa các team
+  // Render tabs chuyển nhanh giữa các team (có nút "Tất cả Team")
   const tabsBox = $('coachTeamTabs');
   tabsBox.innerHTML = '';
+
+  // Nút Tất cả Team
+  const allBtn = document.createElement('span');
+  allBtn.className = 'pill' + (activeCoachTeam === 'all' ? ' on' : '');
+  allBtn.innerHTML = '👥 Tất cả Team';
+  allBtn.onclick = () => {
+    activeCoachTeam = 'all';
+    renderCoachTeamSection(rows, byCoach);
+  };
+  tabsBox.appendChild(allBtn);
+
   availableCoaches.forEach(c => {
     const btn = document.createElement('span');
     btn.className = 'pill' + (c === activeCoachTeam ? ' on' : '');
@@ -379,11 +391,12 @@ function renderCoachTeamSection(rows, byCoach) {
     tabsBox.appendChild(btn);
   });
 
-  $('coachTeamDot').style.background = COLOR[activeCoachTeam] || 'var(--acc)';
-  $('coachTeamTitle').textContent = activeCoachTeam;
-  $('coachTeamTitle').style.color = COLOR[activeCoachTeam] || 'var(--acc)';
+  const isAll = (activeCoachTeam === 'all');
+  $('coachTeamDot').style.background = isAll ? 'var(--acc)' : (COLOR[activeCoachTeam] || 'var(--acc)');
+  $('coachTeamTitle').textContent = isAll ? 'Tất cả các Team Coacher' : activeCoachTeam;
+  $('coachTeamTitle').style.color = isAll ? 'var(--acc)' : (COLOR[activeCoachTeam] || 'var(--acc)');
 
-  const teamDays = rows.filter(d => d.coach === activeCoachTeam);
+  const teamDays = isAll ? rows : rows.filter(d => d.coach === activeCoachTeam);
   const byScMap = groupBy(teamDays, d => d.sc);
 
   const scList = Object.entries(byScMap).map(([sc, ds]) => {
@@ -393,6 +406,7 @@ function renderCoachTeamSection(rows, byCoach) {
       sc,
       name: meta.name,
       full: sc,
+      coach: ds[0].coach,
       nghi: meta.nghi,
       lead: meta.lead,
       days: a.days,
@@ -429,6 +443,7 @@ function renderCoachTeamSection(rows, byCoach) {
   const COACH_TEAM_COLS = [
     { k: 'stt', l: 'STT', a: '' },
     { k: 'name', l: 'Tên NS', a: 'l' },
+    ...(isAll ? [{ k: 'coach', l: 'Team Coacher', a: 'l' }] : []),
     { k: 'cong', l: 'T công', a: '' },
     { k: 'atc', l: 'Tổng ATC', a: '' },
     { k: 'impact', l: 'Tổng Impact', a: '' },
@@ -439,11 +454,13 @@ function renderCoachTeamSection(rows, byCoach) {
 
   let thHtml = '<thead><tr>' + COACH_TEAM_COLS.map(c => `<th class="${c.a}" data-k="${c.k}">${c.l} ⇅</th>`).join('') + '</tr></thead>';
 
+  const colCount = COACH_TEAM_COLS.length;
   let tbHtml = '<tbody>' + (scList.length ? scList.map((s, idx) => {
     const isGood = s.atcPerDay >= S.target;
     return `<tr>
       <td style="color:var(--mut);font-weight:600">${idx + 1}</td>
       <td class="l" title="${esc(s.full)}"><b>${esc(s.name)}</b>${s.nghi ? ' <span class="mut sm">(nghỉ)</span>' : ''}${s.lead ? ' <span class="mut sm">[Coacher]</span>' : ''}</td>
+      ${isAll ? `<td class="l"><span class="dot" style="background:${COLOR[s.coach] || '#888'}"></span> ${esc(s.coach)}</td>` : ''}
       <td><b>${nf(s.cong, 1)}</b></td>
       <td>${n0(s.atc)}</td>
       <td><b style="color:var(--acc)">${n0(s.impact)}</b> <span class="mut sm">(${s.atc ? nf(s.impact * 100 / s.atc, 1) + '%' : '–'})</span></td>
@@ -451,11 +468,12 @@ function renderCoachTeamSection(rows, byCoach) {
       <td style="font-weight:700;color:${isGood ? 'var(--ok)' : 'var(--bad)'}">${nf(s.atcPerDay, 2)}</td>
       <td>${nf(s.timePerDay, 2)} h</td>
     </tr>`;
-  }).join('') : '<tr><td colspan="8" class="mut" style="padding:18px">Không có nhân sự nào phù hợp bộ lọc.</td></tr>') + '</tbody>';
+  }).join('') : `<tr><td colspan="${colCount}" class="mut" style="padding:18px">Không có nhân sự nào phù hợp bộ lọc.</td></tr>`) + '</tbody>';
 
   let tfHtml = `<tfoot><tr>
     <td>Σ</td>
-    <td class="l">TỔNG CỘNG TEAM (${scList.length} NS)</td>
+    <td class="l" style="font-weight:700">TỔNG CỘNG ${isAll ? 'TOÀN BỘ' : 'TEAM'} (${scList.length} NS)</td>
+    ${isAll ? '<td></td>' : ''}
     <td>${nf(teamTot.cong, 1)}</td>
     <td>${n0(teamTot.atc)}</td>
     <td><b style="color:var(--acc)">${n0(teamTot.impact)}</b> <span class="mut sm">(${teamTot.atc ? nf(teamTot.impact * 100 / teamTot.atc, 1) + '%' : '–'})</span></td>
@@ -469,7 +487,7 @@ function renderCoachTeamSection(rows, byCoach) {
   $('coachTeamTbl').querySelectorAll('th').forEach(th => {
     th.onclick = () => {
       const k = th.dataset.k;
-      coachTeamSort = { k, dir: coachTeamSort.k === k ? -coachTeamSort.dir : (k === 'name' ? 1 : -1) };
+      coachTeamSort = { k, dir: coachTeamSort.k === k ? -coachTeamSort.dir : (k === 'name' || k === 'coach' ? 1 : -1) };
       renderCoachTeamSection(rows, byCoach);
     };
   });
@@ -478,10 +496,12 @@ function renderCoachTeamSection(rows, byCoach) {
 function exportCoachTeamCsv() {
   const cur = window._currentCoachTeam;
   if (!cur || !cur.list) return;
-  const head = ['STT', 'Tên NS', 'T công', 'Tổng ATC', 'Tổng Impact', 'TỔNG GIỜ SP (giờ)', 'TB ATC/Ngày', 'TB Time/Ngày (giờ)'];
+  const isAll = (cur.coach === 'all');
+  const head = ['STT', 'Tên NS', ...(isAll ? ['Team Coacher'] : []), 'T công', 'Tổng ATC', 'Tổng Impact', 'TỔNG GIỜ SP (giờ)', 'TB ATC/Ngày', 'TB Time/Ngày (giờ)'];
   const lines = [head].concat(cur.list.map((s, idx) => [
     idx + 1,
     s.name,
+    ...(isAll ? [s.coach] : []),
     nf(s.cong, 1),
     s.atc,
     s.impact,
@@ -489,11 +509,11 @@ function exportCoachTeamCsv() {
     nf(s.atcPerDay, 2),
     nf(s.timePerDay, 2)
   ]));
-  lines.push(['Σ', 'TỔNG CỘNG TEAM (' + cur.list.length + ' NS)', nf(cur.tot.cong, 1), cur.tot.atc, cur.tot.impact, nf(cur.tot.hours, 1), nf(cur.tot.atcPerDay, 2), nf(cur.tot.timePerDay, 2)]);
+  lines.push(['Σ', 'TỔNG CỘNG ' + (isAll ? 'TOÀN BỘ' : 'TEAM') + ' (' + cur.list.length + ' NS)', ...(isAll ? [''] : []), nf(cur.tot.cong, 1), cur.tot.atc, cur.tot.impact, nf(cur.tot.hours, 1), nf(cur.tot.atcPerDay, 2), nf(cur.tot.timePerDay, 2)]);
   const csv = '\ufeff' + lines.map(l => l.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `chi_tiet_team_${cur.coach}.csv`;
+  a.download = isAll ? 'chi_tiet_tat_ca_team_coacher.csv' : `chi_tiet_team_${cur.coach}.csv`;
   a.click();
 }
 
