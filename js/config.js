@@ -77,6 +77,13 @@ let activeTab = 'overview';
 let activeCoachTeam = null;
 let coachTeamSort = { k: 'atcPerDay', dir: -1 };
 
+// Trạng thái Bảng Chất Lượng SC Theo Tỉnh Thành (Tab 1)
+let ALL_RECS = [];
+let PROVINCE_QUALITY_MONTH = '2026-10'; // Mặc định tháng 10
+let PROVINCE_QUALITY_SEARCH = '';
+let PROVINCE_QUALITY_SORT = { k: 'atc', dir: -1 }; // Mặc định sắp xếp theo Tổng atc giảm dần
+let EXPANDED_PROVINCES = new Set(); // Lưu vết các dòng tỉnh đang mở chi tiết SC
+
 // Bộ lọc toàn cục
 const S = {
   coach: new Set(),

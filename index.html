@@ -129,6 +129,28 @@
     <div class="card"><h2>Cơ cấu nguồn data theo team <span class="mut sm">(% ATC)</span></h2><div class="chart"><canvas id="chSrc"></canvas></div></div>
   </div>
 
+  <!-- BẢNG CHẤT LƯỢNG SC THEO TỈNH THÀNH -->
+  <div class="card" id="scProvinceQualityCard" style="margin-bottom:14px;border:1px solid #3b82f630">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+      <div>
+        <h2 style="margin:0;font-size:16px;color:var(--tx-heading);display:flex;align-items:center;gap:8px">
+          <span>🏙️ Chất lượng SC theo tỉnh thành</span>
+        </h2>
+        <div class="mut sm" style="margin-top:3px">Tổng hợp SL nhân sự, tổng sản lượng ATC và tỷ lệ Impact theo từng khu vực · Bấm vào hàng để xem chi tiết từng nhân sự</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
+          <span style="color:var(--mut)">Bộ lọc tháng:</span>
+          <select id="fProvinceQualityMonth" onchange="onProvinceQualityMonthChange(this.value)" style="font-size:13px;font-weight:700;color:#38bdf8;padding:5px 12px;border-radius:6px;background:var(--card-sub);border:1px solid var(--line);cursor:pointer">
+          </select>
+        </label>
+        <input type="text" id="provinceQualitySearch" placeholder="🔍 Tìm khu vực..." oninput="onProvinceQualitySearch(this.value)" style="width:160px;font-size:12px;padding:5px 9px">
+        <button onclick="exportProvinceQualityCsv()" style="font-size:12px;padding:5px 12px;background:#2563eb;color:#fff;border-color:#3b82f6;cursor:pointer">⬇ Xuất CSV</button>
+      </div>
+    </div>
+    <div class="wrap"><table id="scProvinceQualityTbl"></table></div>
+  </div>
+
   <div class="card" style="margin-bottom:14px">
     <h2>Chi tiết từng SC <span class="mut sm">(bấm tiêu đề cột để sắp xếp)</span></h2>
     <div class="wrap"><table id="scTbl"></table></div>

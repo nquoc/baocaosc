@@ -169,6 +169,7 @@ function resetFilters() {
   buildCoachPills();
   buildMonthSelect();
   buildScSelect();
+  if (typeof initProvinceQualityMonths === 'function') initProvinceQualityMonths();
   render();
 }
 
@@ -215,6 +216,7 @@ function setData(headers, data, label, cls) {
   buildCoachPills();
   buildMonthSelect();
   buildScSelect();
+  if (typeof initProvinceQualityMonths === 'function') initProvinceQualityMonths();
   if ($('src')) {
     $('src').className = 'badge ' + cls;
     $('src').textContent = label + ' · ' + n0(recs.length) + ' record';

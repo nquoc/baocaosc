@@ -36,12 +36,23 @@ function normalize(headers, data) {
   for (let idx = 0; idx < data.length; idx++) {
     const r = data[idx];
     if (r[h['Retailer ID']] === 'Retailer ID') continue; // dòng tiêu đề lặp
+
+    // Lọc triệt để dòng trống và dòng lỗi công thức kéo thừa (#N/A, #VALUE!, #REF!, ...)
+    const ret = String(r[h['Retailer ID']] || '').trim();
+    if (!ret || ret === '#N/A' || ret.startsWith('#')) continue;
+
     const sc = String(r[h['Người xử lý']] || '').trim();
-    if (!sc) continue;
-    let coach = String(r[h['Coacher']] || '').trim();
-    if (!coach || coach === '#N/A') coach = scToCoach[sc] || 'Khác / Chưa phân team';
+    if (!sc || sc === '#N/A' || sc.startsWith('#')) continue;
+
     const ci = parseTime(r[h['Thời gian checkin']]);
     if (!ci) continue;
+
+    let coach = String(r[h['Coacher']] || '').trim();
+    if (!coach || coach === '#N/A' || coach.startsWith('#')) coach = scToCoach[sc] || 'Khác / Chưa phân team';
+
+    let khuVuc = String(r[h['Khu Vực']] || '').trim();
+    if (!khuVuc || khuVuc === '#N/A' || khuVuc.startsWith('#')) khuVuc = 'Chưa phân khu vực';
+
     const co = parseTime(r[h['Thời gian checkout']]);
     const dur = co ? (co.min - ci.min) : NaN;
     const valid = !!co && co.date === ci.date && dur >= 0 && dur <= MAXDUR;
@@ -50,6 +61,7 @@ function normalize(headers, data) {
     recs.push({
       sc,
       coach,
+      khuVuc,
       date: ci.date,
       ci: ci.min,
       co: valid ? co.min : ci.min,
@@ -63,9 +75,10 @@ function normalize(headers, data) {
 
     RAW_RECORDS.push({
       idx,
-      retailerId: r[h['Retailer ID']],
+      retailerId: ret,
       sc,
       coach,
+      khuVuc,
       date: ci.date,
       dayNum: parseInt(ci.date.slice(8), 10),
       ciMin: ci.min,
@@ -81,6 +94,7 @@ function normalize(headers, data) {
       raw: r
     });
   }
+  ALL_RECS = recs;
   return recs;
 }
 
@@ -295,6 +309,7 @@ function render() {
   renderCoachTable(byCoach, tot);
   renderCoachTeamSection(rows, byCoach);
   renderCharts(rows, byCoach, bySc);
+  renderScProvinceQuality();
   renderScTable(bySc, tot);
   window._sc = bySc;
 
@@ -606,5 +621,322 @@ function exportCsv() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   a.download = 'so_sanh_sc_coacher.csv';
+  a.click();
+}
+
+/* ==================== BẢNG CHẤT LƯỢNG SC THEO TỈNH THÀNH ==================== */
+
+function initProvinceQualityMonths() {
+  const sel = $('fProvinceQualityMonth');
+  if (!sel) return;
+  const availMonths = [...new Set(ALL_RECS.map(r => r.date.slice(0, 7)))].filter(Boolean).sort().reverse();
+  if (availMonths.length === 0) return;
+
+  if (!PROVINCE_QUALITY_MONTH || (!availMonths.includes(PROVINCE_QUALITY_MONTH) && PROVINCE_QUALITY_MONTH !== 'all')) {
+    PROVINCE_QUALITY_MONTH = availMonths.includes('2026-10') ? '2026-10' : availMonths[0];
+  }
+
+  let html = '';
+  availMonths.forEach(m => {
+    const [y, mon] = m.split('-');
+    html += `<option value="${m}">Tháng ${mon}/${y}</option>`;
+  });
+  html += '<option value="all">Tất cả các tháng</option>';
+  sel.innerHTML = html;
+  sel.value = PROVINCE_QUALITY_MONTH;
+}
+
+function onProvinceQualityMonthChange(val) {
+  PROVINCE_QUALITY_MONTH = val;
+  renderScProvinceQuality();
+}
+
+function onProvinceQualitySearch(val) {
+  PROVINCE_QUALITY_SEARCH = (val || '').trim().toLowerCase();
+  renderScProvinceQuality();
+}
+
+function toggleProvinceExpand(key) {
+  if (EXPANDED_PROVINCES.has(key)) {
+    EXPANDED_PROVINCES.delete(key);
+  } else {
+    EXPANDED_PROVINCES.add(key);
+  }
+  renderScProvinceQuality();
+}
+
+function renderScProvinceQuality() {
+  const tbl = $('scProvinceQualityTbl');
+  if (!tbl) return;
+
+  if (!ALL_RECS || ALL_RECS.length === 0) {
+    tbl.innerHTML = '<tbody><tr><td class="mut" style="padding:18px">Đang tải dữ liệu chất lượng SC...</td></tr></tbody>';
+    return;
+  }
+
+  // 1. Lọc theo tháng được chọn
+  const filteredRecs = (PROVINCE_QUALITY_MONTH === 'all')
+    ? ALL_RECS
+    : ALL_RECS.filter(r => r.date.startsWith(PROVINCE_QUALITY_MONTH));
+
+  // 2. Nhóm theo (Tháng, Khu vực) hoặc Khu vực
+  const isAllMonths = (PROVINCE_QUALITY_MONTH === 'all');
+  const groupMap = new Map();
+
+  for (const r of filteredRecs) {
+    const mStr = r.date.slice(0, 7);
+    const kv = r.khuVuc || 'Chưa phân khu vực';
+    const groupKey = isAllMonths ? (mStr + '|' + kv) : kv;
+
+    if (!groupMap.has(groupKey)) {
+      groupMap.set(groupKey, {
+        key: groupKey,
+        monthRaw: mStr,
+        monthDisplay: mStr ? (mStr.slice(5, 7) + '/' + mStr.slice(0, 4)) : '–',
+        khuVuc: kv,
+        scMap: new Map(),
+        atc: 0,
+        impact: 0
+      });
+    }
+
+    const g = groupMap.get(groupKey);
+    g.atc++;
+    if (r.impact === 1 || r.tv === 1) g.impact++;
+
+    if (!g.scMap.has(r.sc)) {
+      g.scMap.set(r.sc, { sc: r.sc, coach: r.coach, atc: 0, impact: 0 });
+    }
+    const scEntry = g.scMap.get(r.sc);
+    scEntry.atc++;
+    if (r.impact === 1 || r.tv === 1) scEntry.impact++;
+  }
+
+  // Chuyển sang danh sách hiển thị
+  let rows = Array.from(groupMap.values()).map(g => {
+    const scList = Array.from(g.scMap.values()).map(s => ({
+      ...s,
+      pct: s.atc > 0 ? (s.impact * 100 / s.atc) : 0
+    })).sort((a, b) => b.atc - a.atc);
+
+    return {
+      key: g.key,
+      month: g.monthDisplay,
+      monthRaw: g.monthRaw,
+      khuVuc: g.khuVuc,
+      nSc: g.scMap.size,
+      scList,
+      atc: g.atc,
+      impact: g.impact,
+      pct: g.atc > 0 ? (g.impact * 100 / g.atc) : 0
+    };
+  });
+
+  // 3. Lọc theo từ khóa tìm kiếm
+  if (PROVINCE_QUALITY_SEARCH) {
+    const q = PROVINCE_QUALITY_SEARCH;
+    rows = rows.filter(r =>
+      r.khuVuc.toLowerCase().includes(q) ||
+      r.month.toLowerCase().includes(q) ||
+      r.scList.some(s => s.sc.toLowerCase().includes(q))
+    );
+  }
+
+  // 4. Sắp xếp theo cột
+  const { k, dir } = PROVINCE_QUALITY_SORT;
+  rows.sort((a, b) => {
+    const x = a[k], y = b[k];
+    if (typeof x === 'string') return dir * x.localeCompare(y, 'vi');
+    return dir * ((x ?? -1) - (y ?? -1));
+  });
+
+  // 5. Tính tổng cộng toàn bộ
+  const allUniqueScs = new Set();
+  let totAtc = 0;
+  let totImpact = 0;
+  filteredRecs.forEach(r => {
+    allUniqueScs.add(r.sc);
+    totAtc++;
+    if (r.impact === 1 || r.tv === 1) totImpact++;
+  });
+  const totPct = totAtc > 0 ? (totImpact * 100 / totAtc) : 0;
+
+  // 6. Cấu hình các cột hiển thị: Tháng | Khu vực | SL Nhân sự | Tổng atc | Sl impact | % impact
+  const COLS = [
+    { k: 'month', l: 'Tháng', a: '' },
+    { k: 'khuVuc', l: 'Khu vực', a: 'l' },
+    { k: 'nSc', l: 'SL Nhân sự', a: '' },
+    { k: 'atc', l: 'Tổng atc', a: '' },
+    { k: 'impact', l: 'Sl impact', a: '' },
+    { k: 'pct', l: '% impact', a: '' }
+  ];
+
+  let thead = '<thead><tr>' + COLS.map(c => {
+    const isSorted = PROVINCE_QUALITY_SORT.k === c.k;
+    const arrow = isSorted ? (PROVINCE_QUALITY_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅';
+    return `<th class="${c.a}" data-k="${c.k}" style="cursor:pointer;user-select:none" title="Bấm để sắp xếp theo ${c.l}">${c.l}${arrow}</th>`;
+  }).join('') + '</tr></thead>';
+
+  let tbody = '<tbody>';
+  if (rows.length === 0) {
+    tbody += '<tr><td colspan="6" class="mut" style="padding:18px">Không có dữ liệu tỉnh thành phù hợp bộ lọc.</td></tr>';
+  } else {
+    rows.forEach(r => {
+      const isExpanded = EXPANDED_PROVINCES.has(r.key);
+      const pctCol = r.pct >= 65 ? 'var(--ok)' : (r.pct >= 50 ? 'var(--warn)' : 'var(--bad)');
+      const pctBg = r.pct >= 65 ? 'rgba(34, 197, 94, 0.12)' : (r.pct >= 50 ? 'rgba(245, 158, 11, 0.12)' : 'rgba(239, 68, 68, 0.12)');
+
+      tbody += `<tr style="cursor:pointer;transition:background .15s" onclick="toggleProvinceExpand('${esc(r.key)}')" title="Bấm để xem danh sách nhân sự tại ${esc(r.khuVuc)}">
+        <td><span class="badge" style="background:#0284c718;color:#38bdf8;font-weight:700;border:1px solid #38bdf840">${r.month}</span></td>
+        <td class="l">
+          <span style="display:inline-flex;align-items:center;gap:6px">
+            <span style="color:#60a5fa;font-size:10px">${isExpanded ? '▼' : '▶'}</span>
+            <b style="font-size:13px">${esc(r.khuVuc)}</b>
+          </span>
+        </td>
+        <td><span class="badge" style="background:var(--input-bg);color:var(--tx-heading);font-weight:700">${n0(r.nSc)}</span></td>
+        <td><b>${n0(r.atc)}</b></td>
+        <td><b style="color:var(--acc)">${n0(r.impact)}</b></td>
+        <td>
+          <span style="background:${pctBg};color:${pctCol};font-weight:800;padding:3px 9px;border-radius:6px;display:inline-block;min-width:54px">
+            ${nf(r.pct, 1)}%
+          </span>
+        </td>
+      </tr>`;
+
+      if (isExpanded) {
+        tbody += `<tr class="province-detail-row">
+          <td colspan="6" style="background:var(--card-sub);padding:10px 14px;border-bottom:2px solid var(--line)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+              <div style="font-weight:700;font-size:12px;color:var(--tx-heading)">
+                👥 Chi tiết ${r.nSc} nhân sự tại <b>${esc(r.khuVuc)}</b> (${r.month}):
+              </div>
+              <div class="mut sm">Bấm tiêu đề cột trên để sắp xếp bảng tổng</div>
+            </div>
+            <div style="overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--card)">
+              <table style="width:100%;font-size:12px">
+                <thead>
+                  <tr style="background:var(--th-bg)">
+                    <th style="padding:5px 8px;font-size:11px">STT</th>
+                    <th class="l" style="padding:5px 8px;font-size:11px">Tên SC</th>
+                    <th class="l" style="padding:5px 8px;font-size:11px">Team Coacher</th>
+                    <th style="padding:5px 8px;font-size:11px">Tổng ATC</th>
+                    <th style="padding:5px 8px;font-size:11px">SL Impact</th>
+                    <th style="padding:5px 8px;font-size:11px">% Impact</th>
+                  </tr>
+                </thead>
+                <tbody>` +
+                r.scList.map((s, sIdx) => {
+                  const sPctCol = s.pct >= 65 ? 'var(--ok)' : (s.pct >= 50 ? 'var(--warn)' : 'var(--bad)');
+                  const meta = scMeta(s.sc);
+                  return `<tr>
+                    <td style="color:var(--mut);padding:5px 8px">${sIdx + 1}</td>
+                    <td class="l" style="padding:5px 8px"><b>${esc(meta.name)}</b>${meta.nghi ? ' <span class="mut sm">(nghỉ)</span>' : ''}</td>
+                    <td class="l" style="padding:5px 8px"><span class="dot" style="background:${COLOR[s.coach] || '#888'}"></span> ${esc(s.coach || 'Chưa phân team')}</td>
+                    <td style="padding:5px 8px"><b>${n0(s.atc)}</b></td>
+                    <td style="padding:5px 8px"><b style="color:var(--acc)">${n0(s.impact)}</b></td>
+                    <td style="padding:5px 8px;font-weight:700;color:${sPctCol}">${nf(s.pct, 1)}%</td>
+                  </tr>`;
+                }).join('') +
+                `</tbody>
+              </table>
+            </div>
+          </td>
+        </tr>`;
+      }
+    });
+  }
+  tbody += '</tbody>';
+
+  const totPctCol = totPct >= 65 ? 'var(--ok)' : (totPct >= 50 ? 'var(--warn)' : 'var(--bad)');
+  const totPctBg = totPct >= 65 ? 'rgba(34, 197, 94, 0.15)' : (totPct >= 50 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)');
+  let tfoot = `<tfoot><tr>
+    <td><span class="badge" style="background:var(--input-bg);color:var(--tx-heading);font-weight:800">TỔNG CỘNG</span></td>
+    <td class="l"><b>${rows.length} Khu vực</b></td>
+    <td><b style="font-size:13px">${n0(allUniqueScs.size)}</b> NS</td>
+    <td><b style="font-size:13px">${n0(totAtc)}</b></td>
+    <td><b style="font-size:13px;color:var(--acc)">${n0(totImpact)}</b></td>
+    <td>
+      <span style="background:${totPctBg};color:${totPctCol};font-weight:800;padding:3px 9px;border-radius:6px;display:inline-block">
+        ${nf(totPct, 1)}%
+      </span>
+    </td>
+  </tr></tfoot>`;
+
+  tbl.innerHTML = thead + tbody + tfoot;
+
+  tbl.querySelectorAll('thead th').forEach(th => {
+    th.onclick = () => {
+      const col = th.dataset.k;
+      if (!col) return;
+      PROVINCE_QUALITY_SORT = {
+        k: col,
+        dir: PROVINCE_QUALITY_SORT.k === col ? -PROVINCE_QUALITY_SORT.dir : (col === 'khuVuc' || col === 'month' ? 1 : -1)
+      };
+      renderScProvinceQuality();
+    };
+  });
+}
+
+function exportProvinceQualityCsv() {
+  const filteredRecs = (PROVINCE_QUALITY_MONTH === 'all')
+    ? ALL_RECS
+    : ALL_RECS.filter(r => r.date.startsWith(PROVINCE_QUALITY_MONTH));
+
+  const isAllMonths = (PROVINCE_QUALITY_MONTH === 'all');
+  const groupMap = new Map();
+  for (const r of filteredRecs) {
+    const mStr = r.date.slice(0, 7);
+    const kv = r.khuVuc || 'Chưa phân khu vực';
+    const groupKey = isAllMonths ? (mStr + '|' + kv) : kv;
+
+    if (!groupMap.has(groupKey)) {
+      groupMap.set(groupKey, {
+        monthDisplay: mStr ? (mStr.slice(5, 7) + '/' + mStr.slice(0, 4)) : '–',
+        khuVuc: kv,
+        scSet: new Set(),
+        atc: 0,
+        impact: 0
+      });
+    }
+    const g = groupMap.get(groupKey);
+    g.scSet.add(r.sc);
+    g.atc++;
+    if (r.impact === 1 || r.tv === 1) g.impact++;
+  }
+
+  const rows = Array.from(groupMap.values()).map(g => ({
+    month: g.monthDisplay,
+    khuVuc: g.khuVuc,
+    nSc: g.scSet.size,
+    atc: g.atc,
+    impact: g.impact,
+    pct: g.atc > 0 ? (g.impact * 100 / g.atc) : 0
+  })).sort((a, b) => b.atc - a.atc);
+
+  const head = ['Tháng', 'Khu vực', 'SL Nhân sự', 'Tổng atc', 'Sl impact', '% impact'];
+  const lines = [head].concat(rows.map(r => [
+    r.month,
+    r.khuVuc,
+    r.nSc,
+    r.atc,
+    r.impact,
+    nf(r.pct, 1) + '%'
+  ]));
+
+  const allScs = new Set();
+  let totAtc = 0, totImp = 0;
+  filteredRecs.forEach(r => {
+    allScs.add(r.sc);
+    totAtc++;
+    if (r.impact === 1 || r.tv === 1) totImp++;
+  });
+  const totPct = totAtc > 0 ? (totImp * 100 / totAtc) : 0;
+  lines.push(['TỔNG CỘNG', rows.length + ' Khu vực', allScs.size, totAtc, totImp, nf(totPct, 1) + '%']);
+
+  const csv = '\ufeff' + lines.map(l => l.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `chat_luong_sc_theo_tinh_thanh_${PROVINCE_QUALITY_MONTH}.csv`;
   a.click();
 }
