@@ -389,6 +389,27 @@
         <table id="pcOctPivotTable" class="kpi-table"></table>
       </div>
     </div>
+
+    <!-- BẢNG CHI TIẾT CƠ HỘI NHÓM DVKH MANAGER -->
+    <div class="card" id="pcDvkhManagerCard" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📋 Chi Tiết Cơ Hội Nhóm DVKH Manager (<span id="pcDvkhCount" style="color:var(--ok)">0</span> Opp)</span>
+          </h3>
+          <div class="mut sm" style="margin-top:3px">
+            Danh sách chi tiết các cơ hội phần cứng thuộc nhóm DVKH Manager · Bấm tiêu đề cột để sắp xếp
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <input type="text" id="pcDvkhSearch" placeholder="🔍 Tìm gian hàng, người tạo, tỉnh..." oninput="onPhanCungDvkhSearch(this.value)" style="width:220px;font-size:12px;padding:5px 9px">
+          <button onclick="exportPhanCungDvkhCsv()" style="background:#059669;color:#fff;border-color:#10b981;font-size:12px;padding:5px 11px">⬇ Xuất CSV DVKH Manager</button>
+        </div>
+      </div>
+      <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="pcDvkhTable" class="kpi-table"></table>
+      </div>
+    </div>
   </div>
 </div>
 
