@@ -308,7 +308,7 @@ function render() {
 
   renderCoachTable(byCoach, tot);
   renderCoachTeamSection(rows, byCoach);
-  renderCharts(rows, byCoach, bySc);
+  renderCharts(rows, byCoach, bySc, tot);
   renderScProvinceQuality();
   renderScTable(bySc, tot);
   window._sc = bySc;
@@ -505,8 +505,9 @@ function mk(id, cfg) {
   charts[id] = new Chart($(id), cfg);
 }
 
-function renderCharts(rows, byCoach, bySc) {
-  window._lastChartArgs = [rows, byCoach, bySc];
+function renderCharts(rows, byCoach, bySc, tot) {
+  if (!tot) tot = agg(rows);
+  window._lastChartArgs = [rows, byCoach, bySc, tot];
   const isLight = document.body.getAttribute('data-theme') === 'light';
   Chart.defaults.color = isLight ? '#64748b' : '#8899b0';
   Chart.defaults.borderColor = isLight ? 'rgba(0,0,0,.08)' : 'rgba(148,163,184,.12)';
@@ -524,49 +525,55 @@ function renderCharts(rows, byCoach, bySc) {
     options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
   });
 
-  // 2. Radar
-  const RK = ['atcPerCong', 'tvPct', 'addonPerCong', 'openPct', 'fullPct', 'hoursPerCong'];
-  const mx = {};
-  RK.forEach(k => mx[k] = Math.max(...byCoach.map(x => x[k] || 0), 1e-9));
-  mk('chRadar', {
-    type: 'radar',
+  // 2. Biểu đồ Impact theo team Coacher
+  const avgImpactPct = tot.tvPct != null ? tot.tvPct : (tot.atc ? tot.impact * 100 / tot.atc : 0);
+  mk('chImpact', {
     data: {
-      labels: RK.map(k => METRICS[k].l),
-      datasets: byCoach.map(x => ({
-        label: x.coach,
-        data: RK.map(k => +((x[k] || 0) / mx[k] * 100).toFixed(1)),
-        borderColor: COLOR[x.coach],
-        backgroundColor: COLOR[x.coach] + '33',
-        pointBackgroundColor: COLOR[x.coach]
-      }))
+      labels: names,
+      datasets: [
+        {
+          type: 'bar',
+          label: '% Tỷ lệ Impact',
+          data: byCoach.map(x => +(x.tvPct || 0).toFixed(1)),
+          backgroundColor: cols,
+          borderRadius: 6
+        },
+        {
+          type: 'line',
+          label: 'TB toàn bộ (' + avgImpactPct.toFixed(1) + '%)',
+          data: names.map(() => +avgImpactPct.toFixed(1)),
+          borderColor: '#38bdf8',
+          borderDash: [6, 4],
+          pointRadius: 0,
+          borderWidth: 2
+        }
+      ]
     },
-    options: { maintainAspectRatio: false, scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, pointLabels: { font: { size: 10 } } } } }
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              if (ctx.dataset.type === 'line') return `Trung bình chung: ${ctx.raw}%`;
+              const team = byCoach[ctx.dataIndex];
+              return `Tỷ lệ Impact: ${ctx.raw}% (${n0(team.impact || 0)} Impact / ${n0(team.atc || 0)} ATC)`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: { callback: v => v + '%' }
+        }
+      }
+    }
   });
 
-  // 3. Xu hướng ngày
-  const dates = [...new Set(rows.map(d => d.d))].sort();
-  mk('chTrend', {
-    type: 'line',
-    data: {
-      labels: dates.map(d => d.slice(8) + '/' + d.slice(5, 7)),
-      datasets: byCoach.map(x => ({
-        label: x.coach,
-        borderColor: COLOR[x.coach],
-        backgroundColor: COLOR[x.coach],
-        tension: .3,
-        spanGaps: true,
-        pointRadius: 2,
-        data: dates.map(dt => {
-          const ds = rows.filter(r => r.coach === x.coach && r.d === dt);
-          const a = agg(ds);
-          return a.atcPerCong == null ? null : +a.atcPerCong.toFixed(2);
-        })
-      }))
-    },
-    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-  });
-
-  // 4. Cơ cấu nguồn
+  // 3. Cơ cấu nguồn
   const total = {};
   rows.forEach(d => Object.entries(d.srcs).forEach(([s, n]) => total[s] = (total[s] || 0) + n));
   const topSrc = Object.entries(total).sort((a, b) => b[1] - a[1]).slice(0, 6).map(x => x[0]);
@@ -597,6 +604,7 @@ const SC_COLS = [
 ];
 
 function renderScTable(bySc, tot) {
+  if (!$('scTbl')) return;
   const { k, dir } = S.scSort;
   bySc.sort((a, b) => typeof a[k] === 'string' ? dir * a[k].localeCompare(b[k], 'vi') : dir * ((a[k] ?? -1) - (b[k] ?? -1)));
   $('scTbl').innerHTML = '<thead><tr>' + SC_COLS.map(([c, l, a]) => `<th class="${a}" data-k="${c}">${l} ⇅</th>`).join('') + '</tr></thead><tbody>' +
