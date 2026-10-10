@@ -500,8 +500,70 @@ function exportCoachTeamCsv() {
 /**
  * Biểu đồ Chart.js
  */
+/**
+ * Plugin hiển thị số liệu trực tiếp trên biểu đồ (Data Labels)
+ */
+const customDataLabelsPlugin = {
+  id: 'customDataLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    const isLight = document.body.getAttribute('data-theme') === 'light';
+
+    chart.data.datasets.forEach((dataset, dIdx) => {
+      // Bỏ qua các đường Line (mục tiêu, TB) nếu không bật showDataLabels
+      if (dataset.type === 'line' && !dataset.showDataLabels) return;
+      if (dataset.dataLabels === false) return;
+
+      const meta = chart.getDatasetMeta(dIdx);
+      if (meta.hidden) return;
+
+      meta.data.forEach((element, idx) => {
+        const rawVal = dataset.data[idx];
+        if (rawVal == null || isNaN(rawVal)) return;
+
+        let text = '';
+        if (typeof dataset.dataLabelFormatter === 'function') {
+          text = dataset.dataLabelFormatter(rawVal, idx, dataset);
+        } else if (typeof rawVal === 'number') {
+          text = rawVal.toLocaleString('vi-VN');
+        } else {
+          text = String(rawVal);
+        }
+        if (!text) return;
+
+        ctx.save();
+        ctx.textAlign = 'center';
+
+        const isStacked = chart.options?.scales?.x?.stacked || chart.options?.scales?.y?.stacked;
+        if (isStacked) {
+          // Biểu đồ cột chồng (chSrc): Vẽ số liệu ở giữa từng khối nếu đủ độ cao
+          const segHeight = Math.abs(element.base - element.y);
+          if (segHeight >= 14 && rawVal >= 5) {
+            const midY = (element.y + element.base) / 2;
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 11px "Segoe UI", Inter, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+            ctx.shadowBlur = 3;
+            ctx.fillText(text, element.x, midY);
+          }
+        } else {
+          // Biểu đồ cột đơn (chBar, chImpact): Vẽ số liệu nằm ngay phía trên đỉnh cột
+          ctx.textBaseline = 'bottom';
+          ctx.font = 'bold 12px "Segoe UI", Inter, sans-serif';
+          ctx.fillStyle = isLight ? '#0f172a' : '#f8fafc';
+          ctx.fillText(text, element.x, element.y - 4);
+        }
+        ctx.restore();
+      });
+    });
+  }
+};
+
 function mk(id, cfg) {
   if (charts[id]) charts[id].destroy();
+  if (!cfg.plugins) cfg.plugins = [];
+  cfg.plugins.push(customDataLabelsPlugin);
   charts[id] = new Chart($(id), cfg);
 }
 
@@ -513,16 +575,40 @@ function renderCharts(rows, byCoach, bySc, tot) {
   Chart.defaults.borderColor = isLight ? 'rgba(0,0,0,.08)' : 'rgba(148,163,184,.12)';
   const names = byCoach.map(x => x.coach), cols = names.map(n => COLOR[n]);
 
-  // 1. ATC/công
+  // 1. ATC / công theo team
   mk('chBar', {
     data: {
       labels: names,
       datasets: [
-        { type: 'bar', label: 'ATC / công', data: byCoach.map(x => +(x.atcPerCong || 0).toFixed(2)), backgroundColor: cols, borderRadius: 6 },
-        { type: 'line', label: 'Mục tiêu', data: names.map(() => S.target), borderColor: '#f43f5e', borderDash: [6, 4], pointRadius: 0, borderWidth: 2 }
+        {
+          type: 'bar',
+          label: 'ATC / công',
+          data: byCoach.map(x => +(x.atcPerCong || 0).toFixed(2)),
+          dataLabelFormatter: v => Number(v).toFixed(2),
+          backgroundColor: cols,
+          borderRadius: 6
+        },
+        {
+          type: 'line',
+          label: 'Mục tiêu (' + S.target + ')',
+          data: names.map(() => S.target),
+          borderColor: '#f43f5e',
+          borderDash: [6, 4],
+          pointRadius: 0,
+          borderWidth: 2
+        }
       ]
     },
-    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grace: '14%'
+        }
+      }
+    }
   });
 
   // 2. Biểu đồ Impact theo team Coacher
@@ -535,6 +621,7 @@ function renderCharts(rows, byCoach, bySc, tot) {
           type: 'bar',
           label: '% Tỷ lệ Impact',
           data: byCoach.map(x => +(x.tvPct || 0).toFixed(1)),
+          dataLabelFormatter: v => Number(v).toFixed(1) + '%',
           backgroundColor: cols,
           borderRadius: 6
         },
@@ -566,14 +653,14 @@ function renderCharts(rows, byCoach, bySc, tot) {
       scales: {
         y: {
           beginAtZero: true,
-          max: 100,
-          ticks: { callback: v => v + '%' }
+          max: 110,
+          ticks: { callback: v => v <= 100 ? v + '%' : '' }
         }
       }
     }
   });
 
-  // 3. Cơ cấu nguồn
+  // 3. Cơ cấu nguồn data theo team (% ATC)
   const total = {};
   rows.forEach(d => Object.entries(d.srcs).forEach(([s, n]) => total[s] = (total[s] || 0) + n));
   const topSrc = Object.entries(total).sort((a, b) => b[1] - a[1]).slice(0, 6).map(x => x[0]);
@@ -592,9 +679,23 @@ function renderCharts(rows, byCoach, bySc, tot) {
     type: 'bar',
     data: {
       labels: names,
-      datasets: [...topSrc, 'Khác (còn lại)'].map((s, i) => ({ label: s, data: names.map(n => share(n, s)), backgroundColor: SRC_COL[i] }))
+      datasets: [...topSrc, 'Khác (còn lại)'].map((s, i) => ({
+        label: s,
+        data: names.map(n => share(n, s)),
+        dataLabelFormatter: v => (v >= 5 ? Math.round(v) + '%' : ''),
+        backgroundColor: SRC_COL[i]
+      }))
     },
-    options: { maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, max: 100 } }, plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } } } }
+    options: {
+      maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true },
+        y: { stacked: true, max: 100 }
+      },
+      plugins: {
+        legend: { labels: { boxWidth: 10, font: { size: 10 } } }
+      }
+    }
   });
 }
 
