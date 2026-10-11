@@ -105,6 +105,53 @@ function getKpiOnlineMaxDay(rows, isTalktime = false) {
 }
 
 /**
+ * Phân loại và định dạng màu sắc cho các dòng Total của Miền
+ * - Miền Nam / Total HCM: màu xanh dương (row-total-nam)
+ * - Miền Bắc / Total HN: màu vàng hổ phách (row-total-bac)
+ * - Trung bình toàn đội: màu tím (row-total-all)
+ */
+function getRegionRowMeta(rawName, rawStt = '', isLastRow = false) {
+  const sName = String(rawName || '').trim();
+  const sStt = String(rawStt || '').trim();
+  const upper = (sName + ' ' + sStt).toUpperCase();
+
+  if (upper.includes('TOTAL HCM') || upper.includes('MIỀN NAM')) {
+    return {
+      isSummary: true,
+      type: 'nam',
+      cls: 'row-total-nam',
+      icon: '🏙️',
+      title: upper.includes('TOTAL HCM') ? 'TOTAL HCM (MIỀN NAM)' : 'MIỀN NAM (Trung bình)'
+    };
+  }
+  if (upper.includes('TOTAL HN') || upper.includes('MIỀN BẮC')) {
+    return {
+      isSummary: true,
+      type: 'bac',
+      cls: 'row-total-bac',
+      icon: '🏛️',
+      title: upper.includes('TOTAL HN') ? 'TOTAL HN (MIỀN BẮC)' : 'MIỀN BẮC (Trung bình)'
+    };
+  }
+  if (isLastRow || upper.includes('TRUNG BÌNH TOÀN ĐỘI') || (upper.includes('TOTAL') && !upper.includes('HCM') && !upper.includes('HN'))) {
+    return {
+      isSummary: true,
+      type: 'all',
+      cls: 'row-total-all',
+      icon: '⭐',
+      title: 'TRUNG BÌNH TOÀN ĐỘI'
+    };
+  }
+  return {
+    isSummary: false,
+    type: 'normal',
+    cls: '',
+    icon: '',
+    title: sName
+  };
+}
+
+/**
  * Bật/tắt chế độ hiển thị toàn bộ tháng hay rút gọn ngày
  */
 function toggleKpiOnlineAllDays() {
@@ -338,43 +385,46 @@ function renderKpiTeamOnlineTable(data) {
   rows.forEach((r, idx) => {
     const rawStt = r[0];
     const rawName = r[1] || '';
-    const isTotalHcm = String(rawStt).toLowerCase().includes('total hcm') || String(rawName).toLowerCase().includes('total hcm');
-    const isTotalHn = String(rawStt).toLowerCase().includes('total hn') || String(rawName).toLowerCase().includes('total hn');
     const isAverageRow = idx === rows.length - 1; // dòng 19
+    const meta = getRegionRowMeta(rawName, rawStt, isAverageRow);
 
     // Lọc theo search
-    if (KPI_ONLINE_SEARCH) {
+    if (KPI_ONLINE_SEARCH && !meta.isSummary) {
       const q = KPI_ONLINE_SEARCH;
-      if (!isTotalHcm && !isTotalHn && !isAverageRow) {
-        if (!rawName.toLowerCase().includes(q) && !String(rawStt).toLowerCase().includes(q)) {
-          return;
-        }
+      if (!rawName.toLowerCase().includes(q) && !String(rawStt).toLowerCase().includes(q)) {
+        return;
       }
     }
 
-    let trStyle = '';
-    let isSummary = false;
-    if (isTotalHcm || isTotalHn) {
-      trStyle = 'background:rgba(56,189,248,0.1);font-weight:700;color:var(--tx-heading)';
-      isSummary = true;
-    } else if (isAverageRow) {
-      trStyle = 'background:rgba(245,158,11,0.12);font-weight:800;color:#f59e0b';
-      isSummary = true;
-    }
-
-    tbody += `<tr style="${trStyle}">`;
+    tbody += `<tr class="${meta.cls}">`;
 
     // Cột STT & Tên nhân sự
-    if (isSummary) {
-      tbody += `<td style="text-align:center">${isAverageRow ? '★' : '∑'}</td>`;
-      tbody += `<td style="text-align:left;font-weight:800">${esc(isAverageRow ? 'Trung bình toàn đội' : (isTotalHcm ? 'Total HCM' : 'Total HN'))}</td>`;
+    if (meta.isSummary) {
+      let sttLabel = '∑';
+      let titleColor = '#38bdf8';
+      let badgeBg = '#0284c7';
+      if (meta.type === 'nam') {
+        sttLabel = '∑ NAM';
+        titleColor = '#38bdf8';
+        badgeBg = '#0284c7';
+      } else if (meta.type === 'bac') {
+        sttLabel = '∑ BẮC';
+        titleColor = '#fbbf24';
+        badgeBg = '#d97706';
+      } else {
+        sttLabel = '★';
+        titleColor = '#c084fc';
+        badgeBg = '#9333ea';
+      }
+
+      tbody += `<td style="text-align:center"><span style="font-weight:800;color:${titleColor}">${sttLabel}</span></td>`;
+      tbody += `<td style="text-align:left;font-weight:800"><span style="display:inline-flex;align-items:center;gap:6px;color:${titleColor}"><span style="font-size:14px">${meta.icon}</span> <b>${meta.title}</b></span></td>`;
+      tbody += `<td style="text-align:center"><span class="badge" style="background:${badgeBg};color:#fff;font-weight:800;font-size:10px">${meta.type === 'all' ? 'AVG' : 'TOTAL'}</span></td>`;
     } else {
       tbody += `<td style="text-align:center;color:var(--mut)">${rawStt || idx + 1}</td>`;
       tbody += `<td style="text-align:left;font-weight:600;color:var(--tx-heading)">${esc(rawName)}</td>`;
+      tbody += `<td style="text-align:center">${r[2] ? `<span class="level-badge">${esc(r[2])}</span>` : '–'}</td>`;
     }
-
-    // Level
-    tbody += `<td style="text-align:center">${r[2] ? `<span class="level-badge">${esc(r[2])}</span>` : '–'}</td>`;
 
     // Khối lượng công việc (cột 3..8)
     tbody += `<td style="text-align:right">${formatKpiNum(r[3], 0)}</td>`;
@@ -466,18 +516,25 @@ function renderNangSuatCallTable(data) {
   let tbody = '<tbody>';
   rows.forEach(r => {
     const rawName = r[0] || '';
-    const isSummary = rawName.includes('Trung bình') || rawName.includes('MIỀN');
+    const meta = getRegionRowMeta(rawName);
 
-    if (KPI_ONLINE_SEARCH && !isSummary) {
+    if (KPI_ONLINE_SEARCH && !meta.isSummary) {
       if (!rawName.toLowerCase().includes(KPI_ONLINE_SEARCH)) return;
     }
 
-    const trStyle = isSummary ? 'background:rgba(56,189,248,0.1);font-weight:800;color:var(--tx-heading)' : '';
-    tbody += `<tr style="${trStyle}">`;
+    tbody += `<tr class="${meta.cls}">`;
 
-    tbody += `<td style="text-align:left;font-weight:${isSummary ? '800' : '600'}">${esc(rawName)}</td>`;
-    tbody += `<td style="text-align:center">${formatKpiNum(r[1], 1)}</td>`;
-    tbody += `<td style="text-align:center">${r[2] ? `<span class="level-badge">${esc(r[2])}</span>` : '–'}</td>`;
+    if (meta.isSummary) {
+      const titleColor = meta.type === 'nam' ? '#38bdf8' : (meta.type === 'bac' ? '#fbbf24' : '#c084fc');
+      const badgeBg = meta.type === 'nam' ? '#0284c7' : (meta.type === 'bac' ? '#d97706' : '#9333ea');
+      tbody += `<td style="text-align:left;font-weight:800"><span style="display:inline-flex;align-items:center;gap:6px;color:${titleColor}"><span style="font-size:14px">${meta.icon}</span> <b>${meta.title}</b></span></td>`;
+      tbody += `<td style="text-align:center"><span class="badge" style="background:${badgeBg};color:#fff;font-weight:800;font-size:10px">AVG</span></td>`;
+      tbody += `<td style="text-align:center">${r[2] ? `<span class="level-badge">${esc(r[2])}</span>` : '–'}</td>`;
+    } else {
+      tbody += `<td style="text-align:left;font-weight:600">${esc(rawName)}</td>`;
+      tbody += `<td style="text-align:center">${formatKpiNum(r[1], 1)}</td>`;
+      tbody += `<td style="text-align:center">${r[2] ? `<span class="level-badge">${esc(r[2])}</span>` : '–'}</td>`;
+    }
 
     // 13 cột giờ
     for (let c = 3; c <= 15; c++) {
@@ -548,20 +605,25 @@ function renderTalktimeNgayTable(data) {
   let tbody = '<tbody>';
   rows.forEach(r => {
     const rawName = r[0] || '';
-    const isSummary = rawName.includes('Trung bình') || rawName.includes('MIỀN');
+    const meta = getRegionRowMeta(rawName);
 
-    if (KPI_ONLINE_SEARCH && !isSummary) {
+    if (KPI_ONLINE_SEARCH && !meta.isSummary) {
       if (!rawName.toLowerCase().includes(KPI_ONLINE_SEARCH)) return;
     }
 
-    const trStyle = isSummary ? 'background:rgba(56,189,248,0.1);font-weight:800;color:var(--tx-heading)' : '';
-    tbody += `<tr style="${trStyle}">`;
+    tbody += `<tr class="${meta.cls}">`;
 
-    tbody += `<td style="text-align:left;font-weight:${isSummary ? '800' : '600'}">${esc(rawName)}</td>`;
+    if (meta.isSummary) {
+      const titleColor = meta.type === 'nam' ? '#38bdf8' : (meta.type === 'bac' ? '#fbbf24' : '#c084fc');
+      tbody += `<td style="text-align:left;font-weight:800"><span style="display:inline-flex;align-items:center;gap:6px;color:${titleColor}"><span style="font-size:14px">${meta.icon}</span> <b>${meta.title}</b></span></td>`;
+    } else {
+      tbody += `<td style="text-align:left;font-weight:600">${esc(rawName)}</td>`;
+    }
 
     // Cột KPI chuẩn
     const kpiSec = parseTalktimeSeconds(r[1]);
-    tbody += `<td style="text-align:center;font-weight:700;color:#38bdf8;background:rgba(56,189,248,0.06)">${formatTalktime(kpiSec)}</td>`;
+    const kpiColor = meta.isSummary ? (meta.type === 'nam' ? '#38bdf8' : (meta.type === 'bac' ? '#fbbf24' : '#c084fc')) : '#38bdf8';
+    tbody += `<td style="text-align:center;font-weight:700;color:${kpiColor};background:rgba(56,189,248,0.06)">${formatTalktime(kpiSec)}</td>`;
 
     // Các cột ngày từ 1..maxDay
     for (let d = 1; d <= maxDay; d++) {
@@ -571,15 +633,22 @@ function renderTalktimeNgayTable(data) {
       const isOver = valSec >= kpiSec && kpiSec > 0;
 
       let cellStyle = '';
-      if (isZero) {
-        // 0:00 để màu trắng / mặc định trung tính, không bôi đỏ/xanh
-        cellStyle = 'color:var(--tx);opacity:0.65;font-weight:500';
-      } else if (isOver) {
-        // Vượt KPI: màu xanh
-        cellStyle = 'color:#10b981;font-weight:700;background:rgba(16,185,129,0.16);border-radius:4px';
+      if (meta.isSummary) {
+        if (isZero) {
+          cellStyle = 'opacity:0.65;font-weight:700';
+        } else if (isOver) {
+          cellStyle = 'color:#10b981;font-weight:800;background:rgba(16,185,129,0.22);border-radius:4px';
+        } else {
+          cellStyle = 'color:#ef4444;font-weight:800;background:rgba(239,68,68,0.2);border-radius:4px';
+        }
       } else {
-        // Không đủ KPI: màu đỏ
-        cellStyle = 'color:#ef4444;font-weight:600;background:rgba(239,68,68,0.14);border-radius:4px';
+        if (isZero) {
+          cellStyle = 'color:var(--tx);opacity:0.65;font-weight:500';
+        } else if (isOver) {
+          cellStyle = 'color:#10b981;font-weight:700;background:rgba(16,185,129,0.16);border-radius:4px';
+        } else {
+          cellStyle = 'color:#ef4444;font-weight:600;background:rgba(239,68,68,0.14);border-radius:4px';
+        }
       }
 
       tbody += `<td style="text-align:center;padding:6px 4px;font-size:12px;${cellStyle}">${formatTalktime(valSec)}</td>`;
@@ -604,7 +673,7 @@ function renderTalktimeNgayTable(data) {
 function renderSoluongCallNgayTable(data) {
   const tbl = $('tblSoluongCallNgay');
   const infoSpan = $('callDaysInfo');
-  if (!tbl || !Array.isArray(data) || data.length < 82) return;
+  if (!tbl || !Array.isArray(data) || data.length < 75) return;
 
   const rows = data.slice(67, 82);
   const maxDay = getKpiOnlineMaxDay(rows, false);
@@ -630,17 +699,23 @@ function renderSoluongCallNgayTable(data) {
   let tbody = '<tbody>';
   rows.forEach(r => {
     const rawName = r[0] || '';
-    const isSummary = rawName.includes('Trung bình') || rawName.includes('MIỀN');
+    const meta = getRegionRowMeta(rawName);
 
-    if (KPI_ONLINE_SEARCH && !isSummary) {
+    if (KPI_ONLINE_SEARCH && !meta.isSummary) {
       if (!rawName.toLowerCase().includes(KPI_ONLINE_SEARCH)) return;
     }
 
-    const trStyle = isSummary ? 'background:rgba(56,189,248,0.1);font-weight:800;color:var(--tx-heading)' : '';
-    tbody += `<tr style="${trStyle}">`;
+    tbody += `<tr class="${meta.cls}">`;
 
-    tbody += `<td style="text-align:left;font-weight:${isSummary ? '800' : '600'}">${esc(rawName)}</td>`;
-    tbody += `<td style="text-align:center">${r[1] ? `<span class="level-badge">${esc(r[1])}</span>` : '–'}</td>`;
+    if (meta.isSummary) {
+      const titleColor = meta.type === 'nam' ? '#38bdf8' : (meta.type === 'bac' ? '#fbbf24' : '#c084fc');
+      const badgeBg = meta.type === 'nam' ? '#0284c7' : (meta.type === 'bac' ? '#d97706' : '#9333ea');
+      tbody += `<td style="text-align:left;font-weight:800"><span style="display:inline-flex;align-items:center;gap:6px;color:${titleColor}"><span style="font-size:14px">${meta.icon}</span> <b>${meta.title}</b></span></td>`;
+      tbody += `<td style="text-align:center"><span class="badge" style="background:${badgeBg};color:#fff;font-weight:800;font-size:10px">AVG</span></td>`;
+    } else {
+      tbody += `<td style="text-align:left;font-weight:600">${esc(rawName)}</td>`;
+      tbody += `<td style="text-align:center">${r[1] ? `<span class="level-badge">${esc(r[1])}</span>` : '–'}</td>`;
+    }
 
     // Các cột ngày từ 1..maxDay
     for (let d = 1; d <= maxDay; d++) {
@@ -649,12 +724,12 @@ function renderSoluongCallNgayTable(data) {
       const isZero = num === 0;
 
       let cellStyle = isZero ? 'color:var(--mut);opacity:0.4' : 'font-weight:700;color:var(--tx)';
-      tbody += `<td style="text-align:center;padding:6px 4px;font-size:12.5px;${cellStyle}">${isZero ? '0' : formatKpiNum(num, isSummary ? 1 : 0)}</td>`;
+      tbody += `<td style="text-align:center;padding:6px 4px;font-size:12.5px;${cellStyle}">${isZero ? '0' : formatKpiNum(num, meta.isSummary ? 1 : 0)}</td>`;
     }
 
     // Cột Tổng
     const tot = typeof r[32] === 'number' ? r[32] : parseFloat(r[32]) || 0;
-    tbody += `<td style="text-align:right;font-weight:800;color:#38bdf8">${formatKpiNum(tot, isSummary ? 1 : 0)}</td>`;
+    tbody += `<td style="text-align:right;font-weight:800;color:#38bdf8">${formatKpiNum(tot, meta.isSummary ? 1 : 0)}</td>`;
 
     tbody += '</tr>';
   });

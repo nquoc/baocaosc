@@ -724,6 +724,57 @@ body[data-theme="light"] .kpi-table th.kpi-final-th {
   white-space: nowrap;
 }
 
+/* Dòng Total của Miền trong Tab KPI Online (Phân biệt màu rõ rệt) */
+.row-total-nam {
+  background: rgba(14, 165, 233, 0.16) !important;
+  color: #38bdf8 !important;
+  font-weight: 800 !important;
+  border-top: 2px solid #0284c7 !important;
+  border-bottom: 2px solid #0284c7 !important;
+}
+.row-total-nam td {
+  background: transparent !important;
+  font-weight: 800 !important;
+}
+.row-total-bac {
+  background: rgba(245, 158, 11, 0.16) !important;
+  color: #fbbf24 !important;
+  font-weight: 800 !important;
+  border-top: 2px solid #d97706 !important;
+  border-bottom: 2px solid #d97706 !important;
+}
+.row-total-bac td {
+  background: transparent !important;
+  font-weight: 800 !important;
+}
+.row-total-all {
+  background: rgba(168, 85, 247, 0.18) !important;
+  color: #c084fc !important;
+  font-weight: 800 !important;
+  border-top: 2px solid #9333ea !important;
+  border-bottom: 2px solid #9333ea !important;
+}
+.row-total-all td {
+  background: transparent !important;
+  font-weight: 800 !important;
+}
+
+body[data-theme="light"] .row-total-nam {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border-color: #38bdf8 !important;
+}
+body[data-theme="light"] .row-total-bac {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border-color: #f59e0b !important;
+}
+body[data-theme="light"] .row-total-all {
+  background: #f3e8ff !important;
+  color: #7e22ce !important;
+  border-color: #a855f7 !important;
+}
+
 /* Toast Notification */
 .toast {
   position: fixed;
