@@ -775,6 +775,44 @@ body[data-theme="light"] .row-total-all {
   border-color: #a855f7 !important;
 }
 
+/* Năng suất call theo khung giờ (Mục 2 Tab KPI Online: >20 xanh, 10-20 vàng, <10 đỏ) */
+.cell-call-green {
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.18) !important;
+  font-weight: 700;
+  border-radius: 4px;
+}
+.cell-call-yellow {
+  color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.18) !important;
+  font-weight: 700;
+  border-radius: 4px;
+}
+.cell-call-red {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.16) !important;
+  font-weight: 700;
+  border-radius: 4px;
+}
+.cell-call-zero {
+  color: var(--mut) !important;
+  opacity: 0.45;
+  font-weight: 500;
+}
+
+body[data-theme="light"] .cell-call-green {
+  color: #059669 !important;
+  background: rgba(16, 185, 129, 0.2) !important;
+}
+body[data-theme="light"] .cell-call-yellow {
+  color: #d97706 !important;
+  background: rgba(245, 158, 11, 0.2) !important;
+}
+body[data-theme="light"] .cell-call-red {
+  color: #dc2626 !important;
+  background: rgba(239, 68, 68, 0.18) !important;
+}
+
 /* Toast Notification */
 .toast {
   position: fixed;

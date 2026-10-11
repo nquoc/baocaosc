@@ -522,7 +522,7 @@ function renderNangSuatCallTable(data) {
   thead += '<th style="min-width:55px;text-align:center">LEVEL</th>';
   const hours = ['7-8h', '8-9h', '9-10h', '10-11h', '11-12h', '12-13h', '13-14h', '14-15h', '15-16h', '16-17h', '17-18h', '18-19h', '19-20h'];
   hours.forEach(h => {
-    thead += `<th style="min-width:60px;text-align:right;font-size:11.5px">${h}</th>`;
+    thead += `<th style="min-width:60px;text-align:center;font-size:11.5px">${h}</th>`;
   });
   thead += '<th style="min-width:85px;text-align:right;background:#1e3a8a!important;color:#93c5fd!important">TỔNG CALL</th>';
   thead += '<th style="min-width:85px;text-align:right">KẾT NỐI</th>';
@@ -557,10 +557,31 @@ function renderNangSuatCallTable(data) {
       tbody += `<td style="text-align:center">${r[2] ? `<span class="level-badge">${esc(r[2])}</span>` : '–'}</td>`;
     }
 
-    // 13 cột giờ
+    // 13 cột giờ: > 20 màu xanh lá, 10-20 màu vàng, dưới 10 màu đỏ, 0 trung tính
     for (let c = 3; c <= 15; c++) {
       const v = parseFloat(r[c]) || 0;
-      tbody += `<td style="text-align:right;color:${v > 0 ? 'var(--tx)' : 'var(--mut)'};opacity:${v > 0 ? '1' : '0.45'}">${v > 0 ? formatKpiNum(v, 1) : '–'}</td>`;
+      let cellCls = '';
+      let displayVal = '–';
+
+      if (v <= 0) {
+        cellCls = 'cell-call-zero';
+        displayVal = '–';
+      } else if (v >= 20) {
+        // > 20 màu xanh lá
+        cellCls = 'cell-call-green';
+        displayVal = formatKpiNum(v, 1);
+      } else if (v >= 10) {
+        // 10 < màu vàng < 20
+        cellCls = 'cell-call-yellow';
+        displayVal = formatKpiNum(v, 1);
+      } else {
+        // Dưới 10 màu đỏ
+        cellCls = 'cell-call-red';
+        displayVal = formatKpiNum(v, 1);
+      }
+
+      const summaryStyle = meta.isSummary ? 'font-weight:800;' : '';
+      tbody += `<td class="${cellCls}" style="text-align:center;padding:6px 4px;font-size:12px;${summaryStyle}">${displayVal}</td>`;
     }
 
     // Tổng call & kết nối
