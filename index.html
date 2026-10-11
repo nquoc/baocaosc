@@ -34,23 +34,17 @@
       </button>
 
       <!-- HINT MẬT KHẨU THỬ NGHIỆM -->
-      <div style="margin-top:14px;padding:9px 12px;border-radius:9px;background:rgba(56,189,248,0.12);border:1.5px dashed rgba(56,189,248,0.35);font-size:12px;color:#38bdf8;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" onclick="fillTestPassword()" title="Bấm vào đây để tự điền mật khẩu">
-        <span>🔑</span>
-        <span>Mật khẩu thử nghiệm: <b style="color:#ffffff;letter-spacing:1px;font-size:13px;background:rgba(0,0,0,0.35);padding:2px 7px;border-radius:5px">SC@2026</b></span>
-        <span style="font-size:11px;opacity:0.8">(Bấm để tự điền)</span>
-      </div>
+     
     </form>
 
-    <div class="login-footer-note">
-      <span>🛡️ Đang ở chế độ thử nghiệm nội bộ — Sau khi test xong sẽ chuyển sang chế độ private bảo mật.</span>
-    </div>
+  
   </div>
 </div>
 
 <header>
   <div>
     <h1>Báo cáo tổng hợp SC</h1>
-    <div class="mut sm">Nguồn: Google Apps Script API (sheet <b>baocaotong</b>) · Ngày công: sáng + chiều = <b>1</b>, một buổi = <b>0.5</b> · ATC = 1 record</div>
+  
   </div>
   <div class="header-actions">
     <span id="src" class="badge b-load">Đang tải…</span>
@@ -212,7 +206,6 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <h3 style="margin:0;font-size:14px;color:#facc15;display:flex;align-items:center;gap:6px">
         <span>🏢 Báo cáo Team Offline</span>
-        <span class="mut sm" style="font-weight:400">(Range A1:H12)</span>
       </h3>
     </div>
     <div class="excel-table-wrap">
@@ -225,7 +218,6 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <h3 style="margin:0;font-size:14px;color:#38bdf8;display:flex;align-items:center;gap:6px">
         <span>🌐 Báo cáo Team Online</span>
-        <span class="mut sm" style="font-weight:400">(Range A14:H26)</span>
       </h3>
     </div>
     <div class="excel-table-wrap">
@@ -486,7 +478,7 @@
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Tỷ Lệ Chăm Khách New T10 (Ký Mới · Inactive · SC Chăm)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>baocaotuan</b> (phạm vi F2:I6)
+        Nguồn: Sheet <b>baocaotuan</b>
       </div>
     </div>
 
@@ -518,7 +510,7 @@
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Impact Theo Tỉnh / Thành Phố (T7 – T12)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>baocaotuan</b> (phạm vi K2:Q19) · So sánh với tháng trước: <span style="color:#10b981;font-weight:700">▲ Tăng</span> · <span style="color:#ef4444;font-weight:700">▼ Giảm</span>
+        Nguồn: Sheet <b>baocaotuan</b> · So sánh với tháng trước: <span style="color:#10b981;font-weight:700">▲ Tăng</span> · <span style="color:#ef4444;font-weight:700">▼ Giảm</span>
       </div>
     </div>
 
@@ -554,7 +546,7 @@
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Quân Số Đội Ngũ SC (Theo Miền, Vị Trí &amp; Tỉnh Thành)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>baocaotuan</b> (phạm vi U2:AA5 &amp; U7:V24)
+        Nguồn: Sheet <b>baocaotuan</b>
       </div>
     </div>
 
@@ -638,7 +630,7 @@
           <span>1. 📊 KPI TEAM ONLINE (Khối Lượng CV, Điều Kiện Cần, Điều Kiện Đủ, Talk Time &amp; Tỉ Lệ Impact)</span>
         </h3>
         <div class="mut sm" style="margin-top:3px">
-          Theo dõi tổng hợp các điều kiện hoàn thành KPI của từng nhân sự Online và toàn đội · Sheet range <b>A2:AA19</b>
+          Theo dõi tổng hợp các điều kiện hoàn thành KPI của từng nhân sự Online và toàn đội
         </div>
       </div>
       <div>
@@ -658,7 +650,7 @@
           <span>2. 📞 Năng Suất Call Theo Khung Giờ &amp; Tỉ Lệ Kết Nối Thành Công</span>
         </h3>
         <div class="mut sm" style="margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span>Phân bổ cuộc gọi từ 7h đến 20h · Sheet range <b>A27:W42</b></span>
+          <span>Phân bổ cuộc gọi từ 7h đến 20h</span>
           <span style="display:inline-flex;align-items:center;gap:8px;font-size:11.5px;padding:1px 8px;border-radius:6px;background:var(--subtle);border:1px solid var(--line)">
             <span style="color:#10b981;font-weight:700">● &gt;20: Xanh</span>
             <span style="color:#f59e0b;font-weight:700">● 10–20: Vàng</span>
@@ -684,7 +676,7 @@
           <span>3. ⏱️ Bảng Talktime Theo Ngày (Cột KPI &amp; So Sánh Đạt / Vượt Hàng Ngày)</span>
         </h3>
         <div class="mut sm" style="margin-top:3px">
-          <span id="talktimeDaysInfo" style="font-weight:600;color:#38bdf8">Đang hiển thị gọn từ Ngày 1 → Hôm nay</span> · <span style="color:#10b981;font-weight:700">Xanh = Vượt KPI</span> · <span style="color:#ef4444;font-weight:600">Đỏ = Chưa đủ KPI</span> · 00:00 = Trắng · Sheet range <b>A47:AG62</b>
+          <span id="talktimeDaysInfo" style="font-weight:600;color:#38bdf8">Đang hiển thị gọn từ Ngày 1 → Hôm nay</span> · <span style="color:#10b981;font-weight:700">Xanh = Vượt KPI</span> · <span style="color:#ef4444;font-weight:600">Đỏ = Chưa đủ KPI</span> · 00:00 = Trắng
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -705,7 +697,7 @@
           <span>4. 📈 Bảng Số Lượng Call Theo Ngày</span>
         </h3>
         <div class="mut sm" style="margin-top:3px">
-          <span id="callDaysInfo" style="font-weight:600;color:#38bdf8">Đang hiển thị gọn từ Ngày 1 → Hôm nay</span> · Số lượng cuộc gọi thực tế từng ngày và tổng cộng trong tháng · Sheet range <b>A67:AG82</b>
+          <span id="callDaysInfo" style="font-weight:600;color:#38bdf8">Đang hiển thị gọn từ Ngày 1 → Hôm nay</span> · Số lượng cuộc gọi thực tế từng ngày và tổng cộng trong tháng
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
