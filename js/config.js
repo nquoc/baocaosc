@@ -7,7 +7,7 @@ const API_BASE = 'https://script.google.com/macros/s/AKfycbzBneKTnuVmEJD0ra4MVxr
 const API = API_BASE + '?sheet=baocaotong';
 const API_MUCTIEU_OFFLINE = API_BASE + '?sheet=muctieu&range=A1:H12';
 const API_MUCTIEU_ONLINE = API_BASE + '?sheet=muctieu&range=A14:H26';
-const API_KPI = API_BASE + '?sheet=kpi';
+const API_KPI = API_BASE + '?sheet=kpi&range=A1:P28';
 const API_PHANCUNG = API_BASE + '?sheet=phancung';
 const API_PHANCUNG_OCT = API_BASE + '?sheet=opp'; // Endpoint cho Mục 2: Chi Tiết Phần Cứng Tháng 10
 const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14';
@@ -49,7 +49,7 @@ const STORE_NAME = 'cache';
 const CACHE_TTL_MS = 20 * 60 * 1000; // 20 phút
 const CACHE_KEY = 'baocaotong_data';
 const CACHE_KEY_MUCTIEU = 'muctieu_data';
-const CACHE_KEY_KPI = 'kpi_offline_data';
+const CACHE_KEY_KPI = 'kpi_offline_data_v2';
 const CACHE_KEY_PHANCUNG = 'phancung_data';
 const CACHE_KEY_PHANCUNG_OCT = 'phancung_oct_data';
 const CACHE_KEY_BAOCAOSC = 'baocaosc_data';
