@@ -681,7 +681,7 @@
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <button id="btnToggleKpiDays" onclick="toggleKpiOnlineAllDays()" style="font-size:12px;padding:4px 10px">📅 Xem toàn bộ tháng (1→30)</button>
+        <button id="btnToggleKpiDays" onclick="toggleKpiOnlineTalkDays()" style="font-size:12px;padding:4px 10px">📅 Xem toàn bộ tháng (1→30)</button>
         <button onclick="exportTalktimeNgayCsv()" style="font-size:12px;padding:4px 10px">⬇ Xuất CSV Mục 3</button>
       </div>
     </div>
@@ -701,7 +701,8 @@
           <span id="callDaysInfo" style="font-weight:600;color:#38bdf8">Đang hiển thị gọn từ Ngày 1 → Hôm nay</span> · Số lượng cuộc gọi thực tế từng ngày và tổng cộng trong tháng · Sheet range <b>A67:AG82</b>
         </div>
       </div>
-      <div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button id="btnToggleCallDays" onclick="toggleKpiOnlineCallDays()" style="font-size:12px;padding:4px 10px">📅 Xem toàn bộ tháng (1→30)</button>
         <button onclick="exportSoluongCallNgayCsv()" style="font-size:12px;padding:4px 10px">⬇ Xuất CSV Mục 4</button>
       </div>
     </div>

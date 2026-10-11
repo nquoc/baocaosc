@@ -71,8 +71,8 @@ function formatKpiNum(val, dec = 1) {
  * Mặc định: Hiển thị từ ngày 1 đến ngày hiện tại (ví dụ hôm nay ngày 11 -> 1-11)
  * Hoặc nếu có ngày tương lai đã điền data (> 0) thì hiển thị đến ngày đó.
  */
-function getKpiOnlineMaxDay(rows, isTalktime = false) {
-  if (KPI_ONLINE_SHOW_ALL_DAYS) return 30;
+function getKpiOnlineMaxDay(rows, isTalktime = false, forceAll = false) {
+  if (forceAll || KPI_ONLINE_SHOW_ALL_DAYS) return 30;
 
   const currentDay = new Date().getDate(); // ví dụ 11
   let maxDayWithData = 0;
@@ -152,18 +152,39 @@ function getRegionRowMeta(rawName, rawStt = '', isLastRow = false) {
 }
 
 /**
- * Bật/tắt chế độ hiển thị toàn bộ tháng hay rút gọn ngày
+ * Bật/tắt chế độ hiển thị toàn bộ tháng hay rút gọn ngày cho Mục 3: Talktime
  */
-function toggleKpiOnlineAllDays() {
-  KPI_ONLINE_SHOW_ALL_DAYS = !KPI_ONLINE_SHOW_ALL_DAYS;
+function toggleKpiOnlineTalkDays() {
+  KPI_ONLINE_SHOW_ALL_TALK_DAYS = !KPI_ONLINE_SHOW_ALL_TALK_DAYS;
   const btn = $('btnToggleKpiDays');
   if (btn) {
-    btn.textContent = KPI_ONLINE_SHOW_ALL_DAYS ? '📅 Thu gọn ngày (1→Hôm nay)' : '📅 Xem toàn bộ tháng (1→30)';
+    btn.textContent = KPI_ONLINE_SHOW_ALL_TALK_DAYS ? '📅 Thu gọn ngày (1→Hôm nay)' : '📅 Xem toàn bộ tháng (1→30)';
   }
   if (KPI_ONLINE_STATE.data) {
     renderTalktimeNgayTable(KPI_ONLINE_STATE.data);
+  }
+}
+
+/**
+ * Bật/tắt chế độ hiển thị toàn bộ tháng hay rút gọn ngày cho Mục 4: Số lượng Call
+ */
+function toggleKpiOnlineCallDays() {
+  KPI_ONLINE_SHOW_ALL_CALL_DAYS = !KPI_ONLINE_SHOW_ALL_CALL_DAYS;
+  const btn = $('btnToggleCallDays');
+  if (btn) {
+    btn.textContent = KPI_ONLINE_SHOW_ALL_CALL_DAYS ? '📅 Thu gọn ngày (1→Hôm nay)' : '📅 Xem toàn bộ tháng (1→30)';
+  }
+  if (KPI_ONLINE_STATE.data) {
     renderSoluongCallNgayTable(KPI_ONLINE_STATE.data);
   }
+}
+
+/**
+ * Tương thích ngược: Bật/tắt cả 2 mục
+ */
+function toggleKpiOnlineAllDays() {
+  toggleKpiOnlineTalkDays();
+  toggleKpiOnlineCallDays();
 }
 
 /**
@@ -582,12 +603,16 @@ function renderTalktimeNgayTable(data) {
   if (!tbl || !Array.isArray(data) || data.length < 62) return;
 
   const rows = data.slice(47, 62);
-  const maxDay = getKpiOnlineMaxDay(rows, true);
+  const maxDay = getKpiOnlineMaxDay(rows, true, KPI_ONLINE_SHOW_ALL_TALK_DAYS);
 
   if (infoSpan) {
-    infoSpan.textContent = KPI_ONLINE_SHOW_ALL_DAYS
+    infoSpan.textContent = KPI_ONLINE_SHOW_ALL_TALK_DAYS
       ? `Đang xem toàn bộ tháng (Ngày 1 → 30)`
       : `Đang hiển thị gọn từ Ngày 1 → ${maxDay} (Tự động mở rộng khi có dữ liệu mới)`;
+  }
+  const btnTalk = $('btnToggleKpiDays');
+  if (btnTalk) {
+    btnTalk.textContent = KPI_ONLINE_SHOW_ALL_TALK_DAYS ? '📅 Thu gọn ngày (1→Hôm nay)' : '📅 Xem toàn bộ tháng (1→30)';
   }
 
   // 1. THEAD
@@ -676,12 +701,16 @@ function renderSoluongCallNgayTable(data) {
   if (!tbl || !Array.isArray(data) || data.length < 75) return;
 
   const rows = data.slice(67, 82);
-  const maxDay = getKpiOnlineMaxDay(rows, false);
+  const maxDay = getKpiOnlineMaxDay(rows, false, KPI_ONLINE_SHOW_ALL_CALL_DAYS);
 
   if (infoSpan) {
-    infoSpan.textContent = KPI_ONLINE_SHOW_ALL_DAYS
+    infoSpan.textContent = KPI_ONLINE_SHOW_ALL_CALL_DAYS
       ? `Đang xem toàn bộ tháng (Ngày 1 → 30)`
       : `Đang hiển thị gọn từ Ngày 1 → ${maxDay} (Tự động mở rộng khi có dữ liệu mới)`;
+  }
+  const btnCall = $('btnToggleCallDays');
+  if (btnCall) {
+    btnCall.textContent = KPI_ONLINE_SHOW_ALL_CALL_DAYS ? '📅 Thu gọn ngày (1→Hôm nay)' : '📅 Xem toàn bộ tháng (1→30)';
   }
 
   // 1. THEAD
