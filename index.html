@@ -76,6 +76,9 @@
   <button id="tabBtnKpi" class="tab-btn" onclick="switchTab('kpi')">
     📈 KPI Team Offline
   </button>
+  <button id="tabBtnKpiOnline" class="tab-btn" onclick="switchTab('kpionline')">
+    🌐 KPI Team Online
+  </button>
   <button id="tabBtnPhanCung" class="tab-btn" onclick="switchTab('phancung')">
     💻 DS Phần Cứng
   </button>
@@ -601,6 +604,114 @@
   </div>
 </div>
 
+<!-- ==================== TAB 7: KPI TEAM ONLINE ==================== -->
+<div id="kpionlineSection" style="display:none">
+  <!-- THANH ĐIỀU KHIỂN & TRẠNG THÁI TAB -->
+  <div class="card" style="margin-bottom:16px;padding:14px 18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading);display:flex;align-items:center;gap:8px">
+          <span>🌐 Báo Cáo Hiệu Suất &amp; KPI Team Online</span>
+        </h2>
+        <div class="mut sm" style="margin-top:3px">
+          Dữ liệu đồng bộ trực tiếp từ Google Sheets (sheet <b>KPI online</b>) · 4 mục chi tiết: KPI Team, Năng Suất Call, Talktime &amp; Số lượng Call theo ngày
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="kpiOnlineSrcBadge" class="badge b-load">Đang tải…</span>
+        <input type="text" id="kpiOnlineSearchInput" placeholder="🔍 Tìm nhân sự Online..." oninput="onKpiOnlineSearch(this.value)" style="width:200px;font-size:12px;padding:5px 9px">
+        <button id="btnReloadKpiOnline" onclick="loadKpiOnline(true)">⟳ Tải lại KPI Online</button>
+        <button onclick="exportKpiOnlineAllCsv()" style="background:#059669;color:#fff;border-color:#10b981;font-size:12px;padding:5px 12px">⬇ Xuất Toàn Bộ CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CÁC THẺ KPI TÓM TẮT TỔNG QUAN ONLINE -->
+  <div class="grid kpis" id="kpiOnlineSummaryCards" style="margin-bottom:16px"></div>
+
+  <!-- MỤC 1: KPI TEAM ONLINE -->
+  <div class="card" style="padding:14px 16px;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+          <span>1. 📊 KPI TEAM ONLINE (Khối Lượng CV, Điều Kiện Cần, Điều Kiện Đủ, Talk Time &amp; Tỉ Lệ Impact)</span>
+        </h3>
+        <div class="mut sm" style="margin-top:3px">
+          Theo dõi tổng hợp các điều kiện hoàn thành KPI của từng nhân sự Online và toàn đội · Sheet range <b>A2:AA19</b>
+        </div>
+      </div>
+      <div>
+        <button onclick="exportKpiTeamOnlineCsv()" style="font-size:12px;padding:4px 10px">⬇ Xuất CSV Mục 1</button>
+      </div>
+    </div>
+    <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+      <table id="tblKpiTeamOnline" class="kpi-table"></table>
+    </div>
+  </div>
+
+  <!-- MỤC 2: NĂNG SUẤT CALL -->
+  <div class="card" style="padding:14px 16px;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+          <span>2. 📞 Năng Suất Call Theo Khung Giờ &amp; Tỉ Lệ Kết Nối Thành Công</span>
+        </h3>
+        <div class="mut sm" style="margin-top:3px">
+          Phân bổ cuộc gọi từ 7h đến 20h, tổng call, tỉ lệ kết nối và thời lượng trung bình/call · Sheet range <b>A27:W42</b>
+        </div>
+      </div>
+      <div>
+        <button onclick="exportNangSuatCallCsv()" style="font-size:12px;padding:4px 10px">⬇ Xuất CSV Mục 2</button>
+      </div>
+    </div>
+    <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+      <table id="tblNangSuatCall" class="kpi-table"></table>
+    </div>
+  </div>
+
+  <!-- MỤC 3: BẢNG TALKTIME THEO NGÀY -->
+  <div class="card" style="padding:14px 16px;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+          <span>3. ⏱️ Bảng Talktime Theo Ngày (Cột KPI &amp; So Sánh Đạt / Vượt Hàng Ngày)</span>
+        </h3>
+        <div class="mut sm" style="margin-top:3px">
+          <span id="talktimeDaysInfo" style="font-weight:600;color:#38bdf8">Đang hiển thị gọn từ Ngày 1 → Hôm nay</span> · <span style="color:#10b981;font-weight:700">Xanh = Vượt KPI</span> · <span style="color:#ef4444;font-weight:600">Đỏ = Chưa đủ KPI</span> · 00:00 = Trắng · Sheet range <b>A47:AG62</b>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button id="btnToggleKpiDays" onclick="toggleKpiOnlineAllDays()" style="font-size:12px;padding:4px 10px">📅 Xem toàn bộ tháng (1→30)</button>
+        <button onclick="exportTalktimeNgayCsv()" style="font-size:12px;padding:4px 10px">⬇ Xuất CSV Mục 3</button>
+      </div>
+    </div>
+    <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+      <table id="tblTalktimeNgay" class="kpi-table"></table>
+    </div>
+  </div>
+
+  <!-- MỤC 4: BẢNG SỐ LƯỢNG CALL THEO NGÀY -->
+  <div class="card" style="padding:14px 16px;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+          <span>4. 📈 Bảng Số Lượng Call Theo Ngày</span>
+        </h3>
+        <div class="mut sm" style="margin-top:3px">
+          <span id="callDaysInfo" style="font-weight:600;color:#38bdf8">Đang hiển thị gọn từ Ngày 1 → Hôm nay</span> · Số lượng cuộc gọi thực tế từng ngày và tổng cộng trong tháng · Sheet range <b>A67:AG82</b>
+        </div>
+      </div>
+      <div>
+        <button onclick="exportSoluongCallNgayCsv()" style="font-size:12px;padding:4px 10px">⬇ Xuất CSV Mục 4</button>
+      </div>
+    </div>
+    <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+      <table id="tblSoluongCallNgay" class="kpi-table"></table>
+    </div>
+  </div>
+</div>
+
+
 <p class="mut sm" style="line-height:1.6;margin-top:16px">
   <b>Cách tính ngày công</b>: sáng = có checkin trước 12:30; chiều = có checkin từ 13:00 (12:30–13:00 là giờ nghỉ trưa, làm lố không tính).
   Có cả sáng và chiều = 1 công, một buổi = 0.5 công; riêng 1 record kéo dài từ sáng sang chiều (checkout cuối từ 13:30) vẫn là 1 công.
@@ -651,6 +762,7 @@
 <script src="js/tab_kpi.js"></script>
 <script src="js/tab_phancung.js"></script>
 <script src="js/tab_baocaosc.js"></script>
+<script src="js/tab_kpionline.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
  */
 
 /* ---------- Chuyển đổi & Lưu vết Tab (F5 giữ nguyên tab hiện tại) ---------- */
-const VALID_TABS = ['overview', 'pivot', 'target', 'kpi', 'phancung', 'baocaosc'];
+const VALID_TABS = ['overview', 'pivot', 'target', 'kpi', 'kpionline', 'phancung', 'baocaosc'];
 
 function switchTab(tab) {
   if (!VALID_TABS.includes(tab)) {
@@ -24,6 +24,7 @@ function switchTab(tab) {
   $('tabBtnPivot').className = 'tab-btn' + (tab === 'pivot' ? ' active' : '');
   $('tabBtnTarget').className = 'tab-btn' + (tab === 'target' ? ' active' : '');
   $('tabBtnKpi').className = 'tab-btn' + (tab === 'kpi' ? ' active' : '');
+  if ($('tabBtnKpiOnline')) $('tabBtnKpiOnline').className = 'tab-btn' + (tab === 'kpionline' ? ' active' : '');
   if ($('tabBtnPhanCung')) $('tabBtnPhanCung').className = 'tab-btn' + (tab === 'phancung' ? ' active' : '');
   if ($('tabBtnBaoCaoSc')) $('tabBtnBaoCaoSc').className = 'tab-btn' + (tab === 'baocaosc' ? ' active' : '');
 
@@ -31,10 +32,11 @@ function switchTab(tab) {
   $('pivotSection').style.display = tab === 'pivot' ? 'block' : 'none';
   $('targetSection').style.display = tab === 'target' ? 'block' : 'none';
   $('kpiSection').style.display = tab === 'kpi' ? 'block' : 'none';
+  if ($('kpionlineSection')) $('kpionlineSection').style.display = tab === 'kpionline' ? 'block' : 'none';
   if ($('phancungSection')) $('phancungSection').style.display = tab === 'phancung' ? 'block' : 'none';
   if ($('baocaoscSection')) $('baocaoscSection').style.display = tab === 'baocaosc' ? 'block' : 'none';
 
-  $('filters').style.display = (tab === 'target' || tab === 'kpi' || tab === 'phancung' || tab === 'baocaosc') ? 'none' : 'flex';
+  $('filters').style.display = (tab === 'target' || tab === 'kpi' || tab === 'kpionline' || tab === 'phancung' || tab === 'baocaosc') ? 'none' : 'flex';
 
   if (tab === 'pivot') {
     renderPivot();
@@ -49,6 +51,12 @@ function switchTab(tab) {
       loadKpi(false);
     } else {
       renderKpi();
+    }
+  } else if (tab === 'kpionline') {
+    if (!KPI_ONLINE_STATE.data) {
+      loadKpiOnline(false);
+    } else {
+      renderKpiOnline();
     }
   } else if (tab === 'phancung') {
     if (!PHANCUNG_STATE.data) {

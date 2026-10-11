@@ -15,6 +15,7 @@ const API_BAOCAOSC_CARE_RATE = API_BASE + '?sheet=baocaotuan&range=F2:I6';
 const API_BAOCAOSC_PROVINCE_IMPACT = API_BASE + '?sheet=baocaotuan&range=K2:Q19'; // Mục 3: Impact Theo Tỉnh Thành Phố
 const API_BAOCAOSC_HEADCOUNT_REGION = API_BASE + '?sheet=baocaotuan&range=U2:AA5'; // Mục 4: Quân số theo Miền & Vị trí
 const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:V24'; // Mục 4: Quân số theo Tỉnh thành
+const API_KPI_ONLINE = API_BASE + '?sheet=KPI%20online'; // Endpoint cho Tab 7: KPI Team Online
 
 // Quản lý Khóa Xác thực (Session Auth Key)
 const AUTH_STORAGE_KEY = 'tc_auth_token';
@@ -52,6 +53,7 @@ const CACHE_KEY_KPI = 'kpi_offline_data';
 const CACHE_KEY_PHANCUNG = 'phancung_data';
 const CACHE_KEY_PHANCUNG_OCT = 'phancung_oct_data';
 const CACHE_KEY_BAOCAOSC = 'baocaosc_data';
+const CACHE_KEY_KPI_ONLINE = 'kpi_online_data';
 
 // Hằng số tính ngày công & bảng màu
 const SPLIT = 12 * 60 + 30; // 12:30
@@ -133,3 +135,12 @@ let BAOCAOSC_PROVINCE_SEARCH = '';
 let BAOCAOSC_PROVINCE_SORT = { k: 't10', dir: -1 };
 let BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH = '';
 let BAOCAOSC_HEADCOUNT_PROVINCE_SORT = { k: 'count', dir: -1 };
+
+// Trạng thái Tab 7: KPI Team Online
+let KPI_ONLINE_STATE = { data: null, savedAt: 0, timeStr: '' };
+let KPI_ONLINE_SEARCH = '';
+let KPI_ONLINE_SHOW_ALL_DAYS = false; // Mặc định thu gọn ngày (chỉ hiện 1..ngày hiện tại)
+let KPI_ONLINE_TAB1_SORT = { k: 'stt', dir: 1 };
+let KPI_ONLINE_TAB2_SORT = { k: 'totalCall', dir: -1 };
+let KPI_ONLINE_TAB3_SORT = { k: 'stt', dir: 1 };
+let KPI_ONLINE_TAB4_SORT = { k: 'total', dir: -1 };

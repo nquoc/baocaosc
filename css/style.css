@@ -710,6 +710,20 @@ body[data-theme="light"] .kpi-table th.kpi-final-th {
   text-align: center !important;
 }
 
+/* Tab KPI Online (4 Mục Vận Hành) */
+#tblKpiTeamOnline, #tblNangSuatCall, #tblTalktimeNgay, #tblSoluongCallNgay {
+  width: 100%;
+}
+#tblKpiTeamOnline th, #tblNangSuatCall th, #tblTalktimeNgay th, #tblSoluongCallNgay th {
+  user-select: none;
+  font-size: 12.5px;
+  padding: 8px 6px;
+  white-space: nowrap;
+}
+#tblTalktimeNgay td, #tblSoluongCallNgay td {
+  white-space: nowrap;
+}
+
 /* Toast Notification */
 .toast {
   position: fixed;
