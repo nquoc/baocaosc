@@ -181,11 +181,11 @@ function renderKpiSummary() {
   const K = (l, v, s, c = '') => `<div class="card kpi"><div class="l">${l}</div><div class="v" style="${c}">${v}</div><div class="s">${s}</div></div>`;
 
   box.innerHTML =
-    K('Số Nhân Sự SC', n, lvlStr) +
-    K('TB % Điểm Tổng', avgDiemTong.toFixed(2) + '%', 'Tỷ lệ hoàn thành điểm tổng', 'color:#38bdf8') +
-    K('TB % Điểm Addon', avgDiemAddon.toFixed(2) + '%', 'Tỷ lệ hoàn thành addon', 'color:#f59e0b') +
-    K('TB KPI Tổng (70/30)', avgKpiFinal.toFixed(2) + '%', '70% Điểm tổng + 30% Addon', 'color:' + (avgKpiFinal >= 40 ? 'var(--ok)' : (avgKpiFinal >= 25 ? 'var(--warn)' : 'var(--bad)'))) +
-    K('Top 1 KPI Team', top1 ? esc(top1.name) : '–', top1 ? `Đạt ${top1.kpiFinal.toFixed(2)}% (${top1.coach})` : '', 'color:var(--ok)');
+    K('👥 Số Nhân Sự SC', n, lvlStr) +
+    K('📊 TB % Điểm Tổng', avgDiemTong.toFixed(2) + '%', 'Tỷ lệ hoàn thành điểm tổng', 'color:#38bdf8') +
+    K('⚡ TB % Điểm Addon', avgDiemAddon.toFixed(2) + '%', 'Tỷ lệ hoàn thành addon', 'color:#f59e0b') +
+    K('⭐ TB KPI Tổng (70/30)', avgKpiFinal.toFixed(2) + '%', '70% Điểm tổng + 30% Addon', 'color:' + (avgKpiFinal >= 40 ? 'var(--ok)' : (avgKpiFinal >= 25 ? 'var(--warn)' : 'var(--bad)'))) +
+    K('🏆 Top 1 KPI Team', top1 ? esc(top1.name) : '–', top1 ? `Đạt ${top1.kpiFinal.toFixed(2)}% (${top1.coach})` : '', 'color:var(--ok)');
 }
 
 function renderKpiTable() {
@@ -220,8 +220,14 @@ function renderKpiTable() {
   } else {
     list.forEach((r, idx) => {
       const coachCol = COLOR[r.coach] || '#60a5fa';
+      let rankIcon = '';
+      if (KPI_SORT.k === 'kpiFinal' && KPI_SORT.dir === -1) {
+        if (idx === 0) rankIcon = '🥇 ';
+        else if (idx === 1) rankIcon = '🥈 ';
+        else if (idx === 2) rankIcon = '🥉 ';
+      }
       tbody += `<tr>
-        <td style="color:var(--mut)">${idx + 1}</td>
+        <td style="color:var(--mut);font-weight:600">${rankIcon}${idx + 1}</td>
         <td class="sc-name">${esc(r.name)} <span class="mut sm" style="font-weight:400">(${r.ma})</span></td>
         <td><span class="level-badge">${esc(r.level)}</span></td>
         <td style="text-align:left"><span class="dot" style="background:${coachCol}"></span> ${esc(r.coach)}</td>
@@ -262,7 +268,7 @@ function renderKpiTable() {
     const avgKpiFinal = list.reduce((s, r) => s + r.kpiFinal, 0) / n;
 
     tfoot = `<tfoot><tr>
-      <td colspan="4" style="text-align:left;color:var(--acc)">TỔNG CỘNG / TRUNG BÌNH (${n} SC)</td>
+      <td colspan="4" style="text-align:left;color:var(--acc);font-weight:800">📊 TỔNG CỘNG / TRUNG BÌNH (${n} SC)</td>
       <td>${totDaLam}</td>
       <td>${totActImp}</td>
       <td>${avgPctActive.toFixed(2)}%</td>
