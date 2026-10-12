@@ -381,4 +381,4 @@ Dự án đã được phân tách module rõ ràng, không còn dồn trong 1 f
    * Khi thêm cột hoặc thay đổi cấu trúc dữ liệu trên Google Sheets, chạy file `update_snapshot.py` (hoặc click đúp `Cap_Nhat_Du_Lieu.bat`) để tự động đồng bộ lại mảng dữ liệu vào `snapshot.js`.
 
 ---
-*Tài liệu được cập nhật hoàn chỉnh sau khi module hóa toàn bộ dự án (08/10/2026).*
+*Tài liệu được cập nhật hoàn chỉnh sau khi tối ưu mặc định bộ lọc tháng hiện tại cho Tab Báo Cáo Hiệu Suất & Chi Tiết ATC/ngày, và hiển thị mốc thời gian hiện tại trên các thẻ KPI Tab DS Phần Cứng (12/10/2026).*

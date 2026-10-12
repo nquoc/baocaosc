@@ -234,3 +234,25 @@ function toggleTheme() {
   setTheme(next);
   showToast(next === 'dark' ? 'Đã chuyển sang giao diện Tối' : 'Đã chuyển sang giao diện Sáng', true);
 }
+
+/**
+ * Lấy chuỗi YYYY-MM của tháng hiện tại (ví dụ: '2026-10')
+ */
+function getCurrentMonthStr() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+/**
+ * Lấy tháng mặc định cho bộ lọc:
+ * Ưu tiên tháng hiện tại (nếu có trong dữ liệu MONTHS), nếu không có thì lấy tháng mới nhất (MONTHS[0]), fallback 'all'
+ */
+function getDefaultMonth() {
+  const cur = getCurrentMonthStr();
+  if (typeof MONTHS !== 'undefined' && Array.isArray(MONTHS) && MONTHS.includes(cur)) {
+    return cur;
+  }
+  return cur || ((typeof MONTHS !== 'undefined' && Array.isArray(MONTHS) && MONTHS[0]) ? MONTHS[0] : 'all');
+}

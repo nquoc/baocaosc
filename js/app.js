@@ -38,6 +38,29 @@ function switchTab(tab) {
 
   $('filters').style.display = (tab === 'target' || tab === 'kpi' || tab === 'kpionline' || tab === 'phancung' || tab === 'baocaosc') ? 'none' : 'flex';
 
+  if (tab === 'overview' || tab === 'pivot') {
+    if ((!S.month || S.month === 'all') && typeof getDefaultMonth === 'function') {
+      const defM = getDefaultMonth();
+      if (defM !== 'all') {
+        S.month = defM;
+        const mDates = DATES.filter(d => d.startsWith(S.month));
+        if (mDates.length) {
+          S.from = mDates[0];
+          S.to = mDates[mDates.length - 1];
+        } else {
+          const [y, mon] = S.month.split('-');
+          const today = new Date().toISOString().slice(0, 10);
+          S.from = `${y}-${mon}-01`;
+          S.to = (today.startsWith(S.month)) ? today : `${y}-${mon}-31`;
+        }
+        if ($('fMonth')) $('fMonth').value = S.month;
+        if ($('fFrom')) $('fFrom').value = S.from;
+        if ($('fTo')) $('fTo').value = S.to;
+        buildScSelect();
+      }
+    }
+  }
+
   if (tab === 'pivot') {
     renderPivot();
   } else if (tab === 'target') {
@@ -154,14 +177,21 @@ function resetFilters() {
   S.sc = 'all';
   S.status = 'all';
   S.lead = false;
-  S.month = MONTHS[0] || 'all';
+  S.month = typeof getDefaultMonth === 'function' ? getDefaultMonth() : (MONTHS[0] || 'all');
   if (S.month !== 'all') {
     const mDates = DATES.filter(d => d.startsWith(S.month));
-    S.from = mDates[0];
-    S.to = mDates[mDates.length - 1];
+    if (mDates.length) {
+      S.from = mDates[0];
+      S.to = mDates[mDates.length - 1];
+    } else {
+      const [y, mon] = S.month.split('-');
+      const today = new Date().toISOString().slice(0, 10);
+      S.from = `${y}-${mon}-01`;
+      S.to = (today.startsWith(S.month)) ? today : `${y}-${mon}-31`;
+    }
   } else {
-    S.from = DATES[0];
-    S.to = DATES[DATES.length - 1];
+    S.from = DATES[0] || '';
+    S.to = DATES[DATES.length - 1] || '';
   }
   S.target = 6;
   S.minDays = 5;
@@ -191,14 +221,20 @@ function setData(headers, data, label, cls) {
   COACHES = [...new Set(DAYS.map(d => d.coach))].sort((a, b) => a.localeCompare(b, 'vi'));
   COACHES.forEach((c, i) => COLOR[c] = PALETTE[i % PALETTE.length]);
   DATES = [...new Set(DAYS.map(d => d.d))].sort();
-  MONTHS = [...new Set(DATES.map(d => d.slice(0, 7)))].sort().reverse();
+  const rawMonths = [...new Set(DATES.map(d => d.slice(0, 7)))];
+  const curM = typeof getCurrentMonthStr === 'function' ? getCurrentMonthStr() : '';
+  if (curM && !rawMonths.includes(curM)) {
+    rawMonths.push(curM);
+  }
+  MONTHS = rawMonths.sort().reverse();
 
   if (!S.coach.size) COACHES.forEach(c => S.coach.add(c));
   else COACHES.forEach(c => { if (![...S.coach].length) S.coach.add(c); });
 
-  // Mặc định chọn tháng mới nhất nếu chưa có tháng được chọn
+  // Mặc định chọn tháng hiện tại nếu chưa có tháng được chọn (hoặc tháng mới nhất nếu dữ liệu chưa có)
+  const defMonth = typeof getDefaultMonth === 'function' ? getDefaultMonth() : (MONTHS[0] || 'all');
   if (!S.month || S.month === 'all') {
-    S.month = MONTHS[0] || 'all';
+    S.month = defMonth;
   }
   if (S.month !== 'all' && S.month !== 'custom') {
     const mDates = DATES.filter(d => d.startsWith(S.month));
@@ -206,17 +242,21 @@ function setData(headers, data, label, cls) {
       S.from = mDates[0];
       S.to = mDates[mDates.length - 1];
     } else {
-      S.from = DATES[0];
-      S.to = DATES[DATES.length - 1];
+      const [y, mon] = S.month.split('-');
+      const today = new Date().toISOString().slice(0, 10);
+      S.from = `${y}-${mon}-01`;
+      S.to = (today.startsWith(S.month)) ? today : `${y}-${mon}-31`;
     }
   } else {
-    S.from = DATES[0];
-    S.to = DATES[DATES.length - 1];
+    S.from = DATES[0] || '';
+    S.to = DATES[DATES.length - 1] || '';
   }
 
   if ($('fFrom') && $('fTo')) {
-    $('fFrom').min = $('fTo').min = DATES[0];
-    $('fFrom').max = $('fTo').max = DATES[DATES.length - 1];
+    const minD = (DATES.length && DATES[0] < S.from) ? DATES[0] : S.from;
+    const maxD = (DATES.length && DATES[DATES.length - 1] > S.to) ? DATES[DATES.length - 1] : S.to;
+    $('fFrom').min = $('fTo').min = minD;
+    $('fFrom').max = $('fTo').max = maxD;
     $('fFrom').value = S.from;
     $('fTo').value = S.to;
   }

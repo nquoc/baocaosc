@@ -169,14 +169,16 @@ function buildDays(recs) {
 function buildMonthSelect() {
   const sel = $('fMonth');
   if (!sel) return;
+  const curM = typeof getCurrentMonthStr === 'function' ? getCurrentMonthStr() : '';
   let html = '<option value="all">Tất cả các tháng</option>';
   MONTHS.forEach(m => {
     const [y, mon] = m.split('-');
-    html += `<option value="${m}">Tháng ${mon}/${y}</option>`;
+    const isCur = (m === curM) ? ' (Hiện tại)' : '';
+    html += `<option value="${m}">Tháng ${mon}/${y}${isCur}</option>`;
   });
   html += '<option value="custom" style="display:none">Tùy chọn ngày</option>';
   sel.innerHTML = html;
-  sel.value = S.month || (MONTHS[0] || 'all');
+  sel.value = S.month || (typeof getDefaultMonth === 'function' ? getDefaultMonth() : (MONTHS[0] || 'all'));
 }
 
 function buildCoachPills() {
@@ -761,14 +763,16 @@ function initProvinceQualityMonths() {
   const availMonths = [...new Set(ALL_RECS.map(r => r.date.slice(0, 7)))].filter(Boolean).sort().reverse();
   if (availMonths.length === 0) return;
 
+  const curM = typeof getCurrentMonthStr === 'function' ? getCurrentMonthStr() : '2026-10';
   if (!PROVINCE_QUALITY_MONTH || (!availMonths.includes(PROVINCE_QUALITY_MONTH) && PROVINCE_QUALITY_MONTH !== 'all')) {
-    PROVINCE_QUALITY_MONTH = availMonths.includes('2026-10') ? '2026-10' : availMonths[0];
+    PROVINCE_QUALITY_MONTH = availMonths.includes(curM) ? curM : availMonths[0];
   }
 
   let html = '';
   availMonths.forEach(m => {
     const [y, mon] = m.split('-');
-    html += `<option value="${m}">Tháng ${mon}/${y}</option>`;
+    const isCur = (m === curM) ? ' (Hiện tại)' : '';
+    html += `<option value="${m}">Tháng ${mon}/${y}${isCur}</option>`;
   });
   html += '<option value="all">Tất cả các tháng</option>';
   sel.innerHTML = html;

@@ -229,16 +229,39 @@ function renderPhanCungSummaryCards(parsed) {
   const box = $('pcSummaryCards');
   if (!box || !parsed) return;
 
-  const K = (l, v, s, c = '') => `<div class="card kpi"><div class="l">${l}</div><div class="v" style="${c}">${v}</div><div class="s">${s}</div></div>`;
+  const now = new Date();
+  const curMonthIdx = now.getMonth(); // 0-based: 9 = Tháng 10
+  const curMonthNum = curMonthIdx + 1;
+  const curYear = now.getFullYear();
+  const curMonthStr = `Tháng ${curMonthNum}/${curYear}`;
+  const curQuarterIdx = Math.floor(curMonthIdx / 3);
+  const curQuarterStr = `Quý ${curQuarterIdx + 1}/${curYear}`;
+  const curQ = (parsed.quarters && parsed.quarters[curQuarterIdx]) ? parsed.quarters[curQuarterIdx] : { dat: 0, pct: 0, kpi: 0 };
 
-  const q3 = parsed.quarters[2] || { dat: 0, pct: 0, kpi: 0 };
+  const curMonthDat = parsed.datMonths ? (parsed.datMonths[curMonthIdx] || 0) : 0;
+  const curMonthKpi = parsed.kpiMonths ? (parsed.kpiMonths[curMonthIdx] || 0) : 0;
+  const curMonthPct = parsed.pctMonths ? (parsed.pctMonths[curMonthIdx] || 0) : (curMonthKpi > 0 ? (curMonthDat / curMonthKpi * 100) : 0);
+
+  const K = (l, v, s, c = '', timeTag = '') => `
+    <div class="card kpi">
+      <div class="l" style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+        <span>${l}</span>
+        ${timeTag ? `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(56,189,248,0.15);color:#38bdf8;white-space:nowrap">${timeTag}</span>` : ''}
+      </div>
+      <div class="v" style="${c}">${v}</div>
+      <div class="s">${s}</div>
+    </div>`;
+
+  const colorQ = curQ.pct >= 80 ? 'var(--ok)' : (curQ.pct >= 50 ? 'var(--warn)' : 'var(--bad)');
+  const colorM = curMonthPct >= 80 ? 'var(--ok)' : (curMonthPct >= 50 ? 'var(--warn)' : 'var(--bad)');
 
   box.innerHTML =
-    K('Tổng Doanh Số Đạt Được', formatVNDShort(parsed.totDatYear), `% Đạt toàn năm: ${parsed.pctDatYear.toFixed(2)}% · ${formatVND(parsed.totDatYear)}`, 'color:#38bdf8') +
-    K('Tổng Chỉ Tiêu KPI Năm', formatVNDShort(parsed.totKpiYear), `Trung bình ${formatVNDShort(parsed.totKpiYear / 12)} / tháng`, 'color:#facc15') +
-    K('Top 1 Nhân Sự Sale', parsed.topSale ? esc(parsed.topSale.name) : '–', parsed.topSale ? `${formatVNDShort(parsed.topSale.total)} (${parsed.topSale.pct.toFixed(2)}% tổng)` : '', 'color:var(--ok)') +
-    K('Kênh SC Đóng Góp', formatVNDShort(parsed.scTotal), `SC Toàn Quốc + MB + MN (${parsed.scPct.toFixed(2)}%)`, 'color:#a78bfa') +
-    K('Tiến Độ Quý 3/2026', formatVNDShort(q3.dat), `Đạt ${q3.pct.toFixed(2)}% / KPI ${formatVNDShort(q3.kpi)}`, 'color:' + (q3.pct >= 80 ? 'var(--ok)' : (q3.pct >= 50 ? 'var(--warn)' : 'var(--bad)')));
+    K('Tổng Doanh Số Đạt Được', formatVNDShort(parsed.totDatYear), `% Đạt toàn năm: ${parsed.pctDatYear.toFixed(2)}% · Lũy kế đến ${curMonthStr}`, 'color:#38bdf8', curMonthStr) +
+    K('Tổng Chỉ Tiêu KPI Năm', formatVNDShort(parsed.totKpiYear), `Trung bình ${formatVNDShort(parsed.totKpiYear / 12)} / tháng · Năm ${curYear}`, 'color:#facc15', `Năm ${curYear}`) +
+    K('Top 1 Nhân Sự Sale', parsed.topSale ? esc(parsed.topSale.name) : '–', parsed.topSale ? `${formatVNDShort(parsed.topSale.total)} (${parsed.topSale.pct.toFixed(2)}% tổng)` : '', 'color:var(--ok)', curMonthStr) +
+    K('Kênh SC Đóng Góp', formatVNDShort(parsed.scTotal), `SC Toàn Quốc + MB + MN (${parsed.scPct.toFixed(2)}%)`, 'color:#a78bfa', curMonthStr) +
+    K(`Tiến Độ ${curMonthStr}`, formatVNDShort(curMonthDat), `Đạt ${curMonthPct.toFixed(2)}% / KPI ${formatVNDShort(curMonthKpi)}`, 'color:' + colorM, 'Hiện tại') +
+    K(`Tiến Độ ${curQuarterStr}`, formatVNDShort(curQ.dat), `Đạt ${curQ.pct.toFixed(2)}% / KPI ${formatVNDShort(curQ.kpi)}`, 'color:' + colorQ, 'Hiện tại');
 }
 
 /**
@@ -1001,7 +1024,20 @@ function renderPhanCungOctSummaryCards(parsedOct) {
   const box = $('pcOctSummaryCards');
   if (!box || !parsedOct) return;
 
-  const K = (l, v, s, c = '') => `<div class="card kpi"><div class="l">${l}</div><div class="v" style="${c}">${v}</div><div class="s">${s}</div></div>`;
+  const now = new Date();
+  const curMonthNum = now.getMonth() + 1;
+  const curYear = now.getFullYear();
+  const curMonthStr = `Tháng ${curMonthNum}/${curYear}`;
+
+  const K = (l, v, s, c = '', timeTag = curMonthStr) => `
+    <div class="card kpi">
+      <div class="l" style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+        <span>${l}</span>
+        ${timeTag ? `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(16,185,129,0.15);color:#10b981;white-space:nowrap">${timeTag}</span>` : ''}
+      </div>
+      <div class="v" style="${c}">${v}</div>
+      <div class="s">${s}</div>
+    </div>`;
 
   const gt = parsedOct.grandTotal;
   const tc = parsedOct.statusTotals['Thành công'] || { count: 0, val: 0 };
@@ -1013,11 +1049,11 @@ function renderPhanCungOctSummaryCards(parsedOct) {
   const cxdPct = gt.val > 0 ? (cxd.val / gt.val * 100).toFixed(1) : '0';
 
   box.innerHTML =
-    K('Tổng Cơ Hội Tháng 10', `${gt.count} đơn`, `Tổng giá trị: ${formatVND(gt.val)}`, 'color:#38bdf8') +
-    K('Thành Công (Đã Chốt)', `${tc.count} đơn`, `${formatVND(tc.val)} (${tcPct}% tổng)`, 'color:#10b981') +
-    K('KH Đã Thanh Toán', `${tt.count} đơn`, `${formatVND(tt.val)}`, 'color:#0ea5e9') +
-    K('Chờ Xét Duyệt', `${cxd.count} đơn`, `${formatVND(cxd.val)} (${cxdPct}% tổng)`, 'color:#f59e0b') +
-    K('Đang Bán Hàng / Tư Vấn', `${bh.count} đơn`, `${formatVND(bh.val)}`, 'color:#a855f7');
+    K(`Tổng Cơ Hội ${curMonthStr}`, `${gt.count} đơn`, `Tổng giá trị: ${formatVND(gt.val)} · Mốc hiện tại`, 'color:#38bdf8', 'Hiện tại') +
+    K('Thành Công (Đã Chốt)', `${tc.count} đơn`, `${formatVND(tc.val)} (${tcPct}% tổng)`, 'color:#10b981', curMonthStr) +
+    K('KH Đã Thanh Toán', `${tt.count} đơn`, `${formatVND(tt.val)}`, 'color:#0ea5e9', curMonthStr) +
+    K('Chờ Xét Duyệt', `${cxd.count} đơn`, `${formatVND(cxd.val)} (${cxdPct}% tổng)`, 'color:#f59e0b', curMonthStr) +
+    K('Đang Bán Hàng / Tư Vấn', `${bh.count} đơn`, `${formatVND(bh.val)}`, 'color:#a855f7', curMonthStr);
 }
 
 /**

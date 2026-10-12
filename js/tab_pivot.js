@@ -21,7 +21,8 @@ function setPivotDaysRange(type) {
     S.from = DATES[0];
     S.to = DATES[DATES.length - 1];
   } else if (type === 'month') {
-    if (S.month === 'all' || S.month === 'custom') S.month = MONTHS[0] || 'all';
+    const defMonth = typeof getDefaultMonth === 'function' ? getDefaultMonth() : (MONTHS[0] || 'all');
+    if (S.month === 'all' || S.month === 'custom') S.month = defMonth;
     const mDates = DATES.filter(d => d.startsWith(S.month));
     if (mDates.length) {
       S.from = mDates[0];
