@@ -1251,3 +1251,65 @@ body[data-theme="light"] .login-gate-overlay {
   color: #fff;
 }
 
+/* ==========================================================================
+   DVKH MANAGER REGION GROUPING & ACCORDION
+   ========================================================================== */
+.dvkh-region-group-row {
+  background: rgba(56, 189, 248, 0.08) !important;
+  border-top: 1.5px solid var(--line);
+  border-bottom: 1.5px solid var(--line);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.dvkh-region-group-row:hover {
+  background: rgba(56, 189, 248, 0.18) !important;
+}
+.dvkh-region-group-row.expanded {
+  background: rgba(56, 189, 248, 0.13) !important;
+}
+body[data-theme="light"] .dvkh-region-group-row {
+  background: #f0f9ff !important;
+  border-top: 1.5px solid #bae6fd;
+  border-bottom: 1.5px solid #bae6fd;
+}
+body[data-theme="light"] .dvkh-region-group-row:hover {
+  background: #e0f2fe !important;
+}
+body[data-theme="light"] .dvkh-region-group-row.expanded {
+  background: #e0f2fe !important;
+}
+.dvkh-detail-row {
+  transition: background 0.12s ease;
+}
+.dvkh-detail-row:hover {
+  background: var(--tr-hover);
+}
+.dvkh-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: var(--pill-bg);
+  color: var(--mut);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.dvkh-pill-btn:hover {
+  color: var(--tx-heading);
+  border-color: var(--acc);
+}
+.dvkh-pill-btn.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+

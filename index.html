@@ -406,6 +406,14 @@
           <button onclick="exportPhanCungDvkhCsv()" style="background:#059669;color:#fff;border-color:#10b981;font-size:12px;padding:5px 11px">⬇ Xuất CSV DVKH Manager</button>
         </div>
       </div>
+      <!-- BỘ LỌC THEO KHU VỰC & THAO TÁC ĐÓNG/MỞ CHI TIẾT -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;padding-top:4px">
+        <div id="pcDvkhRegionPills" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button type="button" onclick="expandAllDvkhRegions(true)" style="font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;background:var(--card);border:1px solid var(--line);color:var(--tx)" title="Mở toàn bộ danh sách khu vực">📂 Mở tất cả</button>
+          <button type="button" onclick="expandAllDvkhRegions(false)" style="font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;background:var(--card);border:1px solid var(--line);color:var(--tx)" title="Thu gọn toàn bộ khu vực">📁 Thu gọn</button>
+        </div>
+      </div>
       <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
         <table id="pcDvkhTable" class="kpi-table"></table>
       </div>

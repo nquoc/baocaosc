@@ -1175,10 +1175,12 @@ function openPhanCungOctCellModal(st, gp) {
 }
 
 /**
- * Trạng thái lọc và sắp xếp bảng chi tiết DVKH Manager
+ * Trạng thái lọc, phân nhóm và sắp xếp bảng chi tiết DVKH Manager
  */
 let DVKH_SORT = { k: 'stt', dir: 1 };
 let DVKH_SEARCH = '';
+let DVKH_SELECTED_REGION = 'all'; // 'all' hoặc tên khu vực cụ thể
+let DVKH_EXPANDED_REGIONS = {};   // Lưu trạng thái mở/đóng của từng khu vực: { [kv]: boolean }
 
 function sortPhanCungDvkh(colKey) {
   if (DVKH_SORT.k === colKey) {
@@ -1195,17 +1197,57 @@ function onPhanCungDvkhSearch(val) {
   renderPhanCungDvkhManager();
 }
 
+function onSelectDvkhRegion(regionName) {
+  if (DVKH_SELECTED_REGION === regionName && regionName !== 'all') {
+    DVKH_SELECTED_REGION = 'all';
+  } else {
+    DVKH_SELECTED_REGION = regionName;
+    if (regionName !== 'all') {
+      DVKH_EXPANDED_REGIONS[regionName] = true;
+    }
+  }
+  renderPhanCungDvkhManager();
+}
+
+function toggleDvkhRegion(regionName) {
+  DVKH_EXPANDED_REGIONS[regionName] = !DVKH_EXPANDED_REGIONS[regionName];
+  renderPhanCungDvkhManager();
+}
+
+function expandAllDvkhRegions(shouldExpand) {
+  if (PHANCUNG_OCT_STATE.data && PHANCUNG_OCT_STATE.data.length > 1) {
+    const rawData = PHANCUNG_OCT_STATE.data;
+    const headers = rawData[0].map(h => String(h || '').trim());
+    let colNhom = headers.findIndex(h => h.toLowerCase() === 'nhóm');
+    let colKhuVuc = headers.findIndex(h => h.toLowerCase() === 'khu vực');
+    if (colNhom === -1) colNhom = 16;
+    if (colKhuVuc === -1) colKhuVuc = 14;
+
+    for (let r = 1; r < rawData.length; r++) {
+      const row = rawData[r];
+      if (!row) continue;
+      const nhom = String(row[colNhom] || '').trim();
+      if (!/dvkh\s*manager/i.test(nhom)) continue;
+      const kv = String(row[colKhuVuc] || 'Khác').trim() || 'Khác';
+      DVKH_EXPANDED_REGIONS[kv] = shouldExpand;
+    }
+  }
+  renderPhanCungDvkhManager();
+}
+
 /**
- * Render Bảng Chi Tiết Cơ Hội Nhóm DVKH Manager
+ * Render Bảng Chi Tiết Cơ Hội Nhóm DVKH Manager (Nhóm theo Khu Vực)
  */
 function renderPhanCungDvkhManager(parsedOct) {
   const tbl = $('pcDvkhTable');
   const countBadge = $('pcDvkhCount');
+  const pillsBox = $('pcDvkhRegionPills');
   if (!tbl) return;
 
   if (!PHANCUNG_OCT_STATE.data || !Array.isArray(PHANCUNG_OCT_STATE.data) || PHANCUNG_OCT_STATE.data.length < 2) {
     tbl.innerHTML = '<tbody><tr><td colspan="8" style="padding:20px;text-align:center;color:var(--mut)">Chưa có dữ liệu cơ hội phần cứng.</td></tr></tbody>';
     if (countBadge) countBadge.textContent = '0';
+    if (pillsBox) pillsBox.innerHTML = '';
     return;
   }
 
@@ -1248,13 +1290,15 @@ function renderPhanCungDvkhManager(parsedOct) {
       val = parsePcNumber(row[colTienStr]);
     }
 
+    const kv = String(row[colKhuVuc] || '').trim() || 'Chưa phân loại';
+
     allDvkh.push({
       origIdx: r,
       tenGh: String(row[colTenGh] || '–').trim(),
       retailerId: String(row[colRetailerId] || '–').trim(),
       ngayTao: String(row[colNgayTao] || '–').trim(),
       nguoiTao: String(row[colNguoiTao] || '–').trim(),
-      khuVuc: String(row[colKhuVuc] || '–').trim(),
+      khuVuc: kv,
       tinhTp: String(row[colTinhTp] || '–').trim(),
       tinhTrang: String(row[colStatus] || '–').trim(),
       nhom: nhom,
@@ -1265,8 +1309,41 @@ function renderPhanCungDvkhManager(parsedOct) {
 
   if (countBadge) countBadge.textContent = String(allDvkh.length);
 
-  // Lọc theo từ khóa tìm kiếm
+  // Thống kê theo từng khu vực cho thanh điều hướng pills
+  const regionTotals = {};
+  allDvkh.forEach(item => {
+    const kv = item.khuVuc;
+    if (!regionTotals[kv]) {
+      regionTotals[kv] = { count: 0, val: 0 };
+    }
+    regionTotals[kv].count++;
+    regionTotals[kv].val += item.val;
+  });
+
+  // Render các nút Pills khu vực
+  if (pillsBox) {
+    const distinctRegions = Object.keys(regionTotals).sort((a, b) => regionTotals[b].count - regionTotals[a].count);
+    let phtml = '';
+    const isAllActive = (DVKH_SELECTED_REGION === 'all');
+    phtml += `<button type="button" class="dvkh-pill-btn ${isAllActive ? 'active' : ''}" onclick="onSelectDvkhRegion('all')">
+      🌐 Tất cả (${allDvkh.length})
+    </button>`;
+    distinctRegions.forEach(kv => {
+      const isActive = (DVKH_SELECTED_REGION === kv);
+      const cnt = regionTotals[kv].count;
+      phtml += `<button type="button" class="dvkh-pill-btn ${isActive ? 'active' : ''}" onclick="onSelectDvkhRegion('${esc(kv)}')">
+        📍 ${esc(kv)} (${cnt})
+      </button>`;
+    });
+    pillsBox.innerHTML = phtml;
+  }
+
+  // Lọc theo từ khóa tìm kiếm & khu vực được chọn (nếu có)
   let list = allDvkh;
+  if (DVKH_SELECTED_REGION !== 'all') {
+    list = list.filter(item => item.khuVuc === DVKH_SELECTED_REGION);
+  }
+
   if (DVKH_SEARCH) {
     const q = DVKH_SEARCH;
     list = list.filter(item => {
@@ -1280,20 +1357,53 @@ function renderPhanCungDvkhManager(parsedOct) {
     });
   }
 
-  // Sắp xếp
+  // Nhóm các bản ghi theo Khu Vực
+  const groupMap = {};
+  list.forEach(item => {
+    const kv = item.khuVuc;
+    if (!groupMap[kv]) {
+      groupMap[kv] = {
+        name: kv,
+        items: [],
+        provinces: new Set(),
+        totalVal: 0
+      };
+    }
+    groupMap[kv].items.push(item);
+    if (item.tinhTp && item.tinhTp !== '–') groupMap[kv].provinces.add(item.tinhTp);
+    groupMap[kv].totalVal += item.val;
+  });
+
+  // Thứ tự ưu tiên hiển thị khu vực tiêu chuẩn
+  const regionOrder = ['Miền Bắc', 'Hà Nội', 'Miền Trung', 'Miền Nam', 'Sài Gòn'];
+  const groupedRegions = Object.values(groupMap).map(g => ({
+    ...g,
+    provinces: Array.from(g.provinces)
+  })).sort((a, b) => {
+    const idxA = regionOrder.indexOf(a.name);
+    const idxB = regionOrder.indexOf(b.name);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return b.items.length - a.items.length;
+  });
+
+  // Sắp xếp các bản ghi bên trong từng nhóm theo DVKH_SORT
   const dir = DVKH_SORT.dir;
   const k = DVKH_SORT.k;
-  list.sort((a, b) => {
-    if (k === 'stt') return dir * (a.origIdx - b.origIdx);
-    if (k === 'val') return dir * (a.val - b.val);
-    if (k === 'tenGh') return dir * a.tenGh.localeCompare(b.tenGh, 'vi');
-    if (k === 'retailerId') return dir * a.retailerId.localeCompare(b.retailerId, 'vi');
-    if (k === 'ngayTao') return dir * a.ngayTao.localeCompare(b.ngayTao, 'vi');
-    if (k === 'nguoiTao') return dir * a.nguoiTao.localeCompare(b.nguoiTao, 'vi');
-    if (k === 'khuVuc') return dir * a.khuVuc.localeCompare(b.khuVuc, 'vi');
-    if (k === 'tinhTp') return dir * a.tinhTp.localeCompare(b.tinhTp, 'vi');
-    if (k === 'tinhTrang') return dir * a.tinhTrang.localeCompare(b.tinhTrang, 'vi');
-    return 0;
+  groupedRegions.forEach(g => {
+    g.items.sort((a, b) => {
+      if (k === 'stt') return dir * (a.origIdx - b.origIdx);
+      if (k === 'val') return dir * (a.val - b.val);
+      if (k === 'tenGh') return dir * a.tenGh.localeCompare(b.tenGh, 'vi');
+      if (k === 'retailerId') return dir * a.retailerId.localeCompare(b.retailerId, 'vi');
+      if (k === 'ngayTao') return dir * a.ngayTao.localeCompare(b.ngayTao, 'vi');
+      if (k === 'nguoiTao') return dir * a.nguoiTao.localeCompare(b.nguoiTao, 'vi');
+      if (k === 'khuVuc') return dir * a.khuVuc.localeCompare(b.khuVuc, 'vi');
+      if (k === 'tinhTp') return dir * a.tinhTp.localeCompare(b.tinhTp, 'vi');
+      if (k === 'tinhTrang') return dir * a.tinhTrang.localeCompare(b.tinhTrang, 'vi');
+      return 0;
+    });
   });
 
   const sortArrow = key => (DVKH_SORT.k === key ? (DVKH_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
@@ -1312,23 +1422,60 @@ function renderPhanCungDvkhManager(parsedOct) {
 
   // TBODY
   let tbody = '<tbody>';
-  if (list.length === 0) {
+  if (groupedRegions.length === 0) {
     tbody += '<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--mut)">Không có dữ liệu cơ hội DVKH Manager phù hợp điều kiện tìm kiếm.</td></tr>';
   } else {
-    list.forEach((item, idx) => {
-      tbody += '<tr>';
-      tbody += `<td style="text-align:center;font-weight:700;color:var(--mut)">${idx + 1}</td>`;
-      tbody += `<td style="text-align:left">
-        <div style="font-weight:700;font-size:13px;color:var(--tx-heading)">${esc(item.tenGh)}</div>
-        <div class="sm mut" style="font-family:monospace;margin-top:2px">${esc(item.retailerId)}</div>
-      </td>`;
-      tbody += `<td style="text-align:center;font-size:12px;color:var(--mut);white-space:nowrap">${esc(item.ngayTao)}</td>`;
-      tbody += `<td style="text-align:left;font-size:12.5px;font-weight:600">${esc(item.nguoiTao)}</td>`;
-      tbody += `<td style="text-align:center"><span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:11px">${esc(item.khuVuc)}</span></td>`;
-      tbody += `<td style="text-align:left;font-size:12.5px">${esc(item.tinhTp)}</td>`;
-      tbody += `<td style="text-align:center">${getOctStatusBadge(item.tinhTrang)}</td>`;
-      tbody += `<td style="text-align:right;font-weight:700;color:${item.val > 0 ? '#38bdf8' : 'var(--mut)'}">${formatVND(item.val)}</td>`;
-      tbody += '</tr>';
+    groupedRegions.forEach(g => {
+      const kv = g.name;
+      const groupItems = g.items;
+      const groupVal = g.totalVal;
+      // Khi đang gõ tìm kiếm hoặc đã chọn riêng 1 khu vực, tự động mở chi tiết
+      const isExpanded = DVKH_SEARCH ? true : (DVKH_SELECTED_REGION === kv || DVKH_EXPANDED_REGIONS[kv] === true);
+
+      // DÒNG TIÊU ĐỀ NHÓM KHU VỰC (BẤM VÀO ĐỂ ĐÓNG / MỞ ACCORDION)
+      tbody += `
+        <tr class="dvkh-region-group-row ${isExpanded ? 'expanded' : 'collapsed'}" onclick="toggleDvkhRegion('${esc(kv)}')" title="Bấm để ${isExpanded ? 'thu gọn' : 'xem chi tiết'} khu vực ${esc(kv)}">
+          <td colspan="8" style="padding:10px 14px;text-align:left">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:${isExpanded ? 'rgba(56,189,248,0.25)' : 'rgba(148,163,184,0.15)'};color:${isExpanded ? '#38bdf8' : 'var(--mut)'};font-size:11px;font-weight:bold;transition:all 0.15s">
+                  ${isExpanded ? '▼' : '▶'}
+                </span>
+                <span style="font-weight:800;font-size:13.5px;color:var(--tx-heading)">📍 Khu Vực: ${esc(kv)}</span>
+                <span class="badge" style="background:rgba(56,189,248,0.18);color:#38bdf8;font-size:11px;font-weight:700">${groupItems.length} cơ hội</span>
+                ${g.provinces.length > 0 ? `<span class="mut sm" style="font-size:11.5px">(${esc(g.provinces.slice(0, 4).join(', '))}${g.provinces.length > 4 ? '...' : ''})</span>` : ''}
+              </div>
+              <div style="display:flex;align-items:center;gap:14px">
+                <span style="font-size:12.5px;font-weight:700;color:${groupVal > 0 ? '#38bdf8' : 'var(--mut)'}">
+                  Tổng: ${formatVND(groupVal)}
+                </span>
+                <span class="mut sm" style="font-size:11.5px;font-weight:600;color:${isExpanded ? '#38bdf8' : 'var(--mut)'}">
+                  ${isExpanded ? 'Thu gọn ▲' : 'Bấm xem chi tiết (' + groupItems.length + ' đơn) ▼'}
+                </span>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
+
+      // CÁC DÒNG CHI TIẾT (KHI ĐƯỢC MỞ)
+      if (isExpanded) {
+        groupItems.forEach((item, idx) => {
+          tbody += `<tr class="dvkh-detail-row">`;
+          tbody += `<td style="text-align:center;font-weight:700;color:var(--mut)">${idx + 1}</td>`;
+          tbody += `<td style="text-align:left">
+            <div style="font-weight:700;font-size:13px;color:var(--tx-heading)">${esc(item.tenGh)}</div>
+            <div class="sm mut" style="font-family:monospace;margin-top:2px">${esc(item.retailerId)}</div>
+          </td>`;
+          tbody += `<td style="text-align:center;font-size:12px;color:var(--mut);white-space:nowrap">${esc(item.ngayTao)}</td>`;
+          tbody += `<td style="text-align:left;font-size:12.5px;font-weight:600">${esc(item.nguoiTao)}</td>`;
+          tbody += `<td style="text-align:center"><span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:11px">${esc(item.khuVuc)}</span></td>`;
+          tbody += `<td style="text-align:left;font-size:12.5px">${esc(item.tinhTp)}</td>`;
+          tbody += `<td style="text-align:center">${getOctStatusBadge(item.tinhTrang)}</td>`;
+          tbody += `<td style="text-align:right;font-weight:700;color:${item.val > 0 ? '#38bdf8' : 'var(--mut)'}">${formatVND(item.val)}</td>`;
+          tbody += '</tr>';
+        });
+      }
     });
   }
   tbody += '</tbody>';
@@ -1337,7 +1484,7 @@ function renderPhanCungDvkhManager(parsedOct) {
   const totVal = list.reduce((s, it) => s + it.val, 0);
   let tfoot = '<tfoot><tr>';
   tfoot += '<td style="text-align:center;color:var(--mut)">–</td>';
-  tfoot += `<td style="text-align:left;font-weight:800;color:var(--tx-heading)">Tổng cộng: ${list.length} Opp</td>`;
+  tfoot += `<td style="text-align:left;font-weight:800;color:var(--tx-heading)">Tổng hiển thị: ${list.length} Opp ${DVKH_SELECTED_REGION !== 'all' ? `(${DVKH_SELECTED_REGION})` : ''}</td>`;
   tfoot += '<td colspan="5" style="text-align:center;color:var(--mut)"></td>';
   tfoot += `<td style="text-align:right;font-weight:800;color:#38bdf8">${formatVND(totVal)}</td>`;
   tfoot += '</tr></tfoot>';
@@ -1346,7 +1493,7 @@ function renderPhanCungDvkhManager(parsedOct) {
 }
 
 /**
- * Xuất file CSV danh sách cơ hội DVKH Manager
+ * Xuất file CSV danh sách cơ hội DVKH Manager (hỗ trợ lọc theo khu vực và tìm kiếm)
  */
 function exportPhanCungDvkhCsv() {
   if (!PHANCUNG_OCT_STATE.data || !Array.isArray(PHANCUNG_OCT_STATE.data) || PHANCUNG_OCT_STATE.data.length < 2) {
@@ -1388,6 +1535,28 @@ function exportPhanCungDvkhCsv() {
     const nhom = String(row[colNhom] || '').trim();
     if (!/dvkh\s*manager/i.test(nhom)) continue;
 
+    const kv = String(row[colKhuVuc] || '').trim() || 'Chưa phân loại';
+    if (DVKH_SELECTED_REGION !== 'all' && kv !== DVKH_SELECTED_REGION) continue;
+
+    const tenGh = String(row[colTenGh] || '').trim();
+    const retId = String(row[colRetailerId] || '').trim();
+    const nguoiTao = String(row[colNguoiTao] || '').trim();
+    const ngayTao = String(row[colNgayTao] || '').trim();
+    const tinhTp = String(row[colTinhTp] || '').trim();
+    const status = String(row[colStatus] || '').trim();
+
+    if (DVKH_SEARCH) {
+      const q = DVKH_SEARCH;
+      const match = tenGh.toLowerCase().includes(q) ||
+                    retId.toLowerCase().includes(q) ||
+                    nguoiTao.toLowerCase().includes(q) ||
+                    kv.toLowerCase().includes(q) ||
+                    tinhTp.toLowerCase().includes(q) ||
+                    status.toLowerCase().includes(q) ||
+                    ngayTao.toLowerCase().includes(q);
+      if (!match) continue;
+    }
+
     let val = 0;
     if (colTienVal !== -1 && row[colTienVal] != null && String(row[colTienVal]).trim() !== '') {
       val = parsePcNumber(row[colTienVal]);
@@ -1398,20 +1567,20 @@ function exportPhanCungDvkhCsv() {
     count++;
     rows.push([
       count,
-      String(row[colTenGh] || '').trim(),
-      String(row[colRetailerId] || '').trim(),
-      String(row[colNgayTao] || '').trim(),
-      String(row[colNguoiTao] || '').trim(),
-      String(row[colKhuVuc] || '').trim(),
-      String(row[colTinhTp] || '').trim(),
-      String(row[colStatus] || '').trim(),
+      tenGh,
+      retId,
+      ngayTao,
+      nguoiTao,
+      kv,
+      tinhTp,
+      status,
       val,
       nhom
     ]);
   }
 
   if (count === 0) {
-    showToast('Không có bản ghi DVKH Manager nào để xuất!', false);
+    showToast('Không có bản ghi DVKH Manager nào phù hợp để xuất!', false);
     return;
   }
 
@@ -1425,8 +1594,12 @@ function exportPhanCungDvkhCsv() {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `co_hoi_dvkh_manager_${new Date().toISOString().slice(0, 10)}.csv`;
+  const regionSuffix = DVKH_SELECTED_REGION !== 'all' ? `_${DVKH_SELECTED_REGION.replace(/\s+/g, '_')}` : '';
+  a.download = `co_hoi_dvkh_manager${regionSuffix}_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
   showToast(`Đã xuất thành công ${count} cơ hội DVKH Manager ra CSV!`, true);
 }
 
