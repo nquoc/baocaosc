@@ -1312,4 +1312,20 @@ body[data-theme="light"] .dvkh-region-group-row.expanded {
   box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
 }
 
+/* ==========================================================================
+   MỤC 5: IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (2 BẢNG NẰM NGANG NHAU)
+   ========================================================================== */
+.bsc-two-tables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 960px) {
+  .bsc-two-tables-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 

@@ -263,9 +263,11 @@ Giao diện được chia thành 2 Tab chính:
 ### TAB 6: BÁO CÁO SC (`sheet=baocaotuan`)
 1. **Mục tiêu & Nguồn dữ liệu**:
    * API endpoints:
-     * **Mục 1**: `sheet=baocaotuan&range=A2:D14` (Active Rate năm 2026: Retail, F&B, Booking qua các tháng).
-     * **Mục 2**: `sheet=baocaotuan&range=F2:I6` (Tỷ lệ chăm khách New T10: Ký mới, Inactive, SC chăm).
-     * **Mục 3**: `sheet=baocaotuan&range=K2:Q19` (Tỷ lệ Impact theo 16 Tỉnh/Thành phố từ T7 đến T12, so sánh MoM từng tháng).
+     * **Mục 1**: `sheet=baocaotuan&range=U2:AA5` & `range=U7:V24` (Quân số theo Miền, Vị trí & Tỉnh thành).
+     * **Mục 2**: `sheet=baocaotuan&range=A2:D14` (Active Rate năm 2026: Retail, F&B, Booking qua các tháng).
+     * **Mục 3**: `sheet=baocaotuan&range=F2:I6` (Tỷ lệ chăm khách New T10: Ký mới, Inactive, SC chăm).
+     * **Mục 4**: `sheet=baocaotuan&range=K2:Q19` (Tỷ lệ Impact theo 16 Tỉnh/Thành phố từ T7 đến T12, so sánh MoM từng tháng).
+     * **Mục 5**: `sheet=baocaotuan&range=AD2:AG9` (Impact Theo Nguồn Data) & `range=AD13:AG17` (Impact Theo Ngành Hàng).
 2. **Cấu trúc dữ liệu & Giao diện**:
    * **Bố cục chuẩn**: Khối hiển thị căn giữa 70% màn hình trang nhã (`.bsc-centered-block`).
    * **Kiểu dáng bảng**: Header màu đen, chữ in đậm sắc nét, tất cả ô số liệu căn giữa đồng bộ.
@@ -286,9 +288,16 @@ Giao diện được chia thành 2 Tab chính:
      * Sắp xếp theo cột bất kỳ (STT, Tên tỉnh, các tháng T7..T12).
      * Tìm kiếm nhanh theo tên tỉnh (`🔍 Tìm tỉnh thành...`).
      * Dòng chân bảng `TOÀN QUỐC (TOTAL)` tóm tắt trung bình cả nước.
+   * **Mục 5 (Tỷ Lệ Impact Theo Nguồn Data & Ngành Hàng - 2 Bảng Ngang Side-by-Side)**:
+     * 4 thẻ KPI tóm tắt: Impact Chung Nguồn Data (61.61%), Nguồn Hiệu Quả Nhất (DVKH - 88.31%), Impact Chung Ngành Hàng (61.48%), Ngành Hiệu Quả Nhất (FNB - 67.04%).
+     * 2 bảng trình bày song song (CSS Grid 2 cột responsive, tự xếp chồng trên màn hình nhỏ):
+       * Bảng 1: Impact Theo Nguồn Data (Large Fnb, Fnb kitchen print fail, Old expand, T15, Khác, DVKH và TỔNG CỘNG).
+       * Bảng 2: Impact Theo Ngành Hàng (FNB, BOOKING, RETAIL và TỔNG CỘNG).
+     * Mỗi bảng tích hợp thanh tiến độ mini sinh động, mã màu tỷ lệ impact (Xanh lá $\ge 70\%$, Xanh dương $\ge 55\%$, Vàng/Cam $< 55\%$).
+     * Sắp xếp theo cột bất kỳ (STT, Tệp/Ngành, ACT, Impact, Tỷ lệ) và hỗ trợ xuất CSV riêng từng bảng hoặc xuất gộp cả Mục 5.
 3. **Tiện ích**:
    * Smart Cache IndexedDB (`baocaosc_data`, TTL 20 phút), mở tức thì < 0.05s.
-   * Hỗ trợ 4 nút xuất CSV độc lập: `⬇ Xuất CSV Mục 1`, `⬇ Xuất CSV Mục 2`, `⬇ Xuất CSV Mục 3`, `⬇ Xuất CSV Mục 4` (chuẩn UTF-8 BOM).
+   * Hỗ trợ 6 nút xuất CSV độc lập: `⬇ Xuất CSV Mục 1`, `⬇ Xuất CSV Mục 2`, `⬇ Xuất CSV Mục 3`, `⬇ Xuất CSV Mục 4`, `⬇ Xuất CSV Mục 5` (chuẩn UTF-8 BOM).
 
 ---
 

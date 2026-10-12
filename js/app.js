@@ -65,7 +65,7 @@ function switchTab(tab) {
       renderPhanCung();
     }
   } else if (tab === 'baocaosc') {
-    if (!BAOCAOSC_STATE.activeRate || !BAOCAOSC_STATE.provinceImpact || !BAOCAOSC_STATE.headcountRegion) {
+    if (!BAOCAOSC_STATE.activeRate || !BAOCAOSC_STATE.provinceImpact || !BAOCAOSC_STATE.headcountRegion || !BAOCAOSC_STATE.impactDataSource || !BAOCAOSC_STATE.impactIndustry) {
       loadBaoCaoSc(false);
     } else {
       renderBaoCaoSc();

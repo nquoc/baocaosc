@@ -603,10 +603,18 @@ function renderBaoCaoSc() {
     if (parsedRegion) renderHeadcountRegionTable(parsedRegion);
     if (parsedProvince) renderHeadcountProvinceTable(parsedProvince);
   }
+
+  if (BAOCAOSC_STATE.impactDataSource || BAOCAOSC_STATE.impactIndustry) {
+    const parsedSource = BAOCAOSC_STATE.impactDataSource ? normalizeImpactTableData(BAOCAOSC_STATE.impactDataSource) : null;
+    const parsedIndustry = BAOCAOSC_STATE.impactIndustry ? normalizeImpactTableData(BAOCAOSC_STATE.impactIndustry) : null;
+    renderBaoCaoScImpactSummaryCards(parsedSource, parsedIndustry);
+    if (parsedSource) renderImpactSourceTable(parsedSource);
+    if (parsedIndustry) renderImpactIndustryTable(parsedIndustry);
+  }
 }
 
 /**
- * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1, Mục 2, Mục 3 & Mục 4 song song)
+ * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1, Mục 2, Mục 3, Mục 4 & Mục 5 song song)
  */
 async function loadBaoCaoSc(forceReload = false) {
   const btn = $('btnReloadBaoCaoSc');
@@ -632,7 +640,7 @@ async function loadBaoCaoSc(forceReload = false) {
         req.onerror = () => resolve(null);
       });
 
-      if (cached && cached.activeRate && Array.isArray(cached.activeRate) && cached.activeRate.length >= 2 && cached.provinceImpact && cached.headcountRegion && cached.headcountProvince) {
+      if (cached && cached.activeRate && Array.isArray(cached.activeRate) && cached.activeRate.length >= 2 && cached.provinceImpact && cached.headcountRegion && cached.headcountProvince && cached.impactDataSource && cached.impactIndustry) {
         const ageMs = Date.now() - (cached.savedAt || 0);
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
@@ -664,24 +672,28 @@ async function loadBaoCaoSc(forceReload = false) {
     }
   }
 
-  // 2. Tải API trực tiếp song song (Mục 1 range A2:D14 + Mục 2 range F2:I6 + Mục 3 range K2:Q19 + Mục 4 range U2:AA5 & U7:V24)
+  // 2. Tải API trực tiếp song song (Mục 1 range U2:AA5 & U7:V24 + Mục 2 range A2:D14 + Mục 3 range F2:I6 + Mục 4 range K2:Q19 + Mục 5 range AD2:AG9 & AD13:AG17)
   const urlActive = API_BAOCAOSC_ACTIVE_RATE + (API_BAOCAOSC_ACTIVE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlCare = API_BAOCAOSC_CARE_RATE + (API_BAOCAOSC_CARE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlProvince = API_BAOCAOSC_PROVINCE_IMPACT + (API_BAOCAOSC_PROVINCE_IMPACT.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlHeadcountRegion = API_BAOCAOSC_HEADCOUNT_REGION + (API_BAOCAOSC_HEADCOUNT_REGION.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlHeadcountProvince = API_BAOCAOSC_HEADCOUNT_PROVINCE + (API_BAOCAOSC_HEADCOUNT_PROVINCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlImpactDataSource = API_BAOCAOSC_IMPACT_DATA_SOURCE + (API_BAOCAOSC_IMPACT_DATA_SOURCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlImpactIndustry = API_BAOCAOSC_IMPACT_INDUSTRY + (API_BAOCAOSC_IMPACT_INDUSTRY.includes('?') ? '&' : '?') + '_t=' + Date.now();
 
   try {
-    const [resActive, resCare, resProvince, resHeadcountRegion, resHeadcountProvince] = await Promise.all([
+    const [resActive, resCare, resProvince, resHeadcountRegion, resHeadcountProvince, resImpactDataSource, resImpactIndustry] = await Promise.all([
       safeFetchJson(urlActive, 2),
       safeFetchJson(urlCare, 2),
       safeFetchJson(urlProvince, 2),
       safeFetchJson(urlHeadcountRegion, 2),
-      safeFetchJson(urlHeadcountProvince, 2)
+      safeFetchJson(urlHeadcountProvince, 2),
+      safeFetchJson(urlImpactDataSource, 2),
+      safeFetchJson(urlImpactIndustry, 2)
     ]);
 
     if (resActive.status !== 'success' || !Array.isArray(resActive.data) || resActive.data.length < 2) {
-      throw new Error(resActive.status || 'Dữ liệu Mục 1 không đầy đủ');
+      throw new Error(resActive.status || 'Dữ liệu Báo Cáo SC không đầy đủ');
     }
 
     const now = new Date();
@@ -693,6 +705,8 @@ async function loadBaoCaoSc(forceReload = false) {
       provinceImpact: resProvince && resProvince.data ? resProvince.data : null,
       headcountRegion: resHeadcountRegion && resHeadcountRegion.data ? resHeadcountRegion.data : null,
       headcountProvince: resHeadcountProvince && resHeadcountProvince.data ? resHeadcountProvince.data : null,
+      impactDataSource: resImpactDataSource && resImpactDataSource.data ? resImpactDataSource.data : null,
+      impactIndustry: resImpactIndustry && resImpactIndustry.data ? resImpactIndustry.data : null,
       savedAt: Date.now(),
       timeStr: timeStr
     };
@@ -709,7 +723,7 @@ async function loadBaoCaoSc(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1, 2, 3 & 4) lúc ${timeStr}!`, true);
+    showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1, 2, 3, 4 & 5) lúc ${timeStr}!`, true);
   } catch (err) {
     console.error('Lỗi khi tải Báo Cáo SC:', err);
     if (BAOCAOSC_STATE.activeRate) {
@@ -1684,4 +1698,470 @@ function exportHeadcountCsv() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('Đã xuất file CSV Quân Số Đội Ngũ SC (Mục 1) thành công!', true);
+}
+
+/* ==========================================================================
+   MỤC 5: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (AD2:AG9 & AD13:AG17)
+   ========================================================================== */
+
+/**
+ * Chuyển đổi an toàn chuỗi/số sang số nguyên cho Báo Cáo SC
+ */
+function parseBscNumber(val) {
+  if (val == null || val === '' || val === '-') return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : Math.round(val);
+  const s = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : Math.round(n);
+}
+
+/**
+ * Chuyển đổi an toàn chuỗi/số sang phần trăm (0-100) cho Báo Cáo SC
+ */
+function parseBscPct(val) {
+  if (val == null || val === '' || val === '-') return 0;
+  if (typeof val === 'number') {
+    if (isNaN(val)) return 0;
+    // Nếu là dạng số thập phân <= 1 (ví dụ 0.6148), quy đổi sang % (61.48)
+    return val <= 1 && val > 0 ? val * 100 : val;
+  }
+  const s = String(val).trim();
+  const isPercentSign = s.includes('%');
+  const n = parseFloat(s.replace(/%/g, '').replace(/,/g, ''));
+  if (isNaN(n)) return 0;
+  if (!isPercentSign && n > 0 && n <= 1) {
+    return n * 100;
+  }
+  return n;
+}
+
+/**
+ * Chuẩn hóa dữ liệu thô bảng Impact (dùng chung cho Nguồn Data AD2:AG9 & Ngành Hàng AD13:AG17)
+ */
+function normalizeImpactTableData(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const items = [];
+  let totalRow = null;
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+    const name = String(row[0] || '').trim();
+    if (!name) continue;
+
+    const act = parseBscNumber(row[1]);
+    const impact = parseBscNumber(row[2]);
+    let rate = parseBscPct(row[3]);
+    if (rate === 0 && act > 0 && impact > 0) {
+      rate = (impact / act) * 100;
+    }
+
+    const item = {
+      name,
+      act,
+      impact,
+      rate
+    };
+
+    if (name.toLowerCase() === 'tổng' || name.toLowerCase() === 'total') {
+      totalRow = item;
+    } else {
+      items.push(item);
+    }
+  }
+
+  const sortedByRate = [...items].sort((a, b) => b.rate - a.rate);
+  const topItem = sortedByRate[0] || null;
+  const lowestItem = sortedByRate[sortedByRate.length - 1] || null;
+
+  const totAct = totalRow ? totalRow.act : items.reduce((s, it) => s + it.act, 0);
+  const totImpact = totalRow ? totalRow.impact : items.reduce((s, it) => s + it.impact, 0);
+  const avgRate = totalRow ? totalRow.rate : (totAct > 0 ? (totImpact / totAct) * 100 : 0);
+
+  return {
+    items,
+    totalRow,
+    topItem,
+    lowestItem,
+    totAct,
+    totImpact,
+    avgRate
+  };
+}
+
+/**
+ * Màu sắc trực quan cho tỷ lệ Impact
+ */
+function getImpactRateColor(rate) {
+  if (rate >= 70) return '#10b981'; // Xanh lá
+  if (rate >= 55) return '#38bdf8'; // Xanh dương
+  return '#f59e0b'; // Vàng cam
+}
+
+let BAOCAOSC_IMPACT_SOURCE_SORT = { k: 'rate', dir: -1 };
+let BAOCAOSC_IMPACT_INDUSTRY_SORT = { k: 'rate', dir: -1 };
+
+function sortImpactSource(key) {
+  if (BAOCAOSC_IMPACT_SOURCE_SORT.k === key) {
+    BAOCAOSC_IMPACT_SOURCE_SORT.dir = -BAOCAOSC_IMPACT_SOURCE_SORT.dir;
+  } else {
+    BAOCAOSC_IMPACT_SOURCE_SORT.k = key;
+    BAOCAOSC_IMPACT_SOURCE_SORT.dir = (key === 'name') ? 1 : -1;
+  }
+  if (BAOCAOSC_STATE.impactDataSource) {
+    const parsed = normalizeImpactTableData(BAOCAOSC_STATE.impactDataSource);
+    renderImpactSourceTable(parsed);
+  }
+}
+
+function sortImpactIndustry(key) {
+  if (BAOCAOSC_IMPACT_INDUSTRY_SORT.k === key) {
+    BAOCAOSC_IMPACT_INDUSTRY_SORT.dir = -BAOCAOSC_IMPACT_INDUSTRY_SORT.dir;
+  } else {
+    BAOCAOSC_IMPACT_INDUSTRY_SORT.k = key;
+    BAOCAOSC_IMPACT_INDUSTRY_SORT.dir = (key === 'name') ? 1 : -1;
+  }
+  if (BAOCAOSC_STATE.impactIndustry) {
+    const parsed = normalizeImpactTableData(BAOCAOSC_STATE.impactIndustry);
+    renderImpactIndustryTable(parsed);
+  }
+}
+
+/**
+ * Hiển thị 4 thẻ KPI tóm tắt cho Mục 5
+ */
+function renderBaoCaoScImpactSummaryCards(parsedSource, parsedIndustry) {
+  const box = $('bscImpactSummaryCards');
+  if (!box) return;
+
+  const K = (l, v, s, c = '') => `
+    <div class="card kpi">
+      <div class="l">${l}</div>
+      <div class="v" style="${c}">${v}</div>
+      <div class="s">${s}</div>
+    </div>
+  `;
+
+  // 1. Tỷ lệ impact chung Nguồn Data
+  const srcRateStr = parsedSource ? `${parsedSource.avgRate.toFixed(2)}%` : '–';
+  const srcSub = parsedSource ? `${parsedSource.totImpact.toLocaleString('vi-VN')} / ${parsedSource.totAct.toLocaleString('vi-VN')} GH (${parsedSource.items.length} nguồn)` : '';
+  const srcColor = parsedSource ? getImpactRateColor(parsedSource.avgRate) : '#38bdf8';
+
+  // 2. Nguồn Data Hiệu Quả Nhất
+  const topSrc = parsedSource && parsedSource.topItem ? parsedSource.topItem : null;
+  const topSrcVal = topSrc ? `${esc(topSrc.name)}` : '–';
+  const topSrcSub = topSrc ? `Impact: ${topSrc.rate.toFixed(2)}% (${topSrc.impact}/${topSrc.act} GH)` : '';
+
+  // 3. Tỷ lệ impact chung Ngành Hàng
+  const indRateStr = parsedIndustry ? `${parsedIndustry.avgRate.toFixed(2)}%` : '–';
+  const indSub = parsedIndustry ? `${parsedIndustry.totImpact.toLocaleString('vi-VN')} / ${parsedIndustry.totAct.toLocaleString('vi-VN')} GH (${parsedIndustry.items.length} ngành)` : '';
+  const indColor = parsedIndustry ? getImpactRateColor(parsedIndustry.avgRate) : '#a78bfa';
+
+  // 4. Ngành Hàng Hiệu Quả Nhất
+  const topInd = parsedIndustry && parsedIndustry.topItem ? parsedIndustry.topItem : null;
+  const topIndVal = topInd ? `${esc(topInd.name)}` : '–';
+  const topIndSub = topInd ? `Impact: ${topInd.rate.toFixed(2)}% (${topInd.impact}/${topInd.act} GH)` : '';
+
+  box.innerHTML =
+    K('Impact Chung (Nguồn Data)', srcRateStr, srcSub, `color:${srcColor}`) +
+    K('Nguồn Hiệu Quả Nhất', topSrcVal, topSrcSub, 'color:#10b981') +
+    K('Impact Chung (Ngành Hàng)', indRateStr, indSub, `color:${indColor}`) +
+    K('Ngành Hiệu Quả Nhất', topIndVal, topIndSub, 'color:#8b5cf6');
+}
+
+/**
+ * Hiển thị Bảng 1: Impact Theo Nguồn Data (AD2:AG9)
+ */
+function renderImpactSourceTable(parsed) {
+  const tbl = $('bscImpactSourceTable');
+  if (!tbl || !parsed) return;
+
+  const dir = BAOCAOSC_IMPACT_SOURCE_SORT.dir;
+  const k = BAOCAOSC_IMPACT_SOURCE_SORT.k;
+  const items = [...parsed.items].sort((a, b) => {
+    if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
+    if (k === 'act') return dir * (a.act - b.act);
+    if (k === 'impact') return dir * (a.impact - b.impact);
+    if (k === 'rate') return dir * (a.rate - b.rate);
+    return 0;
+  });
+
+  const sortArrow = key => (k === key ? (dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
+
+  let thead = '<thead><tr>';
+  thead += `<th style="width:45px;text-align:center">STT</th>`;
+  thead += `<th onclick="sortImpactSource('name')" style="text-align:left;cursor:pointer">Tệp / Nguồn Data${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortImpactSource('act')" style="text-align:center;cursor:pointer">Số Lượng ACT${sortArrow('act')}</th>`;
+  thead += `<th onclick="sortImpactSource('impact')" style="text-align:center;cursor:pointer">Số Lượng Impact${sortArrow('impact')}</th>`;
+  thead += `<th onclick="sortImpactSource('rate')" style="text-align:center;cursor:pointer">Tỷ Lệ Impact${sortArrow('rate')}</th>`;
+  thead += '</tr></thead>';
+
+  let tbody = '<tbody>';
+  items.forEach((item, idx) => {
+    const color = getImpactRateColor(item.rate);
+    tbody += '<tr>';
+    tbody += `<td style="text-align:center;color:var(--mut);font-weight:700">${idx + 1}</td>`;
+    tbody += `<td style="text-align:left;font-weight:700;color:var(--tx-heading)">${esc(item.name)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:600">${item.act.toLocaleString('vi-VN')}</td>`;
+    tbody += `<td style="text-align:center;font-weight:600;color:#38bdf8">${item.impact.toLocaleString('vi-VN')}</td>`;
+    tbody += `<td style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <div style="flex:1;max-width:70px;height:6px;border-radius:3px;background:rgba(148,163,184,0.18);overflow:hidden">
+          <div style="width:${Math.min(100, item.rate)}%;height:100%;background:${color};border-radius:3px"></div>
+        </div>
+        <span style="font-weight:800;color:${color};min-width:55px;text-align:right">${item.rate.toFixed(2)}%</span>
+      </div>
+    </td>`;
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  let tfoot = '';
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    const color = getImpactRateColor(tot.rate);
+    tfoot += '<tfoot><tr>';
+    tfoot += `<td style="text-align:center;color:var(--mut)">★</td>`;
+    tfoot += `<td style="text-align:left;font-weight:800;color:var(--tx-heading)">TỔNG CỘNG</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${tot.act.toLocaleString('vi-VN')}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800;color:#38bdf8">${tot.impact.toLocaleString('vi-VN')}</td>`;
+    tfoot += `<td style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <div style="flex:1;max-width:70px;height:6px;border-radius:3px;background:rgba(148,163,184,0.25);overflow:hidden">
+          <div style="width:${Math.min(100, tot.rate)}%;height:100%;background:${color};border-radius:3px"></div>
+        </div>
+        <span style="font-weight:800;color:${color};min-width:55px;text-align:right">${tot.rate.toFixed(2)}%</span>
+      </div>
+    </td>`;
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * Hiển thị Bảng 2: Impact Theo Ngành Hàng (AD13:AG17)
+ */
+function renderImpactIndustryTable(parsed) {
+  const tbl = $('bscImpactIndustryTable');
+  if (!tbl || !parsed) return;
+
+  const dir = BAOCAOSC_IMPACT_INDUSTRY_SORT.dir;
+  const k = BAOCAOSC_IMPACT_INDUSTRY_SORT.k;
+  const items = [...parsed.items].sort((a, b) => {
+    if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
+    if (k === 'act') return dir * (a.act - b.act);
+    if (k === 'impact') return dir * (a.impact - b.impact);
+    if (k === 'rate') return dir * (a.rate - b.rate);
+    return 0;
+  });
+
+  const sortArrow = key => (k === key ? (dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
+
+  let thead = '<thead><tr>';
+  thead += `<th style="width:45px;text-align:center">STT</th>`;
+  thead += `<th onclick="sortImpactIndustry('name')" style="text-align:left;cursor:pointer">Ngành Hàng${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortImpactIndustry('act')" style="text-align:center;cursor:pointer">Số Lượng ACT${sortArrow('act')}</th>`;
+  thead += `<th onclick="sortImpactIndustry('impact')" style="text-align:center;cursor:pointer">Số Lượng Impact${sortArrow('impact')}</th>`;
+  thead += `<th onclick="sortImpactIndustry('rate')" style="text-align:center;cursor:pointer">Tỷ Lệ Impact${sortArrow('rate')}</th>`;
+  thead += '</tr></thead>';
+
+  let tbody = '<tbody>';
+  items.forEach((item, idx) => {
+    const color = getImpactRateColor(item.rate);
+    tbody += '<tr>';
+    tbody += `<td style="text-align:center;color:var(--mut);font-weight:700">${idx + 1}</td>`;
+    tbody += `<td style="text-align:left;font-weight:700;color:var(--tx-heading)">${esc(item.name)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:600">${item.act.toLocaleString('vi-VN')}</td>`;
+    tbody += `<td style="text-align:center;font-weight:600;color:#38bdf8">${item.impact.toLocaleString('vi-VN')}</td>`;
+    tbody += `<td style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <div style="flex:1;max-width:70px;height:6px;border-radius:3px;background:rgba(148,163,184,0.18);overflow:hidden">
+          <div style="width:${Math.min(100, item.rate)}%;height:100%;background:${color};border-radius:3px"></div>
+        </div>
+        <span style="font-weight:800;color:${color};min-width:55px;text-align:right">${item.rate.toFixed(2)}%</span>
+      </div>
+    </td>`;
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  let tfoot = '';
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    const color = getImpactRateColor(tot.rate);
+    tfoot += '<tfoot><tr>';
+    tfoot += `<td style="text-align:center;color:var(--mut)">★</td>`;
+    tfoot += `<td style="text-align:left;font-weight:800;color:var(--tx-heading)">TỔNG CỘNG</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${tot.act.toLocaleString('vi-VN')}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800;color:#38bdf8">${tot.impact.toLocaleString('vi-VN')}</td>`;
+    tfoot += `<td style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <div style="flex:1;max-width:70px;height:6px;border-radius:3px;background:rgba(148,163,184,0.25);overflow:hidden">
+          <div style="width:${Math.min(100, tot.rate)}%;height:100%;background:${color};border-radius:3px"></div>
+        </div>
+        <span style="font-weight:800;color:${color};min-width:55px;text-align:right">${tot.rate.toFixed(2)}%</span>
+      </div>
+    </td>`;
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * Xuất file CSV Bảng 1: Impact Theo Nguồn Data
+ */
+function exportImpactSourceCsv() {
+  if (!BAOCAOSC_STATE.impactDataSource) {
+    showToast('Chưa có dữ liệu Nguồn Data để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizeImpactTableData(BAOCAOSC_STATE.impactDataSource);
+  if (!parsed) return;
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 5.1: IMPACT THEO NGUỒN DATA']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+  lines.push(['STT', 'Tệp / Nguồn Data', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
+
+  parsed.items.forEach((it, idx) => {
+    lines.push([idx + 1, it.name, it.act, it.impact, it.rate.toFixed(2) + '%']);
+  });
+
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    lines.push(['★', 'TỔNG CỘNG', tot.act, tot.impact, tot.rate.toFixed(2) + '%']);
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_Impact_NguonData_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Impact Theo Nguồn Data thành công!', true);
+}
+
+/**
+ * Xuất file CSV Bảng 2: Impact Theo Ngành Hàng
+ */
+function exportImpactIndustryCsv() {
+  if (!BAOCAOSC_STATE.impactIndustry) {
+    showToast('Chưa có dữ liệu Ngành Hàng để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizeImpactTableData(BAOCAOSC_STATE.impactIndustry);
+  if (!parsed) return;
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 5.2: IMPACT THEO NGÀNH HÀNG']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+  lines.push(['STT', 'Ngành Hàng', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
+
+  parsed.items.forEach((it, idx) => {
+    lines.push([idx + 1, it.name, it.act, it.impact, it.rate.toFixed(2) + '%']);
+  });
+
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    lines.push(['★', 'TỔNG CỘNG', tot.act, tot.impact, tot.rate.toFixed(2) + '%']);
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_Impact_NganhHang_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Impact Theo Ngành Hàng thành công!', true);
+}
+
+/**
+ * Xuất file CSV Tổng Hợp Mục 5 (Gồm cả 2 bảng Nguồn Data & Ngành Hàng)
+ */
+function exportImpactSection5Csv() {
+  if (!BAOCAOSC_STATE.impactDataSource && !BAOCAOSC_STATE.impactIndustry) {
+    showToast('Chưa có dữ liệu Mục 5 để xuất CSV!', false);
+    return;
+  }
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 5: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+
+  // Bảng 1: Nguồn Data
+  if (BAOCAOSC_STATE.impactDataSource) {
+    const parsedSource = normalizeImpactTableData(BAOCAOSC_STATE.impactDataSource);
+    if (parsedSource) {
+      lines.push(['--- BẢNG 1: IMPACT THEO NGUỒN DATA (AD2:AG9) ---']);
+      lines.push(['STT', 'Tệp / Nguồn Data', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
+      parsedSource.items.forEach((it, idx) => {
+        lines.push([idx + 1, it.name, it.act, it.impact, it.rate.toFixed(2) + '%']);
+      });
+      if (parsedSource.totalRow) {
+        const tot = parsedSource.totalRow;
+        lines.push(['★', 'TỔNG CỘNG', tot.act, tot.impact, tot.rate.toFixed(2) + '%']);
+      }
+      lines.push([]);
+    }
+  }
+
+  // Bảng 2: Ngành Hàng
+  if (BAOCAOSC_STATE.impactIndustry) {
+    const parsedIndustry = normalizeImpactTableData(BAOCAOSC_STATE.impactIndustry);
+    if (parsedIndustry) {
+      lines.push(['--- BẢNG 2: IMPACT THEO NGÀNH HÀNG (AD13:AG17) ---']);
+      lines.push(['STT', 'Ngành Hàng', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
+      parsedIndustry.items.forEach((it, idx) => {
+        lines.push([idx + 1, it.name, it.act, it.impact, it.rate.toFixed(2) + '%']);
+      });
+      if (parsedIndustry.totalRow) {
+        const tot = parsedIndustry.totalRow;
+        lines.push(['★', 'TỔNG CỘNG', tot.act, tot.impact, tot.rate.toFixed(2) + '%']);
+      }
+    }
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_Impact_NguonData_NganhHang_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Tổng Hợp Mục 5 thành công!', true);
 }
