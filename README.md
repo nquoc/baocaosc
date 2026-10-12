@@ -269,23 +269,23 @@ Giao diện được chia thành 2 Tab chính:
 2. **Cấu trúc dữ liệu & Giao diện**:
    * **Bố cục chuẩn**: Khối hiển thị căn giữa 70% màn hình trang nhã (`.bsc-centered-block`).
    * **Kiểu dáng bảng**: Header màu đen, chữ in đậm sắc nét, tất cả ô số liệu căn giữa đồng bộ.
-   * **Mục 1 (Active Rate 2026)**:
+   * **Mục 1 (Quân Số Đội Ngũ SC)**:
+     * API: `sheet=baocaotuan&range=U2:AA5` (Bảng 1: Quân số theo Miền & Vị trí) và `sheet=baocaotuan&range=U7:V24` (Bảng 2: Quân số theo Tỉnh thành).
+     * 4 thẻ KPI tóm tắt: Tổng Quân Số Toàn Quốc (50 nhân sự), Lực Lượng Offline (30), Lực Lượng Online (13), Hỗ Trợ & Thử Việc (4 Thử việc · 4 QL · 3 Sale PC).
+     * Bảng 1: Phân bổ 2 Miền (Bắc, Nam) và Toàn quốc theo từng vị trí (Online, Offline, Sale PC, QL, Tổng, Thử việc).
+     * Bảng 2: Phân bổ 16 Tỉnh thành / Khu vực kèm thanh tiến độ mini và tỷ trọng % trực quan, hỗ trợ tìm kiếm và sắp xếp.
+   * **Mục 2 (Active Rate 2026)**:
      * 3 thẻ KPI tóm tắt (Retail, F&B, Booking) kèm biến động tháng liền kề.
      * Bảng chi tiết 10 tháng có số liệu, chỉ báo MoM delta (▲ xanh lá / ▼ đỏ).
      * Đánh giá xu hướng và dòng TRUNG BÌNH CẢ NĂM.
-   * **Mục 2 (Tỷ lệ chăm khách New T10)**:
+   * **Mục 3 (Tỷ lệ chăm khách New T10)**:
      * 4 thẻ KPI tóm tắt, bảng chi tiết theo từng ngành hàng và dòng TỔNG TOÀN BỘ.
-   * **Mục 3 (Impact Theo Tỉnh / Thành Phố)**:
+   * **Mục 4 (Impact Theo Tỉnh / Thành Phố)**:
      * 4 thẻ KPI tóm tắt: Toàn quốc T10, Top 1 Impact T10, Tăng trưởng tốt nhất, Giảm sâu nhất.
      * Bảng chi tiết 16 tỉnh/thành phố chuẩn 8 cột (STT, Tỉnh, T7..T12) hiển thị tỷ lệ % kèm icon trực quan so sánh với tháng trước (▲ xanh lá = Tăng, ▼ đỏ = Giảm).
      * Sắp xếp theo cột bất kỳ (STT, Tên tỉnh, các tháng T7..T12).
      * Tìm kiếm nhanh theo tên tỉnh (`🔍 Tìm tỉnh thành...`).
      * Dòng chân bảng `TOÀN QUỐC (TOTAL)` tóm tắt trung bình cả nước.
-    * **Mục 4 (Quân Số Đội Ngũ SC)**:
-      * API: `sheet=baocaotuan&range=U2:AA5` (Bảng 1: Quân số theo Miền & Vị trí) và `sheet=baocaotuan&range=U7:V24` (Bảng 2: Quân số theo Tỉnh thành).
-      * 4 thẻ KPI tóm tắt: Tổng Quân Số Toàn Quốc (50 nhân sự), Lực Lượng Offline (30), Lực Lượng Online (13), Hỗ Trợ & Thử Việc (4 Thử việc · 4 QL · 3 Sale PC).
-      * Bảng 1: Phân bổ 2 Miền (Bắc, Nam) và Toàn quốc theo từng vị trí (Online, Offline, Sale PC, QL, Tổng, Thử việc).
-      * Bảng 2: Phân bổ 16 Tỉnh thành / Khu vực kèm thanh tiến độ mini và tỷ trọng % trực quan, hỗ trợ tìm kiếm và sắp xếp.
 3. **Tiện ích**:
    * Smart Cache IndexedDB (`baocaosc_data`, TTL 20 phút), mở tức thì < 0.05s.
    * Hỗ trợ 4 nút xuất CSV độc lập: `⬇ Xuất CSV Mục 1`, `⬇ Xuất CSV Mục 2`, `⬇ Xuất CSV Mục 3`, `⬇ Xuất CSV Mục 4` (chuẩn UTF-8 BOM).
