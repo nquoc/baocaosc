@@ -268,6 +268,10 @@ Giao diện được chia thành 2 Tab chính:
      * **Mục 3**: `sheet=baocaotuan&range=F2:I6` (Tỷ lệ chăm khách New T10: Ký mới, Inactive, SC chăm).
      * **Mục 4**: `sheet=baocaotuan&range=K2:Q19` (Tỷ lệ Impact theo 16 Tỉnh/Thành phố từ T7 đến T12, so sánh MoM từng tháng).
      * **Mục 5**: `sheet=baocaotuan&range=AD2:AG9` (Impact Theo Nguồn Data) & `range=AD13:AG17` (Impact Theo Ngành Hàng).
+     * **Mục 6**:
+       * 6.1: `sheet=baocaotuan&range=AJ2:AP5` (KPI Team Online Tháng 9).
+       * 6.2: `sheet=baocaotuan&range=AJ13:AP17` (KPI Team Offline Tháng 10).
+       * 6.3: `sheet=baocaotuan&range=AJ22:AM29` (Tư Vấn Chuyển Addon Tháng 10).
 2. **Cấu trúc dữ liệu & Giao diện**:
    * **Bố cục chuẩn**: Khối hiển thị căn giữa 70% màn hình trang nhã (`.bsc-centered-block`).
    * **Kiểu dáng bảng**: Header màu đen, chữ in đậm sắc nét, tất cả ô số liệu căn giữa đồng bộ.
@@ -295,9 +299,15 @@ Giao diện được chia thành 2 Tab chính:
        * Bảng 2: Impact Theo Ngành Hàng (FNB, BOOKING, RETAIL và TỔNG CỘNG).
      * Mỗi bảng tích hợp thanh tiến độ mini sinh động, mã màu tỷ lệ impact (Xanh lá $\ge 70\%$, Xanh dương $\ge 55\%$, Vàng/Cam $< 55\%$).
      * Sắp xếp theo cột bất kỳ (STT, Tệp/Ngành, ACT, Impact, Tỷ lệ) và hỗ trợ xuất CSV riêng từng bảng hoặc xuất gộp cả Mục 5.
+   * **Mục 6 (Hiệu Suất KPI Team & Tư Vấn Chuyển Addon - Tháng 9 & Tháng 10)**:
+     * 4 thẻ KPI tóm tắt: KPI Team Online T9 (134.03%), KPI Team Offline T10 (45.67%), Talktime TB Online T9 (01:39:32), Tổng Tư Vấn Addon T10 (738 lượt).
+     * **Bảng 1 (KPI Team Online Tháng 9 - AJ2:AP5)**: 8 cột (STT, Phân vùng Miền, Số nhân sự, KPI Impact, KPI Điểm tổng, KPI Addon, KPI Team, Talktime TB). Tự động format thời lượng cuộc gọi từ UTC Google Sheets.
+     * **Bảng 2 (KPI Team Offline Tháng 10 - AJ13:AP17)**: 8 cột (STT, Coacher Quản lý, Số nhân sự, KPI Active ngày checkin, KPI Điểm tổng, KPI Addon, KPI Team, Tỷ lệ Impact).
+     * **Bảng 3 (Tư Vấn Chuyển Addon Tháng 10 - AJ22:AM29)**: 6 cột (STT, Dịch vụ Addon, Team Offline, Team Online, Tổng số lượng, Tỷ trọng đóng góp %). Kèm thanh tiến độ mini sinh động theo % đóng góp (Payment 48.31%, Phần cứng 27.44%, Kship 18.70%, ...).
+     * Cả 3 bảng đều có nút **⬇ Xuất CSV** riêng tại thanh tiêu đề và hỗ trợ click sắp xếp cột (⇅).
 3. **Tiện ích**:
    * Smart Cache IndexedDB (`baocaosc_data`, TTL 20 phút), mở tức thì < 0.05s.
-   * Thanh điều khiển trên cùng gọn gàng, nút **⬇ Xuất CSV** được bố trí trực tiếp tại thanh tiêu đề của từng bảng (Bảng 1 & 2 Mục 1, Mục 2, Mục 3, Mục 4, Bảng 1 & 2 Mục 5), chuẩn UTF-8 BOM hiển thị tiếng Việt hoàn hảo trên Excel.
+   * Thanh điều khiển trên cùng gọn gàng, nút **⬇ Xuất CSV** được bố trí trực tiếp tại thanh tiêu đề của từng bảng (Bảng 1 & 2 Mục 1, Mục 2, Mục 3, Mục 4, Bảng 1 & 2 Mục 5, Bảng 1, 2 & 3 Mục 6), chuẩn UTF-8 BOM hiển thị tiếng Việt hoàn hảo trên Excel.
 
 ---
 

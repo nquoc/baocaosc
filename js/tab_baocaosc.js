@@ -611,10 +611,20 @@ function renderBaoCaoSc() {
     if (parsedSource) renderImpactSourceTable(parsedSource);
     if (parsedIndustry) renderImpactIndustryTable(parsedIndustry);
   }
+
+  if (BAOCAOSC_STATE.kpiOnlineT9 || BAOCAOSC_STATE.kpiOfflineT10 || BAOCAOSC_STATE.addonT10) {
+    const parsedOnline = BAOCAOSC_STATE.kpiOnlineT9 ? normalizeKpiOnlineT9Data(BAOCAOSC_STATE.kpiOnlineT9) : null;
+    const parsedOffline = BAOCAOSC_STATE.kpiOfflineT10 ? normalizeKpiOfflineT10Data(BAOCAOSC_STATE.kpiOfflineT10) : null;
+    const parsedAddon = BAOCAOSC_STATE.addonT10 ? normalizeAddonT10Data(BAOCAOSC_STATE.addonT10) : null;
+    renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedAddon);
+    if (parsedOnline) renderKpiOnlineT9Table(parsedOnline);
+    if (parsedOffline) renderKpiOfflineT10Table(parsedOffline);
+    if (parsedAddon) renderAddonT10Table(parsedAddon);
+  }
 }
 
 /**
- * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1, Mục 2, Mục 3, Mục 4 & Mục 5 song song)
+ * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1 đến Mục 6 song song)
  */
 async function loadBaoCaoSc(forceReload = false) {
   const btn = $('btnReloadBaoCaoSc');
@@ -640,7 +650,7 @@ async function loadBaoCaoSc(forceReload = false) {
         req.onerror = () => resolve(null);
       });
 
-      if (cached && cached.activeRate && Array.isArray(cached.activeRate) && cached.activeRate.length >= 2 && cached.provinceImpact && cached.headcountRegion && cached.headcountProvince && cached.impactDataSource && cached.impactIndustry) {
+      if (cached && cached.activeRate && Array.isArray(cached.activeRate) && cached.activeRate.length >= 2 && cached.provinceImpact && cached.headcountRegion && cached.headcountProvince && cached.impactDataSource && cached.impactIndustry && cached.kpiOnlineT9 && cached.kpiOfflineT10 && cached.addonT10) {
         const ageMs = Date.now() - (cached.savedAt || 0);
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
@@ -672,7 +682,7 @@ async function loadBaoCaoSc(forceReload = false) {
     }
   }
 
-  // 2. Tải API trực tiếp song song (Mục 1 range U2:AA5 & U7:V24 + Mục 2 range A2:D14 + Mục 3 range F2:I6 + Mục 4 range K2:Q19 + Mục 5 range AD2:AG9 & AD13:AG17)
+  // 2. Tải API trực tiếp song song (Mục 1 đến Mục 6)
   const urlActive = API_BAOCAOSC_ACTIVE_RATE + (API_BAOCAOSC_ACTIVE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlCare = API_BAOCAOSC_CARE_RATE + (API_BAOCAOSC_CARE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlProvince = API_BAOCAOSC_PROVINCE_IMPACT + (API_BAOCAOSC_PROVINCE_IMPACT.includes('?') ? '&' : '?') + '_t=' + Date.now();
@@ -680,16 +690,33 @@ async function loadBaoCaoSc(forceReload = false) {
   const urlHeadcountProvince = API_BAOCAOSC_HEADCOUNT_PROVINCE + (API_BAOCAOSC_HEADCOUNT_PROVINCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlImpactDataSource = API_BAOCAOSC_IMPACT_DATA_SOURCE + (API_BAOCAOSC_IMPACT_DATA_SOURCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlImpactIndustry = API_BAOCAOSC_IMPACT_INDUSTRY + (API_BAOCAOSC_IMPACT_INDUSTRY.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlKpiOnlineT9 = API_BAOCAOSC_KPI_ONLINE_T9 + (API_BAOCAOSC_KPI_ONLINE_T9.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlKpiOfflineT10 = API_BAOCAOSC_KPI_OFFLINE_T10 + (API_BAOCAOSC_KPI_OFFLINE_T10.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlAddonT10 = API_BAOCAOSC_ADDON_T10 + (API_BAOCAOSC_ADDON_T10.includes('?') ? '&' : '?') + '_t=' + Date.now();
 
   try {
-    const [resActive, resCare, resProvince, resHeadcountRegion, resHeadcountProvince, resImpactDataSource, resImpactIndustry] = await Promise.all([
+    const [
+      resActive,
+      resCare,
+      resProvince,
+      resHeadcountRegion,
+      resHeadcountProvince,
+      resImpactDataSource,
+      resImpactIndustry,
+      resKpiOnlineT9,
+      resKpiOfflineT10,
+      resAddonT10
+    ] = await Promise.all([
       safeFetchJson(urlActive, 2),
       safeFetchJson(urlCare, 2),
       safeFetchJson(urlProvince, 2),
       safeFetchJson(urlHeadcountRegion, 2),
       safeFetchJson(urlHeadcountProvince, 2),
       safeFetchJson(urlImpactDataSource, 2),
-      safeFetchJson(urlImpactIndustry, 2)
+      safeFetchJson(urlImpactIndustry, 2),
+      safeFetchJson(urlKpiOnlineT9, 2),
+      safeFetchJson(urlKpiOfflineT10, 2),
+      safeFetchJson(urlAddonT10, 2)
     ]);
 
     if (resActive.status !== 'success' || !Array.isArray(resActive.data) || resActive.data.length < 2) {
@@ -707,6 +734,9 @@ async function loadBaoCaoSc(forceReload = false) {
       headcountProvince: resHeadcountProvince && resHeadcountProvince.data ? resHeadcountProvince.data : null,
       impactDataSource: resImpactDataSource && resImpactDataSource.data ? resImpactDataSource.data : null,
       impactIndustry: resImpactIndustry && resImpactIndustry.data ? resImpactIndustry.data : null,
+      kpiOnlineT9: resKpiOnlineT9 && resKpiOnlineT9.data ? resKpiOnlineT9.data : null,
+      kpiOfflineT10: resKpiOfflineT10 && resKpiOfflineT10.data ? resKpiOfflineT10.data : null,
+      addonT10: resAddonT10 && resAddonT10.data ? resAddonT10.data : null,
       savedAt: Date.now(),
       timeStr: timeStr
     };
@@ -723,7 +753,7 @@ async function loadBaoCaoSc(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1, 2, 3, 4 & 5) lúc ${timeStr}!`, true);
+    showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1 đến Mục 6) lúc ${timeStr}!`, true);
   } catch (err) {
     console.error('Lỗi khi tải Báo Cáo SC:', err);
     if (BAOCAOSC_STATE.activeRate) {
@@ -1807,14 +1837,14 @@ function parseBscPct(val) {
   if (val == null || val === '' || val === '-') return 0;
   if (typeof val === 'number') {
     if (isNaN(val)) return 0;
-    // Nếu là dạng số thập phân <= 1 (ví dụ 0.6148), quy đổi sang % (61.48)
-    return val <= 1 && val > 0 ? val * 100 : val;
+    // Nếu là dạng số thập phân <= 10 (ví dụ 0.6148 -> 61.48% hoặc 1.3403 -> 134.03%)
+    return val <= 10 && val > 0 ? val * 100 : val;
   }
   const s = String(val).trim();
   const isPercentSign = s.includes('%');
   const n = parseFloat(s.replace(/%/g, '').replace(/,/g, ''));
   if (isNaN(n)) return 0;
-  if (!isPercentSign && n > 0 && n <= 1) {
+  if (!isPercentSign && n > 0 && n <= 10) {
     return n * 100;
   }
   return n;
@@ -2249,4 +2279,695 @@ function exportImpactSection5Csv() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('Đã xuất file CSV Tổng Hợp Mục 5 thành công!', true);
+}
+
+/* ==========================================================================
+   MỤC 6: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON (THÁNG 9 & THÁNG 10)
+   - 6.1: KPI Team Online Tháng 9 (AJ2:AP5)
+   - 6.2: KPI Team Offline Tháng 10 (AJ13:AP17)
+   - 6.3: Tư Vấn Chuyển Addon Tháng 10 (AJ22:AM29)
+   ========================================================================== */
+
+let BAOCAOSC_KPI_ONLINE_T9_SORT = { k: 'default', dir: -1 };
+let BAOCAOSC_KPI_OFFLINE_T10_SORT = { k: 'default', dir: -1 };
+let BAOCAOSC_ADDON_T10_SORT = { k: 'default', dir: -1 };
+
+/**
+ * Helper phân tích số thập phân
+ */
+function parseBscDecimal(val) {
+  if (val == null || val === '' || val === '-') return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  const s = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+/**
+ * Helper phân tích thời lượng Talktime (giây) từ ISO date hoặc chuỗi time
+ */
+function parseBscTalktimeSec(val) {
+  if (val == null || val === '' || val === 0 || val === '0') return 0;
+  if (typeof val === 'number') {
+    return Math.round(val * 86400);
+  }
+  if (typeof val === 'string') {
+    if (val.includes('T')) {
+      const d = new Date(val);
+      const d0 = new Date('1899-12-29T17:17:56.000Z');
+      const diffMs = d.getTime() - d0.getTime();
+      return Math.max(0, Math.round(diffMs / 1000));
+    }
+    const parts = val.split(':').map(Number);
+    if (parts.length === 3) return (parts[0] || 0) * 3600 + (parts[1] || 0) * 60 + (parts[2] || 0);
+    if (parts.length === 2) return (parts[0] || 0) * 60 + (parts[1] || 0);
+  }
+  return 0;
+}
+
+/**
+ * Định dạng số giây sang hh:mm:ss
+ */
+function formatBscTalktimeStr(sec) {
+  if (!sec || sec <= 0) return '00:00';
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const pad = n => String(n).padStart(2, '0');
+  if (h > 0) {
+    return pad(h) + ':' + pad(m) + ':' + pad(s);
+  }
+  return pad(m) + ':' + pad(s);
+}
+
+/**
+ * Màu sắc trực quan cho tỷ lệ KPI
+ */
+function getKpiPercentBadge(pct, baseline = 100) {
+  if (pct == null || isNaN(pct)) return '<span style="color:var(--mut)">–</span>';
+  let color = '#38bdf8';
+  if (baseline === 100) {
+    if (pct >= 120) color = '#10b981';
+    else if (pct >= 100) color = '#38bdf8';
+    else if (pct >= 80) color = '#f59e0b';
+    else color = '#ef4444';
+  } else {
+    if (pct >= 50) color = '#10b981';
+    else if (pct >= 40) color = '#38bdf8';
+    else color = '#ef4444';
+  }
+  return `<span style="font-weight:700;color:${color}">${pct.toFixed(2)}%</span>`;
+}
+
+/**
+ * Chuẩn hóa dữ liệu thô 6.1: KPI Team Online Tháng 9 (AJ2:AP5)
+ */
+function normalizeKpiOnlineT9Data(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const items = [];
+  let totalRow = null;
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+    const name = String(row[0] || '').trim();
+    if (!name) continue;
+
+    const headcount = parseBscNumber(row[1]);
+    const kpiImpact = parseBscPct(row[2]);
+    const kpiTotalScore = parseBscPct(row[3]);
+    const kpiAddon = parseBscPct(row[4]);
+    const kpiTeam = parseBscPct(row[5]);
+    const talktimeSec = parseBscTalktimeSec(row[6]);
+    const talktimeStr = formatBscTalktimeStr(talktimeSec);
+
+    const item = {
+      name,
+      headcount,
+      kpiImpact,
+      kpiTotalScore,
+      kpiAddon,
+      kpiTeam,
+      talktimeSec,
+      talktimeStr
+    };
+
+    if (name.toLowerCase().includes('toàn quốc') || name.toLowerCase() === 'tổng') {
+      totalRow = item;
+    } else {
+      items.push(item);
+    }
+  }
+
+  return { items, totalRow };
+}
+
+/**
+ * Chuẩn hóa dữ liệu thô 6.2: KPI Team Offline Tháng 10 (AJ13:AP17)
+ */
+function normalizeKpiOfflineT10Data(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const items = [];
+  let totalRow = null;
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+    const name = String(row[0] || '').trim();
+    if (!name) continue;
+
+    const headcount = parseBscNumber(row[1]);
+    const kpiActive = parseBscPct(row[2]);
+    const kpiTotalScore = parseBscPct(row[3]);
+    const kpiAddon = parseBscPct(row[4]);
+    const kpiTeam = parseBscPct(row[5]);
+    const impact = parseBscPct(row[6]);
+
+    const item = {
+      name,
+      headcount,
+      kpiActive,
+      kpiTotalScore,
+      kpiAddon,
+      kpiTeam,
+      impact
+    };
+
+    if (name.toLowerCase().includes('toàn quốc') || name.toLowerCase() === 'tổng') {
+      totalRow = item;
+    } else {
+      items.push(item);
+    }
+  }
+
+  return { items, totalRow };
+}
+
+/**
+ * Chuẩn hóa dữ liệu thô 6.3: Tư Vấn Chuyển Addon Tháng 10 (AJ22:AM29)
+ */
+function normalizeAddonT10Data(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const items = [];
+  let totalRow = null;
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+    const name = String(row[0] || '').trim();
+    if (!name) continue;
+
+    const offline = parseBscDecimal(row[1]);
+    const online = parseBscDecimal(row[2]);
+    const total = parseBscDecimal(row[3]);
+
+    const item = {
+      name,
+      offline,
+      online,
+      total,
+      pct: 0
+    };
+
+    if (name.toLowerCase().includes('tổng') || name.toLowerCase() === 'total') {
+      totalRow = item;
+    } else {
+      items.push(item);
+    }
+  }
+
+  const grandTotal = totalRow ? totalRow.total : items.reduce((s, it) => s + it.total, 0);
+  items.forEach(it => {
+    it.pct = grandTotal > 0 ? (it.total / grandTotal) * 100 : 0;
+  });
+  if (totalRow) {
+    totalRow.pct = 100;
+  }
+
+  return { items, totalRow, grandTotal };
+}
+
+/**
+ * Render 4 thẻ KPI tóm tắt đầu Mục 6
+ */
+function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedAddon) {
+  const c = $('bscKpiAddonSummaryCards');
+  if (!c) return;
+
+  const K = (title, val, sub = '', style = '') => `
+    <div class="card kpi">
+      <div class="title">${title}</div>
+      <div class="val" style="${style}">${val}</div>
+      ${sub ? `<div class="sub">${sub}</div>` : ''}
+    </div>`;
+
+  let html = '';
+
+  // Thẻ 1: KPI Team Online T9
+  if (parsedOnline && parsedOnline.totalRow) {
+    const tot = parsedOnline.totalRow;
+    html += K('KPI Team Online (T9)', `${tot.kpiTeam.toFixed(2)}%`, `Toàn quốc · ${tot.headcount} nhân sự (Điểm tổng: ${tot.kpiTotalScore.toFixed(1)}%)`, 'color:#38bdf8');
+  } else {
+    html += K('KPI Team Online (T9)', '–', 'Đang cập nhật', 'color:var(--mut)');
+  }
+
+  // Thẻ 2: KPI Team Offline T10
+  if (parsedOffline && parsedOffline.totalRow) {
+    const tot = parsedOffline.totalRow;
+    html += K('KPI Team Offline (T10)', `${tot.kpiTeam.toFixed(2)}%`, `Toàn quốc · ${tot.headcount} nhân sự (Impact: ${tot.impact.toFixed(1)}%)`, 'color:#a855f7');
+  } else {
+    html += K('KPI Team Offline (T10)', '–', 'Đang cập nhật', 'color:var(--mut)');
+  }
+
+  // Thẻ 3: Talktime TB Online T9
+  if (parsedOnline && parsedOnline.totalRow) {
+    const tot = parsedOnline.totalRow;
+    const mb = parsedOnline.items.find(it => it.name.toLowerCase().includes('bắc'));
+    const mn = parsedOnline.items.find(it => it.name.toLowerCase().includes('nam'));
+    const subStr = (mb ? `MB: ${mb.talktimeStr}` : '') + (mb && mn ? ' · ' : '') + (mn ? `MN: ${mn.talktimeStr}` : '');
+    html += K('Talktime TB Online (T9)', tot.talktimeStr, subStr || 'Toàn quốc', 'color:#06b6d4');
+  } else {
+    html += K('Talktime TB Online (T9)', '–', 'Đang cập nhật', 'color:var(--mut)');
+  }
+
+  // Thẻ 4: Tư Vấn Chuyển Addon T10
+  if (parsedAddon && parsedAddon.totalRow) {
+    const tot = parsedAddon.totalRow;
+    const off = tot.offline.toLocaleString('vi-VN');
+    const on = tot.online.toLocaleString('vi-VN');
+    html += K('Tư Vấn Addon (T10)', `${tot.total.toLocaleString('vi-VN')}`, `Offline: ${off} · Online: ${on}`, 'color:#10b981');
+  } else {
+    html += K('Tư Vấn Addon (T10)', '–', 'Đang cập nhật', 'color:var(--mut)');
+  }
+
+  c.innerHTML = html;
+}
+
+/**
+ * BẢNG 1: KPI TEAM ONLINE THÁNG 9
+ */
+function renderKpiOnlineT9Table(parsed) {
+  const tbl = $('bscKpiOnlineT9Table');
+  if (!tbl || !parsed) return;
+
+  const items = [...parsed.items];
+  const { k, dir } = BAOCAOSC_KPI_ONLINE_T9_SORT;
+
+  if (k !== 'default') {
+    items.sort((a, b) => {
+      if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
+      return dir * ((a[k] || 0) - (b[k] || 0));
+    });
+  }
+
+  const sortArrow = col => (BAOCAOSC_KPI_ONLINE_T9_SORT.k === col ? (BAOCAOSC_KPI_ONLINE_T9_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
+
+  let thead = '<thead><tr>';
+  thead += `<th style="width:55px;text-align:center">STT</th>`;
+  thead += `<th onclick="sortKpiOnlineT9('name')" style="cursor:pointer;text-align:center;min-width:140px">Phân Vùng / Miền${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortKpiOnlineT9('headcount')" style="cursor:pointer;text-align:center;width:110px">Số Nhân Sự${sortArrow('headcount')}</th>`;
+  thead += `<th onclick="sortKpiOnlineT9('kpiImpact')" style="cursor:pointer;text-align:center;min-width:130px">KPI Impact${sortArrow('kpiImpact')}</th>`;
+  thead += `<th onclick="sortKpiOnlineT9('kpiTotalScore')" style="cursor:pointer;text-align:center;min-width:130px">KPI Điểm Tổng${sortArrow('kpiTotalScore')}</th>`;
+  thead += `<th onclick="sortKpiOnlineT9('kpiAddon')" style="cursor:pointer;text-align:center;min-width:130px">KPI Addon${sortArrow('kpiAddon')}</th>`;
+  thead += `<th onclick="sortKpiOnlineT9('kpiTeam')" style="cursor:pointer;text-align:center;min-width:130px">KPI Team${sortArrow('kpiTeam')}</th>`;
+  thead += `<th onclick="sortKpiOnlineT9('talktimeSec')" style="cursor:pointer;text-align:center;min-width:120px">Talktime (TB)${sortArrow('talktimeSec')}</th>`;
+  thead += '</tr></thead>';
+
+  let tbody = '<tbody>';
+  items.forEach((item, idx) => {
+    tbody += '<tr>';
+    tbody += `<td style="text-align:center;color:var(--mut);font-weight:700">${idx + 1}</td>`;
+    tbody += `<td style="text-align:left;font-weight:700;color:var(--tx-heading)">${esc(item.name)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:600">${item.headcount}</td>`;
+    tbody += `<td style="text-align:center">${getKpiPercentBadge(item.kpiImpact, 100)}</td>`;
+    tbody += `<td style="text-align:center">${getKpiPercentBadge(item.kpiTotalScore, 100)}</td>`;
+    tbody += `<td style="text-align:center">${getKpiPercentBadge(item.kpiAddon, 100)}</td>`;
+    tbody += `<td style="text-align:center">${getKpiPercentBadge(item.kpiTeam, 100)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700;color:#06b6d4">${esc(item.talktimeStr)}</td>`;
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  let tfoot = '';
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    tfoot += '<tfoot><tr>';
+    tfoot += `<td style="text-align:center;color:var(--mut)">★</td>`;
+    tfoot += `<td style="text-align:left;font-weight:800;color:var(--tx-heading)">TOÀN QUỐC</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${tot.headcount}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.kpiImpact, 100)}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.kpiTotalScore, 100)}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.kpiAddon, 100)}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.kpiTeam, 100)}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800;color:#06b6d4">${esc(tot.talktimeStr)}</td>`;
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * BẢNG 2: KPI TEAM OFFLINE THÁNG 10
+ */
+function renderKpiOfflineT10Table(parsed) {
+  const tbl = $('bscKpiOfflineT10Table');
+  if (!tbl || !parsed) return;
+
+  const items = [...parsed.items];
+  const { k, dir } = BAOCAOSC_KPI_OFFLINE_T10_SORT;
+
+  if (k !== 'default') {
+    items.sort((a, b) => {
+      if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
+      return dir * ((a[k] || 0) - (b[k] || 0));
+    });
+  }
+
+  const sortArrow = col => (BAOCAOSC_KPI_OFFLINE_T10_SORT.k === col ? (BAOCAOSC_KPI_OFFLINE_T10_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
+
+  let thead = '<thead><tr>';
+  thead += `<th style="width:55px;text-align:center">STT</th>`;
+  thead += `<th onclick="sortKpiOfflineT10('name')" style="cursor:pointer;text-align:center;min-width:140px">Coacher Quản Lý${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortKpiOfflineT10('headcount')" style="cursor:pointer;text-align:center;width:110px">Số Nhân Sự${sortArrow('headcount')}</th>`;
+  thead += `<th onclick="sortKpiOfflineT10('kpiActive')" style="cursor:pointer;text-align:center;min-width:145px">KPI Active Ngày Check-in${sortArrow('kpiActive')}</th>`;
+  thead += `<th onclick="sortKpiOfflineT10('kpiTotalScore')" style="cursor:pointer;text-align:center;min-width:130px">KPI Điểm Tổng${sortArrow('kpiTotalScore')}</th>`;
+  thead += `<th onclick="sortKpiOfflineT10('kpiAddon')" style="cursor:pointer;text-align:center;min-width:130px">KPI Addon${sortArrow('kpiAddon')}</th>`;
+  thead += `<th onclick="sortKpiOfflineT10('kpiTeam')" style="cursor:pointer;text-align:center;min-width:130px">KPI Team${sortArrow('kpiTeam')}</th>`;
+  thead += `<th onclick="sortKpiOfflineT10('impact')" style="cursor:pointer;text-align:center;min-width:130px">Tỷ Lệ Impact${sortArrow('impact')}</th>`;
+  thead += '</tr></thead>';
+
+  let tbody = '<tbody>';
+  items.forEach((item, idx) => {
+    tbody += '<tr>';
+    tbody += `<td style="text-align:center;color:var(--mut);font-weight:700">${idx + 1}</td>`;
+    tbody += `<td style="text-align:left;font-weight:700;color:var(--tx-heading)">${esc(item.name)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:600">${item.headcount}</td>`;
+    tbody += `<td style="text-align:center">${getKpiPercentBadge(item.kpiActive, 50)}</td>`;
+    tbody += `<td style="text-align:center">${getKpiPercentBadge(item.kpiTotalScore, 50)}</td>`;
+    tbody += `<td style="text-align:center">${getKpiPercentBadge(item.kpiAddon, 50)}</td>`;
+    tbody += `<td style="text-align:center">${getKpiPercentBadge(item.kpiTeam, 50)}</td>`;
+    tbody += `<td style="text-align:center">${getKpiPercentBadge(item.impact, 50)}</td>`;
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  let tfoot = '';
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    tfoot += '<tfoot><tr>';
+    tfoot += `<td style="text-align:center;color:var(--mut)">★</td>`;
+    tfoot += `<td style="text-align:left;font-weight:800;color:var(--tx-heading)">TOÀN QUỐC</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${tot.headcount}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.kpiActive, 50)}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.kpiTotalScore, 50)}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.kpiAddon, 50)}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.kpiTeam, 50)}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.impact, 50)}</td>`;
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * BẢNG 3: TƯ VẤN CHUYỂN ADDON THÁNG 10
+ */
+function renderAddonT10Table(parsed) {
+  const tbl = $('bscAddonT10Table');
+  if (!tbl || !parsed) return;
+
+  const items = [...parsed.items];
+  const { k, dir } = BAOCAOSC_ADDON_T10_SORT;
+
+  if (k !== 'default') {
+    items.sort((a, b) => {
+      if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
+      return dir * ((a[k] || 0) - (b[k] || 0));
+    });
+  }
+
+  const sortArrow = col => (BAOCAOSC_ADDON_T10_SORT.k === col ? (BAOCAOSC_ADDON_T10_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
+
+  let thead = '<thead><tr>';
+  thead += `<th style="width:55px;text-align:center">STT</th>`;
+  thead += `<th onclick="sortAddonT10('name')" style="cursor:pointer;text-align:center;min-width:180px">Dịch Vụ Addon${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortAddonT10('offline')" style="cursor:pointer;text-align:center;min-width:130px">Team Offline${sortArrow('offline')}</th>`;
+  thead += `<th onclick="sortAddonT10('online')" style="cursor:pointer;text-align:center;min-width:130px">Team Online${sortArrow('online')}</th>`;
+  thead += `<th onclick="sortAddonT10('total')" style="cursor:pointer;text-align:center;min-width:130px">Tổng Số Lượng${sortArrow('total')}</th>`;
+  thead += `<th onclick="sortAddonT10('pct')" style="cursor:pointer;text-align:center;min-width:160px">Tỷ Trọng Đóng Góp${sortArrow('pct')}</th>`;
+  thead += '</tr></thead>';
+
+  let tbody = '<tbody>';
+  items.forEach((item, idx) => {
+    let barColor = '#38bdf8';
+    if (item.pct >= 30) barColor = '#10b981';
+    else if (item.pct >= 15) barColor = '#38bdf8';
+    else if (item.pct >= 5) barColor = '#a855f7';
+    else barColor = '#f59e0b';
+
+    tbody += '<tr>';
+    tbody += `<td style="text-align:center;color:var(--mut);font-weight:700">${idx + 1}</td>`;
+    tbody += `<td style="text-align:left;font-weight:700;color:var(--tx-heading)">${esc(item.name)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:600">${item.offline.toLocaleString('vi-VN')}</td>`;
+    tbody += `<td style="text-align:center;font-weight:600">${item.online.toLocaleString('vi-VN')}</td>`;
+    tbody += `<td style="text-align:center;font-weight:800;color:#38bdf8">${item.total.toLocaleString('vi-VN')}</td>`;
+    tbody += `<td style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <div style="flex:1;max-width:80px;height:6px;border-radius:3px;background:rgba(148,163,184,0.18);overflow:hidden">
+          <div style="width:${Math.min(100, item.pct)}%;height:100%;background:${barColor};border-radius:3px"></div>
+        </div>
+        <span style="font-weight:800;color:${barColor};min-width:55px;text-align:right">${item.pct.toFixed(2)}%</span>
+      </div>
+    </td>`;
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  let tfoot = '';
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    tfoot += '<tfoot><tr>';
+    tfoot += `<td style="text-align:center;color:var(--mut)">★</td>`;
+    tfoot += `<td style="text-align:left;font-weight:800;color:var(--tx-heading)">TỔNG CỘNG</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${tot.offline.toLocaleString('vi-VN')}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${tot.online.toLocaleString('vi-VN')}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800;color:#38bdf8">${tot.total.toLocaleString('vi-VN')}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800;color:#10b981">100.00%</td>`;
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * Xử lý sắp xếp Bảng 1: KPI Team Online T9
+ */
+function sortKpiOnlineT9(col) {
+  if (BAOCAOSC_KPI_ONLINE_T9_SORT.k === col) {
+    BAOCAOSC_KPI_ONLINE_T9_SORT.dir *= -1;
+  } else {
+    BAOCAOSC_KPI_ONLINE_T9_SORT = { k: col, dir: -1 };
+  }
+  if (BAOCAOSC_STATE.kpiOnlineT9) {
+    const parsed = normalizeKpiOnlineT9Data(BAOCAOSC_STATE.kpiOnlineT9);
+    renderKpiOnlineT9Table(parsed);
+  }
+}
+
+/**
+ * Xử lý sắp xếp Bảng 2: KPI Team Offline T10
+ */
+function sortKpiOfflineT10(col) {
+  if (BAOCAOSC_KPI_OFFLINE_T10_SORT.k === col) {
+    BAOCAOSC_KPI_OFFLINE_T10_SORT.dir *= -1;
+  } else {
+    BAOCAOSC_KPI_OFFLINE_T10_SORT = { k: col, dir: -1 };
+  }
+  if (BAOCAOSC_STATE.kpiOfflineT10) {
+    const parsed = normalizeKpiOfflineT10Data(BAOCAOSC_STATE.kpiOfflineT10);
+    renderKpiOfflineT10Table(parsed);
+  }
+}
+
+/**
+ * Xử lý sắp xếp Bảng 3: Addon T10
+ */
+function sortAddonT10(col) {
+  if (BAOCAOSC_ADDON_T10_SORT.k === col) {
+    BAOCAOSC_ADDON_T10_SORT.dir *= -1;
+  } else {
+    BAOCAOSC_ADDON_T10_SORT = { k: col, dir: -1 };
+  }
+  if (BAOCAOSC_STATE.addonT10) {
+    const parsed = normalizeAddonT10Data(BAOCAOSC_STATE.addonT10);
+    renderAddonT10Table(parsed);
+  }
+}
+
+/**
+ * Xuất file CSV Bảng 1 Mục 6: KPI Team Online Tháng 9
+ */
+function exportKpiOnlineT9Csv() {
+  if (!BAOCAOSC_STATE.kpiOnlineT9) {
+    showToast('Chưa có dữ liệu KPI Team Online Tháng 9 để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizeKpiOnlineT9Data(BAOCAOSC_STATE.kpiOnlineT9);
+  if (!parsed) return;
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 6.1: KPI TEAM ONLINE THÁNG 9 (AJ2:AP5)']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+  lines.push(['STT', 'Phân Vùng / Miền', 'Số Nhân Sự', 'KPI Impact (%)', 'KPI Điểm Tổng (%)', 'KPI Addon (%)', 'KPI Team (%)', 'Talktime (TB)']);
+
+  parsed.items.forEach((it, idx) => {
+    lines.push([
+      idx + 1,
+      it.name,
+      it.headcount,
+      it.kpiImpact.toFixed(2) + '%',
+      it.kpiTotalScore.toFixed(2) + '%',
+      it.kpiAddon.toFixed(2) + '%',
+      it.kpiTeam.toFixed(2) + '%',
+      it.talktimeStr
+    ]);
+  });
+
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    lines.push([
+      '★',
+      'TOÀN QUỐC',
+      tot.headcount,
+      tot.kpiImpact.toFixed(2) + '%',
+      tot.kpiTotalScore.toFixed(2) + '%',
+      tot.kpiAddon.toFixed(2) + '%',
+      tot.kpiTeam.toFixed(2) + '%',
+      tot.talktimeStr
+    ]);
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_KPI_Team_Online_T9_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV KPI Team Online Tháng 9 thành công!', true);
+}
+
+/**
+ * Xuất file CSV Bảng 2 Mục 6: KPI Team Offline Tháng 10
+ */
+function exportKpiOfflineT10Csv() {
+  if (!BAOCAOSC_STATE.kpiOfflineT10) {
+    showToast('Chưa có dữ liệu KPI Team Offline Tháng 10 để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizeKpiOfflineT10Data(BAOCAOSC_STATE.kpiOfflineT10);
+  if (!parsed) return;
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 6.2: KPI TEAM OFFLINE THÁNG 10 (AJ13:AP17)']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+  lines.push(['STT', 'Coacher Quản Lý', 'Số Nhân Sự', 'KPI Active Ngày Checkin (%)', 'KPI Điểm Tổng (%)', 'KPI Addon (%)', 'KPI Team (%)', 'Tỷ Lệ Impact (%)']);
+
+  parsed.items.forEach((it, idx) => {
+    lines.push([
+      idx + 1,
+      it.name,
+      it.headcount,
+      it.kpiActive.toFixed(2) + '%',
+      it.kpiTotalScore.toFixed(2) + '%',
+      it.kpiAddon.toFixed(2) + '%',
+      it.kpiTeam.toFixed(2) + '%',
+      it.impact.toFixed(2) + '%'
+    ]);
+  });
+
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    lines.push([
+      '★',
+      'TOÀN QUỐC',
+      tot.headcount,
+      tot.kpiActive.toFixed(2) + '%',
+      tot.kpiTotalScore.toFixed(2) + '%',
+      tot.kpiAddon.toFixed(2) + '%',
+      tot.kpiTeam.toFixed(2) + '%',
+      tot.impact.toFixed(2) + '%'
+    ]);
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_KPI_Team_Offline_T10_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV KPI Team Offline Tháng 10 thành công!', true);
+}
+
+/**
+ * Xuất file CSV Bảng 3 Mục 6: Tư Vấn Chuyển Addon Tháng 10
+ */
+function exportAddonT10Csv() {
+  if (!BAOCAOSC_STATE.addonT10) {
+    showToast('Chưa có dữ liệu Tư Vấn Chuyển Addon Tháng 10 để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizeAddonT10Data(BAOCAOSC_STATE.addonT10);
+  if (!parsed) return;
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 6.3: TƯ VẤN CHUYỂN ADDON THÁNG 10 (AJ22:AM29)']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+  lines.push(['STT', 'Dịch Vụ Addon', 'Team Offline', 'Team Online', 'Tổng Số Lượng', 'Tỷ Trọng (%)']);
+
+  parsed.items.forEach((it, idx) => {
+    lines.push([
+      idx + 1,
+      it.name,
+      it.offline,
+      it.online,
+      it.total,
+      it.pct.toFixed(2) + '%'
+    ]);
+  });
+
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    lines.push([
+      '★',
+      'TỔNG CỘNG',
+      tot.offline,
+      tot.online,
+      tot.total,
+      '100.00%'
+    ]);
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_TuVan_Addon_T10_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Tư Vấn Chuyển Addon Tháng 10 thành công!', true);
 }
