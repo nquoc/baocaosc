@@ -1700,6 +1700,91 @@ function exportHeadcountCsv() {
   showToast('Đã xuất file CSV Quân Số Đội Ngũ SC (Mục 1) thành công!', true);
 }
 
+/**
+ * Xuất file CSV Bảng 1 Mục 1: Phân bổ quân số theo Miền & Vị trí
+ */
+function exportHeadcountRegionCsv() {
+  if (!BAOCAOSC_STATE.headcountRegion) {
+    showToast('Chưa có dữ liệu Quân số theo Miền để xuất CSV!', false);
+    return;
+  }
+  const parsedRegion = normalizeHeadcountRegionData(BAOCAOSC_STATE.headcountRegion);
+  if (!parsedRegion) return;
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 1.1: PHÂN BỔ QUÂN SỐ THEO MIỀN & VỊ TRÍ']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+  lines.push(['STT', 'Phân Vùng Miền', 'ONLINE', 'OFFLINE', 'Sale Phần Cứng', 'Quản Lý', 'Tổng Miền', 'Thử Việc']);
+  parsedRegion.regions.forEach((r, idx) => {
+    lines.push([idx + 1, r.name, r.online, r.offline, r.salePC, r.manager, r.total, r.probation]);
+  });
+  if (parsedRegion.totalRow) {
+    const tot = parsedRegion.totalRow;
+    lines.push(['★', 'TOÀN QUỐC', tot.online, tot.offline, tot.salePC, tot.manager, tot.total, tot.probation]);
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_QuanSo_TheoMien_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Quân số theo Miền thành công!', true);
+}
+
+/**
+ * Xuất file CSV Bảng 2 Mục 1: Phân bổ quân số theo Tỉnh thành / Khu vực
+ */
+function exportHeadcountProvinceCsv() {
+  if (!BAOCAOSC_STATE.headcountProvince) {
+    showToast('Chưa có dữ liệu Quân số theo Tỉnh thành để xuất CSV!', false);
+    return;
+  }
+  const parsedProvince = normalizeHeadcountProvinceData(BAOCAOSC_STATE.headcountProvince);
+  if (!parsedProvince) return;
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 1.2: PHÂN BỔ QUÂN SỐ THEO TỈNH THÀNH / KHU VỰC']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+  lines.push(['STT', 'Khu Vực / Tỉnh Thành', 'Quân Số', 'Tỷ Trọng (%)']);
+  parsedProvince.provinces.forEach((p, idx) => {
+    lines.push([idx + 1, p.name, p.count, (p.pct != null ? p.pct.toFixed(2) : '0.00') + '%']);
+  });
+  if (parsedProvince.totalRow) {
+    lines.push(['★', 'TỔNG CỘNG', parsedProvince.totalCount, '100.00%']);
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_QuanSo_TheoTinhThanh_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Quân số theo Tỉnh thành thành công!', true);
+}
+
 /* ==========================================================================
    MỤC 5: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (AD2:AG9 & AD13:AG17)
    ========================================================================== */

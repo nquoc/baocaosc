@@ -437,11 +437,6 @@
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span id="baocaoscSrcBadge" class="badge b-load">Đang tải…</span>
         <button id="btnReloadBaoCaoSc" onclick="loadBaoCaoSc(true)">⟳ Tải lại Báo Cáo SC</button>
-        <button onclick="exportHeadcountCsv()" style="background:#7c3aed;border-color:#8b5cf6;color:#fff">⬇ Xuất CSV Mục 1</button>
-        <button onclick="exportActiveRateCsv()" style="background:#059669;border-color:#10b981;color:#fff">⬇ Xuất CSV Mục 2</button>
-        <button onclick="exportCareRateCsv()" style="background:#0284c7;border-color:#0ea5e9;color:#fff">⬇ Xuất CSV Mục 3</button>
-        <button onclick="exportProvinceImpactCsv()" style="background:#d97706;border-color:#f59e0b;color:#fff">⬇ Xuất CSV Mục 4</button>
-        <button onclick="exportImpactSection5Csv()" style="background:#0284c7;border-color:#38bdf8;color:#fff">⬇ Xuất CSV Mục 5</button>
       </div>
     </div>
   </div>
@@ -471,6 +466,9 @@
             <span class="mut sm" style="font-weight:400">(Online · Offline · Sale Phần Cứng · Quản Lý · Thử Việc)</span>
           </h3>
         </div>
+        <div>
+          <button onclick="exportHeadcountRegionCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
+        </div>
       </div>
       <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
         <table id="bscHeadcountRegionTable" class="kpi-table"></table>
@@ -489,6 +487,7 @@
         <div style="display:flex;align-items:center;gap:10px">
           <input type="text" id="bscHeadcountProvinceSearch" placeholder="🔍 Tìm khu vực..." oninput="onHeadcountProvinceSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
           <div class="mut sm" id="bscHeadcountProvinceCount">...</div>
+          <button onclick="exportHeadcountProvinceCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
         </div>
       </div>
       <div class="wrap" style="max-height:600px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
@@ -525,6 +524,7 @@
         <div style="display:flex;align-items:center;gap:10px">
           <input type="text" id="bscSearch" placeholder="🔍 Lọc theo tháng..." oninput="onActiveRateSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
           <div class="mut sm" id="bscTableCount">...</div>
+          <button onclick="exportActiveRateCsv()" style="background:#059669;color:#fff;border-color:#10b981;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
         </div>
       </div>
       <div class="wrap" style="max-height:650px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
@@ -557,6 +557,9 @@
             <span>📊 Bảng Chi Tiết Tỷ Lệ Chăm Khách New Theo Ngành Hàng (Tháng 10)</span>
             <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
           </h3>
+        </div>
+        <div>
+          <button onclick="exportCareRateCsv()" style="background:#0284c7;color:#fff;border-color:#0ea5e9;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
         </div>
       </div>
       <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
@@ -593,6 +596,7 @@
         <div style="display:flex;align-items:center;gap:10px">
           <input type="text" id="bscProvinceSearch" placeholder="🔍 Tìm tỉnh thành..." oninput="onProvinceImpactSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
           <div class="mut sm" id="bscProvinceTableCount">...</div>
+          <button onclick="exportProvinceImpactCsv()" style="background:#d97706;color:#fff;border-color:#f59e0b;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
         </div>
       </div>
       <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
@@ -628,7 +632,7 @@
               <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
             </h3>
           </div>
-          <button onclick="exportImpactSourceCsv()" style="background:#0ea5e9;color:#fff;border-color:#38bdf8;font-size:11.5px;padding:3px 9px;border-radius:6px">⬇ Xuất CSV</button>
+          <button onclick="exportImpactSourceCsv()" style="background:#0ea5e9;color:#fff;border-color:#38bdf8;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
         </div>
         <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
           <table id="bscImpactSourceTable" class="kpi-table"></table>
@@ -644,7 +648,7 @@
               <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
             </h3>
           </div>
-          <button onclick="exportImpactIndustryCsv()" style="background:#8b5cf6;color:#fff;border-color:#a78bfa;font-size:11.5px;padding:3px 9px;border-radius:6px">⬇ Xuất CSV</button>
+          <button onclick="exportImpactIndustryCsv()" style="background:#8b5cf6;color:#fff;border-color:#a78bfa;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
         </div>
         <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
           <table id="bscImpactIndustryTable" class="kpi-table"></table>

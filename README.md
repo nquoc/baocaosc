@@ -297,7 +297,7 @@ Giao diện được chia thành 2 Tab chính:
      * Sắp xếp theo cột bất kỳ (STT, Tệp/Ngành, ACT, Impact, Tỷ lệ) và hỗ trợ xuất CSV riêng từng bảng hoặc xuất gộp cả Mục 5.
 3. **Tiện ích**:
    * Smart Cache IndexedDB (`baocaosc_data`, TTL 20 phút), mở tức thì < 0.05s.
-   * Hỗ trợ 6 nút xuất CSV độc lập: `⬇ Xuất CSV Mục 1`, `⬇ Xuất CSV Mục 2`, `⬇ Xuất CSV Mục 3`, `⬇ Xuất CSV Mục 4`, `⬇ Xuất CSV Mục 5` (chuẩn UTF-8 BOM).
+   * Thanh điều khiển trên cùng gọn gàng, nút **⬇ Xuất CSV** được bố trí trực tiếp tại thanh tiêu đề của từng bảng (Bảng 1 & 2 Mục 1, Mục 2, Mục 3, Mục 4, Bảng 1 & 2 Mục 5), chuẩn UTF-8 BOM hiển thị tiếng Việt hoàn hảo trên Excel.
 
 ---
 
