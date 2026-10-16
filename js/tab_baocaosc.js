@@ -569,7 +569,7 @@ function sortCareRate(key) {
    ========================================================================== */
 
 /**
- * Điều phối render toàn bộ Tab BÁO CÁO SC (Mục 1, Mục 2, Mục 3 & Mục 4)
+ * Điều phối render toàn bộ Tab BÁO CÁO SC (Mục 1 đến Mục 7)
  */
 function renderBaoCaoSc() {
   if (BAOCAOSC_STATE.activeRate) {
@@ -588,6 +588,14 @@ function renderBaoCaoSc() {
     }
   }
 
+  if (BAOCAOSC_STATE.fnbIssue) {
+    const parsedFnb = normalizeFnbIssueData(BAOCAOSC_STATE.fnbIssue);
+    if (parsedFnb) {
+      renderBaoCaoScFnbIssueSummaryCards(parsedFnb);
+      renderFnbIssueTable(parsedFnb);
+    }
+  }
+
   if (BAOCAOSC_STATE.provinceImpact) {
     const parsedProvince = normalizeProvinceImpactData(BAOCAOSC_STATE.provinceImpact);
     if (parsedProvince) {
@@ -596,20 +604,20 @@ function renderBaoCaoSc() {
     }
   }
 
-  if (BAOCAOSC_STATE.headcountRegion || BAOCAOSC_STATE.headcountProvince) {
-    const parsedRegion = BAOCAOSC_STATE.headcountRegion ? normalizeHeadcountRegionData(BAOCAOSC_STATE.headcountRegion) : null;
-    const parsedProvince = BAOCAOSC_STATE.headcountProvince ? normalizeHeadcountProvinceData(BAOCAOSC_STATE.headcountProvince) : null;
-    renderBaoCaoScHeadcountSummaryCards(parsedRegion, parsedProvince);
-    if (parsedRegion) renderHeadcountRegionTable(parsedRegion);
-    if (parsedProvince) renderHeadcountProvinceTable(parsedProvince);
-  }
-
   if (BAOCAOSC_STATE.impactDataSource || BAOCAOSC_STATE.impactIndustry) {
     const parsedSource = BAOCAOSC_STATE.impactDataSource ? normalizeImpactTableData(BAOCAOSC_STATE.impactDataSource) : null;
     const parsedIndustry = BAOCAOSC_STATE.impactIndustry ? normalizeImpactTableData(BAOCAOSC_STATE.impactIndustry) : null;
     renderBaoCaoScImpactSummaryCards(parsedSource, parsedIndustry);
     if (parsedSource) renderImpactSourceTable(parsedSource);
     if (parsedIndustry) renderImpactIndustryTable(parsedIndustry);
+  }
+
+  if (BAOCAOSC_STATE.headcountRegion || BAOCAOSC_STATE.headcountProvince) {
+    const parsedRegion = BAOCAOSC_STATE.headcountRegion ? normalizeHeadcountRegionData(BAOCAOSC_STATE.headcountRegion) : null;
+    const parsedProvince = BAOCAOSC_STATE.headcountProvince ? normalizeHeadcountProvinceData(BAOCAOSC_STATE.headcountProvince) : null;
+    renderBaoCaoScHeadcountSummaryCards(parsedRegion, parsedProvince);
+    if (parsedRegion) renderHeadcountRegionTable(parsedRegion);
+    if (parsedProvince) renderHeadcountProvinceTable(parsedProvince);
   }
 
   if (BAOCAOSC_STATE.kpiOnlineT9 || BAOCAOSC_STATE.kpiOfflineT10 || BAOCAOSC_STATE.addonT10) {
@@ -624,7 +632,7 @@ function renderBaoCaoSc() {
 }
 
 /**
- * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1 đến Mục 6 song song)
+ * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1 đến Mục 7 song song)
  */
 async function loadBaoCaoSc(forceReload = false) {
   const btn = $('btnReloadBaoCaoSc');
@@ -650,7 +658,7 @@ async function loadBaoCaoSc(forceReload = false) {
         req.onerror = () => resolve(null);
       });
 
-      if (cached && cached.activeRate && Array.isArray(cached.activeRate) && cached.activeRate.length >= 2 && cached.provinceImpact && cached.headcountRegion && cached.headcountProvince && cached.impactDataSource && cached.impactIndustry && cached.kpiOnlineT9 && cached.kpiOfflineT10 && cached.addonT10) {
+      if (cached && cached.activeRate && Array.isArray(cached.activeRate) && cached.activeRate.length >= 2 && cached.fnbIssue && cached.provinceImpact && cached.headcountRegion && cached.headcountProvince && cached.impactDataSource && cached.impactIndustry && cached.kpiOnlineT9 && cached.kpiOfflineT10 && cached.addonT10) {
         const ageMs = Date.now() - (cached.savedAt || 0);
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
@@ -682,14 +690,15 @@ async function loadBaoCaoSc(forceReload = false) {
     }
   }
 
-  // 2. Tải API trực tiếp song song (Mục 1 đến Mục 6)
+  // 2. Tải API trực tiếp song song (Mục 1 đến Mục 7)
   const urlActive = API_BAOCAOSC_ACTIVE_RATE + (API_BAOCAOSC_ACTIVE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlCare = API_BAOCAOSC_CARE_RATE + (API_BAOCAOSC_CARE_RATE.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlFnbIssue = API_BAOCAOSC_FNB_ISSUE + (API_BAOCAOSC_FNB_ISSUE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlProvince = API_BAOCAOSC_PROVINCE_IMPACT + (API_BAOCAOSC_PROVINCE_IMPACT.includes('?') ? '&' : '?') + '_t=' + Date.now();
-  const urlHeadcountRegion = API_BAOCAOSC_HEADCOUNT_REGION + (API_BAOCAOSC_HEADCOUNT_REGION.includes('?') ? '&' : '?') + '_t=' + Date.now();
-  const urlHeadcountProvince = API_BAOCAOSC_HEADCOUNT_PROVINCE + (API_BAOCAOSC_HEADCOUNT_PROVINCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlImpactDataSource = API_BAOCAOSC_IMPACT_DATA_SOURCE + (API_BAOCAOSC_IMPACT_DATA_SOURCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlImpactIndustry = API_BAOCAOSC_IMPACT_INDUSTRY + (API_BAOCAOSC_IMPACT_INDUSTRY.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlHeadcountRegion = API_BAOCAOSC_HEADCOUNT_REGION + (API_BAOCAOSC_HEADCOUNT_REGION.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlHeadcountProvince = API_BAOCAOSC_HEADCOUNT_PROVINCE + (API_BAOCAOSC_HEADCOUNT_PROVINCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlKpiOnlineT9 = API_BAOCAOSC_KPI_ONLINE_T9 + (API_BAOCAOSC_KPI_ONLINE_T9.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlKpiOfflineT10 = API_BAOCAOSC_KPI_OFFLINE_T10 + (API_BAOCAOSC_KPI_OFFLINE_T10.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlAddonT10 = API_BAOCAOSC_ADDON_T10 + (API_BAOCAOSC_ADDON_T10.includes('?') ? '&' : '?') + '_t=' + Date.now();
@@ -698,22 +707,24 @@ async function loadBaoCaoSc(forceReload = false) {
     const [
       resActive,
       resCare,
+      resFnbIssue,
       resProvince,
-      resHeadcountRegion,
-      resHeadcountProvince,
       resImpactDataSource,
       resImpactIndustry,
+      resHeadcountRegion,
+      resHeadcountProvince,
       resKpiOnlineT9,
       resKpiOfflineT10,
       resAddonT10
     ] = await Promise.all([
       safeFetchJson(urlActive, 2),
       safeFetchJson(urlCare, 2),
+      safeFetchJson(urlFnbIssue, 2),
       safeFetchJson(urlProvince, 2),
-      safeFetchJson(urlHeadcountRegion, 2),
-      safeFetchJson(urlHeadcountProvince, 2),
       safeFetchJson(urlImpactDataSource, 2),
       safeFetchJson(urlImpactIndustry, 2),
+      safeFetchJson(urlHeadcountRegion, 2),
+      safeFetchJson(urlHeadcountProvince, 2),
       safeFetchJson(urlKpiOnlineT9, 2),
       safeFetchJson(urlKpiOfflineT10, 2),
       safeFetchJson(urlAddonT10, 2)
@@ -729,11 +740,12 @@ async function loadBaoCaoSc(forceReload = false) {
     BAOCAOSC_STATE = {
       activeRate: resActive.data,
       careRate: resCare && resCare.data ? resCare.data : null,
+      fnbIssue: resFnbIssue && resFnbIssue.data ? resFnbIssue.data : null,
       provinceImpact: resProvince && resProvince.data ? resProvince.data : null,
-      headcountRegion: resHeadcountRegion && resHeadcountRegion.data ? resHeadcountRegion.data : null,
-      headcountProvince: resHeadcountProvince && resHeadcountProvince.data ? resHeadcountProvince.data : null,
       impactDataSource: resImpactDataSource && resImpactDataSource.data ? resImpactDataSource.data : null,
       impactIndustry: resImpactIndustry && resImpactIndustry.data ? resImpactIndustry.data : null,
+      headcountRegion: resHeadcountRegion && resHeadcountRegion.data ? resHeadcountRegion.data : null,
+      headcountProvince: resHeadcountProvince && resHeadcountProvince.data ? resHeadcountProvince.data : null,
       kpiOnlineT9: resKpiOnlineT9 && resKpiOnlineT9.data ? resKpiOnlineT9.data : null,
       kpiOfflineT10: resKpiOfflineT10 && resKpiOfflineT10.data ? resKpiOfflineT10.data : null,
       addonT10: resAddonT10 && resAddonT10.data ? resAddonT10.data : null,
@@ -753,7 +765,7 @@ async function loadBaoCaoSc(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1 đến Mục 6) lúc ${timeStr}!`, true);
+    showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1 đến Mục 7) lúc ${timeStr}!`, true);
   } catch (err) {
     console.error('Lỗi khi tải Báo Cáo SC:', err);
     if (BAOCAOSC_STATE.activeRate) {
@@ -902,7 +914,228 @@ function exportCareRateCsv() {
 }
 
 /* ==========================================================================
-   MỤC 3: IMPACT THEO TỈNH THÀNH PHỐ (SHEET 'baocaotuan', RANGE K2:Q19)
+   MỤC 3: TRIỂN KHAI TỆP FNB LỚN (SHEET 'baocaotuan', RANGE AR2:AS9)
+   ========================================================================== */
+
+/**
+ * Chuẩn hóa dữ liệu thô từ sheet 'baocaotuan' (range AR2:AS9)
+ */
+function normalizeFnbIssueData(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const items = [];
+  let totalRow = null;
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+    const name = String(row[0] || '').trim();
+    if (!name) continue;
+
+    const count = parseBscNumber(row[1]);
+    const isTotal = name.toLowerCase() === 'tổng cộng' || name.toLowerCase() === 'total' || name.toLowerCase().includes('tổng');
+
+    const item = {
+      name,
+      count,
+      pct: 0
+    };
+
+    if (isTotal) {
+      totalRow = item;
+    } else {
+      item.id = items.length + 1;
+      items.push(item);
+    }
+  }
+
+  const calculatedTotal = items.reduce((s, it) => s + it.count, 0);
+  const grandTotal = totalRow && totalRow.count > 0 ? totalRow.count : calculatedTotal;
+
+  items.forEach(it => {
+    it.pct = grandTotal > 0 ? (it.count / grandTotal) * 100 : 0;
+  });
+
+  if (totalRow) {
+    totalRow.pct = 100;
+  }
+
+  // Phân tích các chỉ số
+  const sortedByCount = [...items].sort((a, b) => b.count - a.count);
+  const topIssue = sortedByCount[0] || null;
+
+  // Nhóm lỗi kỹ thuật (App/POS, In ấn, Máy in, App Food)
+  const techKeywords = ['app/pos', 'lỗi in', 'máy in', 'app food'];
+  const techItems = items.filter(it => techKeywords.some(kw => it.name.toLowerCase().includes(kw)));
+  const techCount = techItems.reduce((s, it) => s + it.count, 0);
+  const techPct = grandTotal > 0 ? (techCount / grandTotal) * 100 : 0;
+
+  // Nhóm không lỗi / không nhu cầu
+  const nonIssueItem = items.find(it => it.name.toLowerCase().includes('không lỗi') || it.name.toLowerCase().includes('không nhu cầu'));
+  const nonIssueCount = nonIssueItem ? nonIssueItem.count : 0;
+  const nonIssuePct = grandTotal > 0 ? (nonIssueCount / grandTotal) * 100 : 0;
+
+  return {
+    items,
+    totalRow: totalRow || { name: 'Tổng cộng', count: grandTotal, pct: 100 },
+    grandTotal,
+    topIssue,
+    techCount,
+    techPct,
+    nonIssueCount,
+    nonIssuePct
+  };
+}
+
+/**
+ * Hiển thị 4 thẻ KPI tóm tắt cho Mục 3: Triển Khai Tệp FNB Lớn
+ */
+function renderBaoCaoScFnbIssueSummaryCards(parsed) {
+  const box = $('bscFnbIssueSummaryCards');
+  if (!box || !parsed) return;
+
+  const K = (label, val, sub, color = '') => `
+    <div class="card kpi">
+      <div class="l">${label}</div>
+      <div class="v" style="${color}">${val}</div>
+      <div class="s">${sub}</div>
+    </div>`;
+
+  const top = parsed.topIssue;
+  const topName = top ? esc(top.name) : '–';
+  const topVal = top ? `${top.count} case` : '–';
+  const topSub = top ? `Tỷ trọng cao nhất: <b style="color:var(--tx)">${top.pct.toFixed(2)}%</b>` : '–';
+
+  box.innerHTML =
+    K('Tổng Khách Hàng / Case F&B Lớn', `${n0(parsed.grandTotal)} case`, `Ghi nhận qua ${parsed.items.length} nhóm vấn đề`, 'color:#ea580c') +
+    K('Phát Sinh Nhiều Nhất', topVal, `Nhóm: <b style="color:var(--tx)" title="${topName}">${topName.length > 28 ? topName.slice(0, 26) + '…' : topName}</b> (${top ? top.pct.toFixed(1) + '%' : ''})`, 'color:#3b82f6') +
+    K('Sự Cố Kỹ Thuật / Vận Hành', `${n0(parsed.techCount)} case`, `Chiếm <b style="color:#ef4444">${parsed.techPct.toFixed(2)}%</b> (App/POS, Máy in, Báo Bếp, Food)`, 'color:#ef4444') +
+    K('Không Lỗi / Chưa Có Nhu Cầu', `${n0(parsed.nonIssueCount)} case`, `Tỷ trọng: <b style="color:#10b981">${parsed.nonIssuePct.toFixed(2)}%</b> tổng tệp`, 'color:#10b981');
+}
+
+/**
+ * Hiển thị bảng chi tiết Mục 3: Nhóm Vấn Đề / Lỗi Phát Sinh
+ */
+function renderFnbIssueTable(parsed) {
+  const tbl = $('bscFnbIssueTable');
+  if (!tbl || !parsed) return;
+
+  const items = [...parsed.items];
+  const { k, dir } = BAOCAOSC_FNB_ISSUE_SORT;
+
+  items.sort((a, b) => {
+    if (k === 'id') return dir * ((a.id || 0) - (b.id || 0));
+    if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
+    if (k === 'count' || k === 'pct') return dir * (a.count - b.count);
+    return 0;
+  });
+
+  const sortArrow = col => (BAOCAOSC_FNB_ISSUE_SORT.k === col ? (BAOCAOSC_FNB_ISSUE_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
+
+  let thead = '<thead><tr>';
+  thead += `<th onclick="sortFnbIssue('id')" style="width:55px;text-align:center;cursor:pointer">STT${sortArrow('id')}</th>`;
+  thead += `<th onclick="sortFnbIssue('name')" style="text-align:left;cursor:pointer;min-width:240px">Nhóm Vấn Đề / Lỗi Phát Sinh${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortFnbIssue('count')" style="text-align:center;cursor:pointer;min-width:140px">Số Lượng (Case / GH)${sortArrow('count')}</th>`;
+  thead += `<th onclick="sortFnbIssue('pct')" style="text-align:center;cursor:pointer;min-width:180px">Tỷ Trọng Đóng Góp${sortArrow('pct')}</th>`;
+  thead += '</tr></thead>';
+
+  let tbody = '<tbody>';
+  items.forEach((item, idx) => {
+    let barColor = '#38bdf8';
+    if (item.pct >= 30) barColor = '#ea580c';
+    else if (item.pct >= 15) barColor = '#f59e0b';
+    else if (item.pct >= 5) barColor = '#3b82f6';
+    else barColor = '#10b981';
+
+    tbody += '<tr>';
+    tbody += `<td style="text-align:center;color:var(--mut);font-weight:700">${idx + 1}</td>`;
+    tbody += `<td style="text-align:left;font-weight:700;color:var(--tx-heading)">${esc(item.name)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700;color:#ea580c;font-size:13.5px">${n0(item.count)}</td>`;
+    tbody += `<td style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <div style="flex:1;max-width:110px;height:7px;border-radius:4px;background:rgba(148,163,184,0.18);overflow:hidden">
+          <div style="width:${Math.min(100, item.pct)}%;height:100%;background:${barColor};border-radius:4px"></div>
+        </div>
+        <span style="font-weight:800;color:${barColor};min-width:55px;text-align:right">${item.pct.toFixed(2)}%</span>
+      </div>
+    </td>`;
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  let tfoot = '';
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    tfoot += '<tfoot><tr>';
+    tfoot += `<td style="text-align:center;color:var(--mut)">★</td>`;
+    tfoot += `<td style="text-align:left;font-weight:800;color:var(--acc)">TỔNG CỘNG</td>`;
+    tfoot += `<td style="text-align:center;font-weight:900;font-size:14px;color:#ea580c">${n0(tot.count)}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800;color:var(--acc)">100.00%</td>`;
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+function sortFnbIssue(col) {
+  if (BAOCAOSC_FNB_ISSUE_SORT.k === col) {
+    BAOCAOSC_FNB_ISSUE_SORT.dir *= -1;
+  } else {
+    BAOCAOSC_FNB_ISSUE_SORT = { k: col, dir: (col === 'name' || col === 'id') ? 1 : -1 };
+  }
+  if (BAOCAOSC_STATE.fnbIssue) {
+    const parsed = normalizeFnbIssueData(BAOCAOSC_STATE.fnbIssue);
+    renderFnbIssueTable(parsed);
+  }
+}
+
+/**
+ * Xuất file CSV UTF-8 với BOM - Mục 3: Triển Khai Tệp FNB Lớn
+ */
+function exportFnbIssueCsv() {
+  if (!BAOCAOSC_STATE.fnbIssue) {
+    showToast('Chưa có dữ liệu Mục 3 để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizeFnbIssueData(BAOCAOSC_STATE.fnbIssue);
+  if (!parsed) return;
+
+  const lines = [];
+  lines.push(['BÁO CÁO SC - MỤC 3: TRIỂN KHAI TỆP FNB LỚN (AR2:AS9)']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+  lines.push(['STT', 'Nhóm Vấn Đề / Lỗi Phát Sinh', 'Số Lượng', 'Tỷ Trọng (%)']);
+
+  parsed.items.forEach((it, idx) => {
+    lines.push([idx + 1, it.name, it.count, it.pct.toFixed(2) + '%']);
+  });
+
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    lines.push(['★', 'TỔNG CỘNG', tot.count, '100.00%']);
+  }
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BaoCaoSC_Tep_FNB_Lon_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Triển Khai Tệp FNB Lớn (Mục 3) thành công!', true);
+}
+
+/* ==========================================================================
+   MỤC 4: IMPACT THEO TỈNH THÀNH PHỐ (SHEET 'baocaotuan', RANGE K2:Q19)
    ========================================================================== */
 
 function parseProvinceImpactVal(val) {
@@ -1242,18 +1475,19 @@ function onProvinceImpactSearch(val) {
 }
 
 /**
- * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 3
+ * /**
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 4
  */
 function exportProvinceImpactCsv() {
   if (!BAOCAOSC_STATE.provinceImpact) {
-    showToast('Chưa có dữ liệu Mục 3 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 4 để xuất CSV!', false);
     return;
   }
   const parsed = normalizeProvinceImpactData(BAOCAOSC_STATE.provinceImpact);
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 3: IMPACT THEO TỈNH THÀNH PHỐ (T7 - T12)']);
+  lines.push(['BÁO CÁO SC - MỤC 4: IMPACT THEO TỈNH THÀNH PHỐ (T7 - T12)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -1313,11 +1547,11 @@ function exportProvinceImpactCsv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Impact Theo Tỉnh Thành (Mục 3) thành công!', true);
+  showToast('Đã xuất file CSV Impact Theo Tỉnh Thành (Mục 4) thành công!', true);
 }
 
 /* ==========================================================================
-   MỤC 5: QUÂN SỐ ĐỘI NGŨ SC (SHEET 'baocaotuan', U2:AA5 & U7:V24)
+   MỤC 6: QUÂN SỐ ĐỘI NGŨ SC (SHEET 'baocaotuan', U2:AA5 & U7:V24)
    ========================================================================== */
 
 /**
@@ -1456,7 +1690,7 @@ function normalizeHeadcountProvinceData(rawData) {
 }
 
 /**
- * Hiển thị các thẻ KPI tóm tắt Mục 5
+ * Hiển thị các thẻ KPI tóm tắt Mục 6
  */
 function renderBaoCaoScHeadcountSummaryCards(parsedRegion, parsedProvince) {
   const box = $('bscHeadcountSummaryCards');
@@ -1505,7 +1739,7 @@ function renderBaoCaoScHeadcountSummaryCards(parsedRegion, parsedProvince) {
     K('Tổng Quân Số Toàn Quốc', totVal, totSub, 'color:#8b5cf6') +
     K('Lực Lượng OFFLINE', offVal, offSub, 'color:#10b981') +
     K('Lực Lượng ONLINE', onlVal, onlSub, 'color:#0ea5e9') +
-    K('Hỗ Trợ & Thử Việc', otherVal, otherSub, 'color:#f59e0b');
+    K('Hỗ TrỢ & Thử Việc', otherVal, otherSub, 'color:#f59e0b');
 }
 
 /**
@@ -1639,7 +1873,7 @@ function renderHeadcountProvinceTable(parsedProvince) {
 }
 
 /**
- * Sắp xếp bảng Bảng 2 Mục 5
+ * Sắp xếp bảng Bảng 2 Mục 6
  */
 function sortHeadcountProvince(key) {
   if (BAOCAOSC_HEADCOUNT_PROVINCE_SORT.k === key) {
@@ -1655,7 +1889,7 @@ function sortHeadcountProvince(key) {
 }
 
 /**
- * Tìm kiếm khu vực ở Bảng 2 Mục 5
+ * Tìm kiếm khu vực ở Bảng 2 Mục 6
  */
 function onHeadcountProvinceSearch(val) {
   BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH = String(val || '').trim();
@@ -1666,16 +1900,16 @@ function onHeadcountProvinceSearch(val) {
 }
 
 /**
- * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 5
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 6
  */
 function exportHeadcountCsv() {
   if (!BAOCAOSC_STATE.headcountRegion && !BAOCAOSC_STATE.headcountProvince) {
-    showToast('Chưa có dữ liệu Mục 5 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 6 để xuất CSV!', false);
     return;
   }
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 5: QUÂN SỐ ĐỘI NGŨ SC']);
+  lines.push(['BÁO CÁO SC - MỤC 6: QUÂN SỐ ĐỘI NGŨ SC']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -1727,11 +1961,11 @@ function exportHeadcountCsv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Quân Số Đội Ngũ SC (Mục 5) thành công!', true);
+  showToast('Đã xuất file CSV Quân Số Đội Ngũ SC (Mục 6) thành công!', true);
 }
 
 /**
- * Xuất file CSV Bảng 1 Mục 5: Phân bổ quân số theo Miền & Vị trí
+ * Xuất file CSV Bảng 1 Mục 6: Phân bổ quân số theo Miền & Vị trí
  */
 function exportHeadcountRegionCsv() {
   if (!BAOCAOSC_STATE.headcountRegion) {
@@ -1742,7 +1976,7 @@ function exportHeadcountRegionCsv() {
   if (!parsedRegion) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 5.1: PHÂN BỔ QUÂN SỐ THEO MIỀN & VỊ TRÍ']);
+  lines.push(['BÁO CÁO SC - MỤC 6.1: PHÂN BỔ QUÂN SỐ THEO MIỀN & VỊ TRÍ']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Phân Vùng Miền', 'ONLINE', 'OFFLINE', 'Sale Phần Cứng', 'Quản Lý', 'Tổng Miền', 'Thử Việc']);
@@ -1774,7 +2008,7 @@ function exportHeadcountRegionCsv() {
 }
 
 /**
- * Xuất file CSV Bảng 2 Mục 5: Phân bổ quân số theo Tỉnh thành / Khu vực
+ * Xuất file CSV Bảng 2 Mục 6: Phân bổ quân số theo Tỉnh thành / Khu vực
  */
 function exportHeadcountProvinceCsv() {
   if (!BAOCAOSC_STATE.headcountProvince) {
@@ -1785,7 +2019,7 @@ function exportHeadcountProvinceCsv() {
   if (!parsedProvince) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 5.2: PHÂN BỔ QUÂN SỐ THEO TỈNH THÀNH / KHU VỰC']);
+  lines.push(['BÁO CÁO SC - MỤC 6.2: PHÂN BỔ QUÂN SỐ THEO TỈNH THÀNH / KHU VỰC']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Khu Vực / Tỉnh Thành', 'Quân Số', 'Tỷ Trọng (%)']);
@@ -1816,7 +2050,7 @@ function exportHeadcountProvinceCsv() {
 }
 
 /* ==========================================================================
-   MỤC 4: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (AD2:AG9 & AD13:AG17)
+   MỤC 5: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (AD2:AG9 & AD13:AG17)
    ========================================================================== */
 
 /**
@@ -2137,7 +2371,7 @@ function exportImpactSourceCsv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 4.1: IMPACT THEO NGUỒN DATA']);
+  lines.push(['BÁO CÁO SC - MỤC 5.1: IMPACT THEO NGUỒN DATA']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Tệp / Nguồn Data', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
@@ -2182,7 +2416,7 @@ function exportImpactIndustryCsv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 4.2: IMPACT THEO NGÀNH HÀNG']);
+  lines.push(['BÁO CÁO SC - MỤC 5.2: IMPACT THEO NGÀNH HÀNG']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Ngành Hàng', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
@@ -2216,16 +2450,16 @@ function exportImpactIndustryCsv() {
 }
 
 /**
- * Xuất file CSV Tổng Hợp Mục 4 (Gồm cả 2 bảng Nguồn Data & Ngành Hàng)
+ * Xuất file CSV Tổng Hợp Mục 5 (Gồm cả 2 bảng Nguồn Data & Ngành Hàng)
  */
 function exportImpactSection5Csv() {
   if (!BAOCAOSC_STATE.impactDataSource && !BAOCAOSC_STATE.impactIndustry) {
-    showToast('Chưa có dữ liệu Mục 4 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 5 để xuất CSV!', false);
     return;
   }
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 4: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG']);
+  lines.push(['BÁO CÁO SC - MỤC 5: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -2278,14 +2512,14 @@ function exportImpactSection5Csv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Tổng Hợp Mục 4 thành công!', true);
+  showToast('Đã xuất file CSV Tổng Hợp Mục 5 thành công!', true);
 }
 
 /* ==========================================================================
-   MỤC 6: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON (THÁNG 9 & THÁNG 10)
-   - 6.1: KPI Team Online Tháng 9 (AJ2:AP5)
-   - 6.2: KPI Team Offline Tháng 10 (AJ13:AP17)
-   - 6.3: Tư Vấn Chuyển Addon Tháng 10 (AJ22:AM29)
+   MỤC 7: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON (THÁNG 9 & THÁNG 10)
+   - 7.1: KPI Team Online Tháng 9 (AJ2:AP5)
+   - 7.2: KPI Team Offline Tháng 10 (AJ13:AP17)
+   - 7.3: Tư Vấn Chuyển Addon Tháng 10 (AJ22:AM29)
    ========================================================================== */
 
 let BAOCAOSC_KPI_ONLINE_T9_SORT = { k: 'default', dir: -1 };
@@ -2788,7 +3022,7 @@ function sortAddonT10(col) {
 }
 
 /**
- * Xuất file CSV Bảng 1 Mục 6: KPI Team Online Tháng 9
+ * Xuất file CSV Bảng 1 Mục 7: KPI Team Online Tháng 9
  */
 function exportKpiOnlineT9Csv() {
   if (!BAOCAOSC_STATE.kpiOnlineT9) {
@@ -2799,7 +3033,7 @@ function exportKpiOnlineT9Csv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 6.1: KPI TEAM ONLINE THÁNG 9 (AJ2:AP5)']);
+  lines.push(['BÁO CÁO SC - MỤC 7.1: KPI TEAM ONLINE THÁNG 9 (AJ2:AP5)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Phân Vùng / Miền', 'Số Nhân Sự', 'KPI Impact (%)', 'KPI Điểm Tổng (%)', 'KPI Addon (%)', 'KPI Team (%)', 'Talktime (TB)']);
@@ -2851,7 +3085,7 @@ function exportKpiOnlineT9Csv() {
 }
 
 /**
- * Xuất file CSV Bảng 2 Mục 6: KPI Team Offline Tháng 10
+ * Xuất file CSV Bảng 2 Mục 7: KPI Team Offline Tháng 10
  */
 function exportKpiOfflineT10Csv() {
   if (!BAOCAOSC_STATE.kpiOfflineT10) {
@@ -2862,7 +3096,7 @@ function exportKpiOfflineT10Csv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 6.2: KPI TEAM OFFLINE THÁNG 10 (AJ13:AP17)']);
+  lines.push(['BÁO CÁO SC - MỤC 7.2: KPI TEAM OFFLINE THÁNG 10 (AJ13:AP17)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Coacher Quản Lý', 'Số Nhân Sự', 'KPI Active Ngày Checkin (%)', 'KPI Điểm Tổng (%)', 'KPI Addon (%)', 'KPI Team (%)', 'Tỷ Lệ Impact (%)']);
@@ -2914,7 +3148,7 @@ function exportKpiOfflineT10Csv() {
 }
 
 /**
- * Xuất file CSV Bảng 3 Mục 6: Tư Vấn Chuyển Addon Tháng 10
+ * Xuất file CSV Bảng 3 Mục 7: Tư Vấn Chuyển Addon Tháng 10
  */
 function exportAddonT10Csv() {
   if (!BAOCAOSC_STATE.addonT10) {
@@ -2925,7 +3159,7 @@ function exportAddonT10Csv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 6.3: TƯ VẤN CHUYỂN ADDON THÁNG 10 (AJ22:AM29)']);
+  lines.push(['BÁO CÁO SC - MỤC 7.3: TƯ VẤN CHUYỂN ADDON THÁNG 10 (AJ22:AM29)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Dịch Vụ Addon', 'Team Offline', 'Team Online', 'Tổng Số Lượng', 'Tỷ Trọng (%)']);
