@@ -791,7 +791,7 @@ function exportActiveRateCsv() {
   const lines = [];
 
   // Tiêu đề
-  lines.push(['BÁO CÁO SC - MỤC 2: ACTIVE RATE NĂM 2026']);
+  lines.push(['BÁO CÁO SC - MỤC 1: ACTIVE RATE NĂM 2026']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -839,15 +839,15 @@ function exportActiveRateCsv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Active Rate (Mục 2) thành công!', true);
+  showToast('Đã xuất file CSV Active Rate (Mục 1) thành công!', true);
 }
 
 /**
- * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 3
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 2
  */
 function exportCareRateCsv() {
   if (!BAOCAOSC_STATE.careRate) {
-    showToast('Chưa có dữ liệu Mục 3 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 2 để xuất CSV!', false);
     return;
   }
   const parsed = normalizeCareRateData(BAOCAOSC_STATE.careRate);
@@ -856,7 +856,7 @@ function exportCareRateCsv() {
   const lines = [];
 
   // Tiêu đề
-  lines.push(['BÁO CÁO SC - MỤC 3: TỶ LỆ CHĂM KHÁCH NEW T10']);
+  lines.push(['BÁO CÁO SC - MỤC 2: TỶ LỆ CHĂM KHÁCH NEW T10']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -898,7 +898,7 @@ function exportCareRateCsv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Chăm Khách New (Mục 3) thành công!', true);
+  showToast('Đã xuất file CSV Chăm Khách New (Mục 2) thành công!', true);
 }
 
 /* ==========================================================================
@@ -1242,18 +1242,18 @@ function onProvinceImpactSearch(val) {
 }
 
 /**
- * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 4
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 3
  */
 function exportProvinceImpactCsv() {
   if (!BAOCAOSC_STATE.provinceImpact) {
-    showToast('Chưa có dữ liệu Mục 4 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 3 để xuất CSV!', false);
     return;
   }
   const parsed = normalizeProvinceImpactData(BAOCAOSC_STATE.provinceImpact);
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 4: IMPACT THEO TỈNH THÀNH PHỐ (T7 - T12)']);
+  lines.push(['BÁO CÁO SC - MỤC 3: IMPACT THEO TỈNH THÀNH PHỐ (T7 - T12)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -1313,11 +1313,11 @@ function exportProvinceImpactCsv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Impact Theo Tỉnh Thành (Mục 4) thành công!', true);
+  showToast('Đã xuất file CSV Impact Theo Tỉnh Thành (Mục 3) thành công!', true);
 }
 
 /* ==========================================================================
-   MỤC 4: QUÂN SỐ ĐỘI NGŨ SC (SHEET 'baocaotuan', U2:AA5 & U7:V24)
+   MỤC 5: QUÂN SỐ ĐỘI NGŨ SC (SHEET 'baocaotuan', U2:AA5 & U7:V24)
    ========================================================================== */
 
 /**
@@ -1456,7 +1456,7 @@ function normalizeHeadcountProvinceData(rawData) {
 }
 
 /**
- * Hiển thị các thẻ KPI tóm tắt Mục 4
+ * Hiển thị các thẻ KPI tóm tắt Mục 5
  */
 function renderBaoCaoScHeadcountSummaryCards(parsedRegion, parsedProvince) {
   const box = $('bscHeadcountSummaryCards');
@@ -1639,7 +1639,7 @@ function renderHeadcountProvinceTable(parsedProvince) {
 }
 
 /**
- * Sắp xếp bảng Bảng 2 Mục 4
+ * Sắp xếp bảng Bảng 2 Mục 5
  */
 function sortHeadcountProvince(key) {
   if (BAOCAOSC_HEADCOUNT_PROVINCE_SORT.k === key) {
@@ -1655,7 +1655,7 @@ function sortHeadcountProvince(key) {
 }
 
 /**
- * Tìm kiếm khu vực ở Bảng 2 Mục 4
+ * Tìm kiếm khu vực ở Bảng 2 Mục 5
  */
 function onHeadcountProvinceSearch(val) {
   BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH = String(val || '').trim();
@@ -1666,16 +1666,16 @@ function onHeadcountProvinceSearch(val) {
 }
 
 /**
- * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 1
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 5
  */
 function exportHeadcountCsv() {
   if (!BAOCAOSC_STATE.headcountRegion && !BAOCAOSC_STATE.headcountProvince) {
-    showToast('Chưa có dữ liệu Mục 1 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 5 để xuất CSV!', false);
     return;
   }
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 1: QUÂN SỐ ĐỘI NGŨ SC']);
+  lines.push(['BÁO CÁO SC - MỤC 5: QUÂN SỐ ĐỘI NGŨ SC']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -1727,11 +1727,11 @@ function exportHeadcountCsv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Quân Số Đội Ngũ SC (Mục 1) thành công!', true);
+  showToast('Đã xuất file CSV Quân Số Đội Ngũ SC (Mục 5) thành công!', true);
 }
 
 /**
- * Xuất file CSV Bảng 1 Mục 1: Phân bổ quân số theo Miền & Vị trí
+ * Xuất file CSV Bảng 1 Mục 5: Phân bổ quân số theo Miền & Vị trí
  */
 function exportHeadcountRegionCsv() {
   if (!BAOCAOSC_STATE.headcountRegion) {
@@ -1742,7 +1742,7 @@ function exportHeadcountRegionCsv() {
   if (!parsedRegion) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 1.1: PHÂN BỔ QUÂN SỐ THEO MIỀN & VỊ TRÍ']);
+  lines.push(['BÁO CÁO SC - MỤC 5.1: PHÂN BỔ QUÂN SỐ THEO MIỀN & VỊ TRÍ']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Phân Vùng Miền', 'ONLINE', 'OFFLINE', 'Sale Phần Cứng', 'Quản Lý', 'Tổng Miền', 'Thử Việc']);
@@ -1774,7 +1774,7 @@ function exportHeadcountRegionCsv() {
 }
 
 /**
- * Xuất file CSV Bảng 2 Mục 1: Phân bổ quân số theo Tỉnh thành / Khu vực
+ * Xuất file CSV Bảng 2 Mục 5: Phân bổ quân số theo Tỉnh thành / Khu vực
  */
 function exportHeadcountProvinceCsv() {
   if (!BAOCAOSC_STATE.headcountProvince) {
@@ -1785,7 +1785,7 @@ function exportHeadcountProvinceCsv() {
   if (!parsedProvince) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 1.2: PHÂN BỔ QUÂN SỐ THEO TỈNH THÀNH / KHU VỰC']);
+  lines.push(['BÁO CÁO SC - MỤC 5.2: PHÂN BỔ QUÂN SỐ THEO TỈNH THÀNH / KHU VỰC']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Khu Vực / Tỉnh Thành', 'Quân Số', 'Tỷ Trọng (%)']);
@@ -1816,7 +1816,7 @@ function exportHeadcountProvinceCsv() {
 }
 
 /* ==========================================================================
-   MỤC 5: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (AD2:AG9 & AD13:AG17)
+   MỤC 4: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (AD2:AG9 & AD13:AG17)
    ========================================================================== */
 
 /**
@@ -1944,7 +1944,7 @@ function sortImpactIndustry(key) {
 }
 
 /**
- * Hiển thị 4 thẻ KPI tóm tắt cho Mục 5
+ * Hiển thị 4 thẻ KPI tóm tắt cho Mục 4
  */
 function renderBaoCaoScImpactSummaryCards(parsedSource, parsedIndustry) {
   const box = $('bscImpactSummaryCards');
@@ -2137,7 +2137,7 @@ function exportImpactSourceCsv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 5.1: IMPACT THEO NGUỒN DATA']);
+  lines.push(['BÁO CÁO SC - MỤC 4.1: IMPACT THEO NGUỒN DATA']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Tệp / Nguồn Data', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
@@ -2182,7 +2182,7 @@ function exportImpactIndustryCsv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 5.2: IMPACT THEO NGÀNH HÀNG']);
+  lines.push(['BÁO CÁO SC - MỤC 4.2: IMPACT THEO NGÀNH HÀNG']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Ngành Hàng', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
@@ -2216,16 +2216,16 @@ function exportImpactIndustryCsv() {
 }
 
 /**
- * Xuất file CSV Tổng Hợp Mục 5 (Gồm cả 2 bảng Nguồn Data & Ngành Hàng)
+ * Xuất file CSV Tổng Hợp Mục 4 (Gồm cả 2 bảng Nguồn Data & Ngành Hàng)
  */
 function exportImpactSection5Csv() {
   if (!BAOCAOSC_STATE.impactDataSource && !BAOCAOSC_STATE.impactIndustry) {
-    showToast('Chưa có dữ liệu Mục 5 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 4 để xuất CSV!', false);
     return;
   }
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 5: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG']);
+  lines.push(['BÁO CÁO SC - MỤC 4: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -2278,7 +2278,7 @@ function exportImpactSection5Csv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Tổng Hợp Mục 5 thành công!', true);
+  showToast('Đã xuất file CSV Tổng Hợp Mục 4 thành công!', true);
 }
 
 /* ==========================================================================
