@@ -82,7 +82,7 @@ function switchTab(tab) {
       renderKpiOnline();
     }
   } else if (tab === 'phancung') {
-    if (!PHANCUNG_STATE.data) {
+    if (!PHANCUNG_STATE.data || !PHANCUNG_SOURCE_STATE.data) {
       loadPhanCung(false);
     } else {
       renderPhanCung();

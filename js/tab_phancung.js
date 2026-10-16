@@ -648,10 +648,11 @@ function renderPhanCung() {
   renderKpiQuarterTable(parsed);
   renderSaleDetailTable(parsed);
   renderPhanCungOct();
+  renderPhanCungSource();
 }
 
 /**
- * Tải dữ liệu DS Phần Cứng từ IndexedDB hoặc API trực tiếp
+ * Tải dữ liệu DS Phần Cứng từ IndexedDB hoặc API trực tiếp (Mục 1, Mục 2, Mục 3)
  */
 async function loadPhanCung(forceReload = false) {
   const btn = $('btnReloadPhanCung');
@@ -670,7 +671,7 @@ async function loadPhanCung(forceReload = false) {
   if (!forceReload) {
     try {
       const db = await openDB();
-      const [cachedYear, cachedOct] = await Promise.all([
+      const [cachedYear, cachedOct, cachedSource] = await Promise.all([
         new Promise(resolve => {
           const tx = db.transaction(STORE_NAME, 'readonly');
           const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG);
@@ -682,16 +683,24 @@ async function loadPhanCung(forceReload = false) {
           const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG_OCT);
           req.onsuccess = () => resolve(req.result || null);
           req.onerror = () => resolve(null);
+        }),
+        new Promise(resolve => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG_SOURCE);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
         })
       ]);
 
-      if (cachedYear && cachedYear.data && Array.isArray(cachedYear.data) && cachedYear.data.length >= 12) {
+      if (cachedYear && cachedYear.data && Array.isArray(cachedYear.data) && cachedYear.data.length >= 12 &&
+          cachedSource && cachedSource.data && Array.isArray(cachedSource.data) && cachedSource.data.length >= 2) {
         const ageMs = Date.now() - (cachedYear.savedAt || 0);
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
 
         PHANCUNG_STATE = cachedYear;
         if (cachedOct && cachedOct.data) PHANCUNG_OCT_STATE = cachedOct;
+        PHANCUNG_SOURCE_STATE = cachedSource;
 
         if (ageMs < CACHE_TTL_MS) {
           renderPhanCung();
@@ -703,12 +712,13 @@ async function loadPhanCung(forceReload = false) {
             btn.disabled = false;
             btn.textContent = '⟳ Tải lại DS Phần Cứng';
           }
-          showToast(`⚡ Đã tải tức thì DS Phần Cứng từ bộ nhớ đệm (${timeLabel}).`, true);
+          showToast(`⚡ Đã tải tức thì DS Phần Cứng (Mục 1, 2 & 3) từ bộ nhớ đệm (${timeLabel}).`, true);
           return;
         } else {
           // Hiển thị tạm cache cũ và tải ngầm
           PHANCUNG_STATE = cachedYear;
           if (cachedOct && cachedOct.data) PHANCUNG_OCT_STATE = cachedOct;
+          PHANCUNG_SOURCE_STATE = cachedSource;
           renderPhanCung();
           if (badge) {
             badge.className = 'badge b-load';
@@ -721,13 +731,15 @@ async function loadPhanCung(forceReload = false) {
     }
   }
 
-  // 2. Tải API trực tiếp song song (Mục 1 sheet phancung + Mục 2 sheet opp)
+  // 2. Tải API trực tiếp song song (Mục 1 sheet phancung + Mục 2 sheet opp + Mục 3 sheet phancung T1:W9)
   const urlYear = API_PHANCUNG + (API_PHANCUNG.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlOct = API_PHANCUNG_OCT + (API_PHANCUNG_OCT.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlSource = API_PHANCUNG_SOURCE + (API_PHANCUNG_SOURCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   try {
-    const [resYear, resOct] = await Promise.all([
+    const [resYear, resOct, resSource] = await Promise.all([
       safeFetchJson(urlYear, 2),
-      safeFetchJson(urlOct, 2)
+      safeFetchJson(urlOct, 2),
+      safeFetchJson(urlSource, 2)
     ]);
 
     if (resYear.status !== 'success' || !Array.isArray(resYear.data) || resYear.data.length < 12) {
@@ -751,6 +763,14 @@ async function loadPhanCung(forceReload = false) {
       };
     }
 
+    if (resSource && resSource.status === 'success' && Array.isArray(resSource.data) && resSource.data.length >= 2) {
+      PHANCUNG_SOURCE_STATE = {
+        data: resSource.data,
+        savedAt: Date.now(),
+        timeStr: timeStr
+      };
+    }
+
     // Lưu IndexedDB
     try {
       const db = await openDB();
@@ -759,6 +779,9 @@ async function loadPhanCung(forceReload = false) {
       if (PHANCUNG_OCT_STATE.data) {
         tx.objectStore(STORE_NAME).put(PHANCUNG_OCT_STATE, CACHE_KEY_PHANCUNG_OCT);
       }
+      if (PHANCUNG_SOURCE_STATE.data) {
+        tx.objectStore(STORE_NAME).put(PHANCUNG_SOURCE_STATE, CACHE_KEY_PHANCUNG_SOURCE);
+      }
     } catch (e) {}
 
     renderPhanCung();
@@ -766,7 +789,7 @@ async function loadPhanCung(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast(`Đã đồng bộ thành công DS Phần Cứng (Mục 1 & Mục 2) lúc ${timeStr}!`, true);
+    showToast(`Đã đồng bộ thành công DS Phần Cứng (Mục 1, 2 & 3) lúc ${timeStr}!`, true);
   } catch (err) {
     console.error('Lỗi khi tải DS Phần Cứng:', err);
     if (PHANCUNG_STATE.data) {
@@ -1744,4 +1767,341 @@ function exportPhanCungOctCsv() {
   a.download = `ma_tran_phan_cung_thang_10_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   showToast('Đã xuất thành công file CSV Ma Trận Phần Cứng Tháng 10!', true);
+}
+
+// =========================================================================
+// MỤC 3: BÁN HÀNG TỪ NGUỒN (SHEET PHANCUNG T1:W9)
+// =========================================================================
+
+/**
+ * Lấy icon trực quan cho từng kênh / nguồn tiếp cận
+ */
+function getPhanCungSourceIcon(name) {
+  const s = String(name || '').toLowerCase();
+  if (s.includes('sale')) return '💼';
+  if (s.includes('dvkh') || s.includes('chăm sóc')) return '🎧';
+  if (s.includes('shopee') || s.includes('lazada') || s.includes('tiktok') || s.includes('sàn')) return '🛍️';
+  if (s.includes('fanpage') || s.includes('fb') || s.includes('facebook')) return '📱';
+  if (s.includes('mky')) return '🏷️';
+  return '📁';
+}
+
+/**
+ * Chuẩn hóa dữ liệu Mục 3: Bán Hàng Từ Nguồn từ Sheet phancung (T1:W9)
+ */
+function normalizePhanCungSourceData(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const headerRow = rawData[0] || [];
+  let colName = 0;
+  let colT10 = 1;
+  let colT11 = 2;
+  let colT12 = 3;
+
+  headerRow.forEach((h, idx) => {
+    const s = String(h || '').trim().toLowerCase();
+    if (s.includes('nguồn')) colName = idx;
+    else if (s.includes('10')) colT10 = idx;
+    else if (s.includes('11')) colT11 = idx;
+    else if (s.includes('12')) colT12 = idx;
+  });
+
+  const items = [];
+  let totalRow = null;
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+    const name = String(row[colName] == null ? '' : row[colName]).trim();
+    if (!name) continue;
+
+    const valT10Raw = row[colT10];
+    const valT11Raw = row[colT11];
+    const valT12Raw = row[colT12];
+
+    const t10 = (valT10Raw === '' || valT10Raw == null) ? null : parsePcNumber(valT10Raw);
+    const t11 = (valT11Raw === '' || valT11Raw == null) ? null : parsePcNumber(valT11Raw);
+    const t12 = (valT12Raw === '' || valT12Raw == null) ? null : parsePcNumber(valT12Raw);
+
+    const q4 = (t10 || 0) + (t11 || 0) + (t12 || 0);
+
+    const itemObj = {
+      stt: r,
+      name,
+      t10,
+      t11,
+      t12,
+      q4,
+      pct10: 0,
+      rawRow: row
+    };
+
+    if (/^tổng/i.test(name)) {
+      totalRow = itemObj;
+    } else {
+      items.push(itemObj);
+    }
+  }
+
+  // Tính tổng
+  const sumT10Items = items.reduce((s, it) => s + (it.t10 || 0), 0);
+  const sumT11Items = items.reduce((s, it) => s + (it.t11 || 0), 0);
+  const sumT12Items = items.reduce((s, it) => s + (it.t12 || 0), 0);
+  const sumQ4Items = items.reduce((s, it) => s + it.q4, 0);
+
+  const grandT10 = (totalRow && totalRow.t10 != null && totalRow.t10 > 0) ? totalRow.t10 : sumT10Items;
+  const grandT11 = (totalRow && totalRow.t11 != null && totalRow.t11 > 0) ? totalRow.t11 : sumT11Items;
+  const grandT12 = (totalRow && totalRow.t12 != null && totalRow.t12 > 0) ? totalRow.t12 : sumT12Items;
+  const grandQ4 = (totalRow && totalRow.q4 > 0) ? totalRow.q4 : sumQ4Items;
+
+  items.forEach(it => {
+    if (it.t10 != null && grandT10 > 0) {
+      it.pct10 = (it.t10 / grandT10) * 100;
+    } else {
+      it.pct10 = 0;
+    }
+  });
+
+  const saleItem = items.find(it => /sale/i.test(it.name));
+  const dvkhItem = items.find(it => /dvkh/i.test(it.name) || /chăm sóc/i.test(it.name));
+  const otherItems = items.filter(it => it !== saleItem && it !== dvkhItem);
+  const otherT10 = otherItems.reduce((s, it) => s + (it.t10 || 0), 0);
+
+  return {
+    headers: headerRow,
+    items,
+    totalRow: totalRow || { name: 'Tổng', t10: grandT10, t11: grandT11, t12: grandT12, q4: grandQ4, pct10: 100 },
+    grandT10,
+    grandT11,
+    grandT12,
+    grandQ4,
+    saleItem,
+    dvkhItem,
+    otherItems,
+    otherT10
+  };
+}
+
+/**
+ * Hiển thị các thẻ KPI tóm tắt Mục 3
+ */
+function renderPhanCungSourceSummaryCards(parsed) {
+  const box = $('pcSourceSummaryCards');
+  if (!box || !parsed) return;
+
+  const K = (l, v, s, c = '', tag = '') => `
+    <div class="card kpi">
+      <div class="l" style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+        <span>${l}</span>
+        ${tag ? `<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(124,58,237,0.18);color:#c084fc;white-space:nowrap">${tag}</span>` : ''}
+      </div>
+      <div class="v" style="${c}">${v}</div>
+      <div class="s">${s}</div>
+    </div>`;
+
+  const totalT10 = parsed.grandT10 || 0;
+  const saleCount = parsed.saleItem ? (parsed.saleItem.t10 || 0) : 0;
+  const salePct = parsed.saleItem ? parsed.saleItem.pct10 : 0;
+  const dvkhCount = parsed.dvkhItem ? (parsed.dvkhItem.t10 || 0) : 0;
+  const dvkhPct = parsed.dvkhItem ? parsed.dvkhItem.pct10 : 0;
+  const otherCount = parsed.otherT10 || 0;
+  const otherPct = totalT10 > 0 ? (otherCount / totalT10 * 100) : 0;
+
+  box.innerHTML =
+    K('Tổng Sản Lượng T10', `${n0(totalT10)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `Toàn bộ các kênh ghi nhận trong Tháng 10`, 'color:#38bdf8', 'Tháng 10') +
+    K('Kênh Sale Trực Tiếp', `${n0(saleCount)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `Chiếm ${salePct.toFixed(1)}% sản lượng Tháng 10`, 'color:#10b981', `${salePct.toFixed(1)}%`) +
+    K('DVKH CS (Chăm Sóc)', `${n0(dvkhCount)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `Chiếm ${dvkhPct.toFixed(1)}% sản lượng Tháng 10`, 'color:#f59e0b', `${dvkhPct.toFixed(1)}%`) +
+    K('Các Kênh Khác (MKY / Sàn)', `${n0(otherCount)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `MKY (7) · Shopee, Lazada, Tiktok, Fanpage (0)`, 'color:#c084fc', `${otherPct.toFixed(1)}%`);
+}
+
+/**
+ * Hiển thị bảng chi tiết Mục 3: Bán Hàng Từ Nguồn
+ */
+function renderPhanCungSourceTable(parsed) {
+  const tbl = $('pcSourceTable');
+  if (!tbl || !parsed) return;
+
+  const { k, dir } = PHANCUNG_SOURCE_SORT;
+  const sortArrow = key => (k === key ? (dir > 0 ? ' ▲' : ' ▼') : ' ⇅');
+
+  const items = [...parsed.items];
+  items.sort((a, b) => {
+    if (k === 'name') {
+      return dir * String(a.name).localeCompare(String(b.name), 'vi');
+    }
+    let vA = a[k];
+    let vB = b[k];
+    vA = vA == null ? -Infinity : Number(vA);
+    vB = vB == null ? -Infinity : Number(vB);
+    return dir * (vA - vB);
+  });
+
+  let hHtml = `
+    <thead>
+      <tr style="background:var(--subtle);border-bottom:2px solid var(--line)">
+        <th onclick="sortPhanCungSource('stt')" style="cursor:pointer;text-align:center;width:55px" title="Sắp xếp theo STT">STT${sortArrow('stt')}</th>
+        <th onclick="sortPhanCungSource('name')" style="cursor:pointer;text-align:left;min-width:220px" title="Sắp xếp theo Kênh / Nguồn">Kênh / Nguồn Tiếp Cận${sortArrow('name')}</th>
+        <th onclick="sortPhanCungSource('t10')" style="cursor:pointer;text-align:right;width:125px" title="Sắp xếp theo Số lượng Tháng 10">Tháng 10 (SL)${sortArrow('t10')}</th>
+        <th onclick="sortPhanCungSource('pct10')" style="cursor:pointer;text-align:left;min-width:180px" title="Sắp xếp theo Tỷ trọng % Tháng 10">Tỷ Trọng T10 (%)${sortArrow('pct10')}</th>
+        <th onclick="sortPhanCungSource('t11')" style="cursor:pointer;text-align:right;width:115px" title="Sắp xếp theo Tháng 11">Tháng 11 (SL)${sortArrow('t11')}</th>
+        <th onclick="sortPhanCungSource('t12')" style="cursor:pointer;text-align:right;width:115px" title="Sắp xếp theo Tháng 12">Tháng 12 (SL)${sortArrow('t12')}</th>
+        <th onclick="sortPhanCungSource('q4')" style="cursor:pointer;text-align:right;width:130px" title="Sắp xếp theo Tổng Quý 4">Tổng Quý 4 (SL)${sortArrow('q4')}</th>
+      </tr>
+    </thead>
+  `;
+
+  let bHtml = '<tbody>';
+  items.forEach((it, idx) => {
+    const pct = it.pct10 || 0;
+    let barColor = '#a855f7';
+    if (pct >= 50) barColor = '#10b981';
+    else if (pct >= 30) barColor = '#38bdf8';
+    else if (pct >= 10) barColor = '#f59e0b';
+    else if (pct > 0) barColor = '#a855f7';
+    else barColor = 'rgba(148, 163, 184, 0.3)';
+
+    bHtml += `
+      <tr style="border-bottom:1px solid var(--line);transition:background 0.2s">
+        <td style="text-align:center;color:var(--mut);font-weight:600">${idx + 1}</td>
+        <td style="text-align:left;font-weight:600;color:var(--tx)">
+          <span style="font-size:15px;margin-right:8px">${getPhanCungSourceIcon(it.name)}</span>
+          <span>${esc(it.name)}</span>
+        </td>
+        <td style="text-align:right;font-weight:700;color:var(--tx-heading)">
+          ${it.t10 != null ? n0(it.t10) : '<span class="mut">–</span>'}
+        </td>
+        <td style="text-align:left">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;height:7px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;min-width:60px">
+              <div style="width:${Math.min(100, pct)}%;height:100%;background:${barColor};border-radius:4px"></div>
+            </div>
+            <span style="font-size:12px;font-weight:700;color:${pct > 0 ? barColor : 'var(--mut)'};min-width:44px;text-align:right">${pct.toFixed(1)}%</span>
+          </div>
+        </td>
+        <td style="text-align:right;color:var(--mut)">
+          ${it.t11 != null ? n0(it.t11) : '<span class="mut">–</span>'}
+        </td>
+        <td style="text-align:right;color:var(--mut)">
+          ${it.t12 != null ? n0(it.t12) : '<span class="mut">–</span>'}
+        </td>
+        <td style="text-align:right;font-weight:800;color:#facc15">
+          ${n0(it.q4)}
+        </td>
+      </tr>
+    `;
+  });
+
+  // Dòng TỔNG CỘNG
+  bHtml += `
+    <tr style="background:rgba(124, 58, 237, 0.12);border-top:2px solid var(--line);font-weight:800">
+      <td style="text-align:center;color:var(--mut)">–</td>
+      <td style="text-align:left;color:#facc15;font-weight:800">
+        <span style="font-size:15px;margin-right:8px">∑</span>
+        <span>TỔNG CỘNG</span>
+      </td>
+      <td style="text-align:right;color:#38bdf8;font-size:14px;font-weight:800">
+        ${n0(parsed.grandT10)}
+      </td>
+      <td style="text-align:left">
+        <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-weight:800;font-size:12px;background:rgba(16, 185, 129, 0.2);color:#10b981">100.0%</span>
+      </td>
+      <td style="text-align:right;color:var(--mut)">
+        ${parsed.grandT11 > 0 ? n0(parsed.grandT11) : '<span class="mut">–</span>'}
+      </td>
+      <td style="text-align:right;color:var(--mut)">
+        ${parsed.grandT12 > 0 ? n0(parsed.grandT12) : '<span class="mut">–</span>'}
+      </td>
+      <td style="text-align:right;color:#facc15;font-size:14px;font-weight:800">
+        ${n0(parsed.grandQ4)}
+      </td>
+    </tr>
+  `;
+
+  bHtml += '</tbody>';
+  tbl.innerHTML = hHtml + bHtml;
+}
+
+/**
+ * Xử lý sắp xếp bảng Mục 3: Bán Hàng Từ Nguồn
+ */
+function sortPhanCungSource(colKey) {
+  if (PHANCUNG_SOURCE_SORT.k === colKey) {
+    PHANCUNG_SOURCE_SORT.dir = -PHANCUNG_SOURCE_SORT.dir;
+  } else {
+    PHANCUNG_SOURCE_SORT.k = colKey;
+    PHANCUNG_SOURCE_SORT.dir = (colKey === 'name') ? 1 : -1;
+  }
+  if (!PHANCUNG_SOURCE_STATE.data) return;
+  const parsed = normalizePhanCungSourceData(PHANCUNG_SOURCE_STATE.data);
+  if (parsed) renderPhanCungSourceTable(parsed);
+}
+
+/**
+ * Điều phối render Mục 3: Bán Hàng Từ Nguồn
+ */
+function renderPhanCungSource() {
+  if (!PHANCUNG_SOURCE_STATE.data) return;
+  const parsed = normalizePhanCungSourceData(PHANCUNG_SOURCE_STATE.data);
+  if (!parsed) return;
+  renderPhanCungSourceSummaryCards(parsed);
+  renderPhanCungSourceTable(parsed);
+}
+
+/**
+ * Xuất file CSV Mục 3: Bán Hàng Từ Nguồn (Quý 4: T10 - T12)
+ */
+function exportPhanCungSourceCsv() {
+  if (!PHANCUNG_SOURCE_STATE.data) {
+    showToast('Chưa có dữ liệu Bán Hàng Từ Nguồn để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizePhanCungSourceData(PHANCUNG_SOURCE_STATE.data);
+  if (!parsed) {
+    showToast('Lỗi cấu trúc dữ liệu Bán Hàng Từ Nguồn!', false);
+    return;
+  }
+
+  const lines = [];
+  lines.push(['BÁO CÁO PHẦN CỨNG - BÁN HÀNG TỪ NGUỒN (QUÝ 4)']);
+  lines.push(['Thời gian xuất:', new Date().toLocaleString('vi-VN')]);
+  lines.push(['Nguồn dữ liệu:', 'Sheet phancung (T1:W9)']);
+  lines.push([]);
+
+  lines.push(['STT', 'Kênh / Nguồn Tiếp Cận', 'Tháng 10 (SL)', 'Tỷ Trọng T10 (%)', 'Tháng 11 (SL)', 'Tháng 12 (SL)', 'Tổng Quý 4 (SL)']);
+
+  parsed.items.forEach((it, idx) => {
+    lines.push([
+      idx + 1,
+      it.name,
+      it.t10 != null ? it.t10 : '',
+      it.pct10.toFixed(1) + '%',
+      it.t11 != null ? it.t11 : '',
+      it.t12 != null ? it.t12 : '',
+      it.q4
+    ]);
+  });
+
+  lines.push([
+    '',
+    'TỔNG CỘNG',
+    parsed.grandT10,
+    '100.0%',
+    parsed.grandT11 > 0 ? parsed.grandT11 : '',
+    parsed.grandT12 > 0 ? parsed.grandT12 : '',
+    parsed.grandQ4
+  ]);
+
+  const csvContent = '\ufeff' + lines.map(row => {
+    return (row || []).map(val => {
+      const s = String(val == null ? '' : val);
+      return '"' + s.replace(/"/g, '""') + '"';
+    }).join(',');
+  }).join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ban_hang_tu_nguon_phancung_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  showToast('Đã xuất thành công file CSV Bán Hàng Từ Nguồn (Mục 3)!', true);
 }

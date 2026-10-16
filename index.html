@@ -291,6 +291,7 @@
       <button id="btnReloadPhanCung" onclick="loadPhanCung(true)">⟳ Tải lại DS Phần Cứng</button>
       <button onclick="exportPhanCungCsv()" style="background:#2563eb;color:#fff;border-color:#3b82f6">⬇ Xuất CSV Mục 1</button>
       <button id="btnExportPcOct" onclick="exportPhanCungOctCsv()" style="background:#059669;color:#fff;border-color:#10b981" title="Sẵn sàng xuất CSV khi nạp API Tháng 10">⬇ Xuất CSV Mục 2 (T10)</button>
+      <button id="btnExportPcSource" onclick="exportPhanCungSourceCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6" title="Xuất CSV Bán Hàng Từ Nguồn">⬇ Xuất CSV Mục 3 (Nguồn)</button>
     </div>
   </div>
 
@@ -416,6 +417,41 @@
       </div>
       <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
         <table id="pcDvkhTable" class="kpi-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MỤC 3: BÁN HÀNG TỪ NGUỒN ==================== -->
+  <div id="pcSecSource" style="margin-top:28px">
+    <!-- Tiêu đề phân đoạn Mục 3 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#7c3aed;color:#ffffff;letter-spacing:0.5px">MỤC 3</span>
+        <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Bán Hàng Từ Nguồn (Quý 4: Tháng 10 – Tháng 12)</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Nguồn: Sheet <b>phancung</b> (T1:W9) · Cơ cấu sản lượng đơn/máy theo từng kênh tiếp cận
+      </div>
+    </div>
+
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 3 -->
+    <div class="grid kpis" id="pcSourceSummaryCards" style="margin-bottom:14px"></div>
+
+    <!-- BẢNG CHI TIẾT BÁN HÀNG TỪ NGUỒN -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📊 Bảng Thống Kê Bán Hàng Từ Nguồn</span>
+            <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+          </h3>
+        </div>
+        <div>
+          <button onclick="exportPhanCungSourceCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:12px;padding:5px 11px">⬇ Xuất CSV Mục 3</button>
+        </div>
+      </div>
+      <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="pcSourceTable" class="kpi-table"></table>
       </div>
     </div>
   </div>

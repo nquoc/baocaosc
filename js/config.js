@@ -10,6 +10,7 @@ const API_MUCTIEU_ONLINE = API_BASE + '?sheet=muctieu&range=A14:H26';
 const API_KPI = API_BASE + '?sheet=kpi&range=A1:P28';
 const API_PHANCUNG = API_BASE + '?sheet=phancung';
 const API_PHANCUNG_OCT = API_BASE + '?sheet=opp'; // Endpoint cho Mục 2: Chi Tiết Phần Cứng Tháng 10
+const API_PHANCUNG_SOURCE = API_BASE + '?sheet=phancung&range=T1:W9'; // Endpoint cho Mục 3: Bán Hàng Từ Nguồn
 const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14';
 const API_BAOCAOSC_CARE_RATE = API_BASE + '?sheet=baocaotuan&range=F2:I6';
 const API_BAOCAOSC_FNB_ISSUE = API_BASE + '?sheet=baocaotuan&range=AR2:AS9'; // Mục 3: Triển Khai Tệp FNB Lớn
@@ -58,6 +59,7 @@ const CACHE_KEY_MUCTIEU = 'muctieu_data';
 const CACHE_KEY_KPI = 'kpi_offline_data_v2';
 const CACHE_KEY_PHANCUNG = 'phancung_data';
 const CACHE_KEY_PHANCUNG_OCT = 'phancung_oct_data';
+const CACHE_KEY_PHANCUNG_SOURCE = 'phancung_source_data';
 const CACHE_KEY_BAOCAOSC = 'baocaosc_data';
 const CACHE_KEY_KPI_ONLINE = 'kpi_online_data';
 
@@ -131,6 +133,10 @@ let PHANCUNG_SORT = { k: 'total', dir: -1 };
 let PHANCUNG_OCT_STATE = { data: null, savedAt: 0, timeStr: '' };
 let PHANCUNG_OCT_SEARCH = '';
 let PHANCUNG_OCT_SORT = { k: 'total', dir: -1 };
+
+// Trạng thái Mục 3: Bán Hàng Từ Nguồn (Quý 4: T10 - T12)
+let PHANCUNG_SOURCE_STATE = { data: null, savedAt: 0, timeStr: '' };
+let PHANCUNG_SOURCE_SORT = { k: 't10', dir: -1 };
 
 // Trạng thái Tab 6: BÁO CÁO SC
 let BAOCAOSC_STATE = { activeRate: null, careRate: null, fnbIssue: null, provinceImpact: null, headcountRegion: null, headcountProvince: null, impactDataSource: null, impactIndustry: null, kpiOnlineT9: null, kpiOfflineT10: null, addonT10: null, savedAt: 0, timeStr: '' };
