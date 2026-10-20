@@ -1103,25 +1103,50 @@
       </div>
     </div>
 
-    <!-- BẢNG 2.3: TỒN TREO NGOÀI THEO TỈNH / THÀNH PHỐ (CHƯA GÁN NHÂN SỰ SC) -->
-    <div class="card" style="padding:14px 16px;margin-top:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>🚨 2.3: Tồn Treo Ngoài Theo Tỉnh / Thành Phố</span>
-            <span class="badge" style="background:#ef4444;color:#fff;font-size:11px">Pool: Chăm sóc khách hàng hỗ trợ trực tiếp</span>
-          </h3>
-          <div class="mut sm" style="margin-top:4px">
-            Thống kê các ticket đang treo ngoài chưa gán cho nhân sự SC xử lý · Nhấp tiêu đề cột để sắp xếp ⇅ · Nhấp dòng để xem chi tiết
+    <!-- 2 BẢNG NẰM NGANG NHAU: TREO NGOÀI & TREO NGOÀI TRỄ SLA (SIDE BY SIDE) -->
+    <div class="bsc-two-tables-grid" style="margin-top:16px">
+      <!-- BẢNG 2.3: TỒN TREO NGOÀI THEO TỈNH / THÀNH PHỐ -->
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div>
+            <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+              <span>🚨 2.3: Tồn Treo Ngoài Theo Tỉnh</span>
+              <span class="badge" style="background:#ef4444;color:#fff;font-size:10.5px">Pool CSKH</span>
+            </h3>
+            <div class="mut sm" style="margin-top:3px">
+              Chưa gán nhân sự SC · Nhấp tiêu đề để xếp ⇅ · Nhấp dòng xem chi tiết
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="text" placeholder="🔍 Lọc tỉnh..." oninput="onDataTonSearch('offlinePoolProvince', this.value)" style="width:120px;font-size:11.5px;padding:4px 8px">
+            <button onclick="exportDataTonOfflinePoolProvinceCsv()" style="background:#dc2626;color:#fff;border-color:#ef4444;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ CSV</button>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <input type="text" placeholder="🔍 Lọc tỉnh thành..." oninput="onDataTonSearch('offlinePoolProvince', this.value)" style="width:150px;font-size:11.5px;padding:4px 8px">
-          <button onclick="exportDataTonOfflinePoolProvinceCsv()" style="background:#dc2626;color:#fff;border-color:#ef4444;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
+        <div class="wrap" style="max-height:550px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+          <table id="tblDataTonOfflinePoolProvince" class="kpi-table"></table>
         </div>
       </div>
-      <div class="wrap" style="max-height:550px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-        <table id="tblDataTonOfflinePoolProvince" class="kpi-table"></table>
+
+      <!-- BẢNG 2.4: TỒN TREO NGOÀI TRỄ SLA THEO TỈNH / THÀNH PHỐ -->
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div>
+            <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+              <span>⏰ 2.4: Treo Ngoài Trễ SLA (≥10 Ngày)</span>
+              <span class="badge" style="background:#991b1b;color:#fff;font-size:10.5px">Trễ SLA</span>
+            </h3>
+            <div class="mut sm" style="margin-top:3px">
+              Ngày hiện tại - ngày tạo ≥ 10 ngày · Nhấp tiêu đề để xếp ⇅ · Nhấp dòng xem chi tiết
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="text" placeholder="🔍 Lọc tỉnh..." oninput="onDataTonSearch('offlineOverdueProvince', this.value)" style="width:120px;font-size:11.5px;padding:4px 8px">
+            <button onclick="exportDataTonOfflineOverdueProvinceCsv()" style="background:#991b1b;color:#fff;border-color:#b91c1c;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="wrap" style="max-height:550px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+          <table id="tblDataTonOfflineOverdueProvince" class="kpi-table"></table>
+        </div>
       </div>
     </div>
   </div>

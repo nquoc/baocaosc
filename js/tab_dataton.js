@@ -119,6 +119,24 @@ function normalizeDataTonOnline(rawData) {
 }
 
 /**
+ * Tính số ngày trôi qua từ thời gian tạo đến hiện tại (làm tròn theo ngày dương lịch)
+ */
+function calcDaysDifference(timeStr, nowDate = new Date()) {
+  if (!timeStr) return -1;
+  let d = new Date(timeStr);
+  if (isNaN(d.getTime())) {
+    const m = timeStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (m) d = new Date(m[3], m[2] - 1, m[1]);
+  }
+  if (isNaN(d.getTime())) return -1;
+
+  const dStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const nowStart = new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate());
+  const diffTime = nowStart.getTime() - dStart.getTime();
+  return Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+}
+
+/**
  * Chuẩn hóa dữ liệu thô từ sheet 'ton offline'
  */
 function normalizeDataTonOffline(rawData) {
@@ -149,6 +167,7 @@ function normalizeDataTonOffline(rawData) {
   const records = [];
   const userMap = new Map();
   const provinceMap = new Map();
+  const now = new Date();
 
   for (let r = 1; r < rawData.length; r++) {
     const row = rawData[r];
@@ -163,6 +182,9 @@ function normalizeDataTonOffline(rawData) {
     provinceName = provinceName.replace(/^Tỉnh\s+/i, '').replace(/^Thành phố\s+/i, '').trim();
 
     const timeStr = String(colTime >= 0 ? row[colTime] : '').trim();
+    const diffDays = calcDaysDifference(timeStr, now);
+    const isOverdue = diffDays >= 10;
+
     const industry = String(colIndustry >= 0 ? row[colIndustry] : '').trim();
     const product = String(colProduct >= 0 ? row[colProduct] : '').trim();
     const address = String(colAddress >= 0 ? row[colAddress] : '').trim();
@@ -174,6 +196,8 @@ function normalizeDataTonOffline(rawData) {
     const rec = {
       retId,
       time: timeStr,
+      diffDays,
+      isOverdue,
       industry,
       product,
       contract,
@@ -244,6 +268,37 @@ function normalizeDataTonOffline(rawData) {
     };
   }).sort((a, b) => b.count - a.count);
 
+  // Lọc riêng các ticket treo ngoài bị TRỄ SLA (Ngày hiện tại - Ngày tạo >= 10 ngày)
+  const overduePoolRecords = poolRecords.filter(r => r.isOverdue);
+  const totalOverduePoolCount = overduePoolRecords.length;
+
+  const overduePoolProvinceMap = new Map();
+  overduePoolRecords.forEach(r => {
+    const p = r.province || '(Chưa xác định)';
+    if (!overduePoolProvinceMap.has(p)) {
+      overduePoolProvinceMap.set(p, []);
+    }
+    overduePoolProvinceMap.get(p).push(r);
+  });
+
+  const overduePoolProvinces = Array.from(overduePoolProvinceMap.entries()).map(([name, list]) => {
+    const poolCount = poolProvinceMap.has(name) ? poolProvinceMap.get(name).length : list.length;
+    const maxDelay = Math.max(...list.map(r => (r.diffDays >= 0 ? r.diffDays : 0)));
+    const avgDelay = Math.round(list.reduce((sum, r) => sum + (r.diffDays >= 0 ? r.diffDays : 0), 0) / list.length);
+    return {
+      name,
+      count: list.length,
+      pct: totalOverduePoolCount > 0 ? (list.length / totalOverduePoolCount) * 100 : 0,
+      pctOfPool: poolCount > 0 ? (list.length / poolCount) * 100 : 0,
+      poolCount,
+      maxDelay,
+      avgDelay,
+      records: list
+    };
+  }).sort((a, b) => b.count - a.count);
+
+  const overallMaxDelay = overduePoolRecords.length > 0 ? Math.max(...overduePoolRecords.map(r => r.diffDays)) : 0;
+
   return {
     totalCount,
     users,
@@ -251,6 +306,10 @@ function normalizeDataTonOffline(rawData) {
     poolProvinces,
     totalPoolCount,
     poolRecords,
+    overduePoolProvinces,
+    totalOverduePoolCount,
+    overduePoolRecords,
+    overallMaxDelay,
     records
   };
 }
@@ -269,10 +328,11 @@ function renderDataTonSummaryCards(parsedOnline, parsedOffline) {
   const onCount = parsedOnline ? parsedOnline.totalCount : 0;
   const offCount = parsedOffline ? parsedOffline.totalCount : 0;
   const poolCount = parsedOffline ? parsedOffline.totalPoolCount : 0;
+  const overduePoolCount = parsedOffline ? parsedOffline.totalOverduePoolCount : 0;
   const grandTotal = onCount + offCount;
 
   const topJob = parsedOnline && parsedOnline.jobs && parsedOnline.jobs.length ? parsedOnline.jobs[0] : null;
-  const topPoolProv = parsedOffline && parsedOffline.poolProvinces && parsedOffline.poolProvinces.length ? parsedOffline.poolProvinces[0] : null;
+  const topOverdueProv = parsedOffline && parsedOffline.overduePoolProvinces && parsedOffline.overduePoolProvinces.length ? parsedOffline.overduePoolProvinces[0] : null;
 
   const K = (label, val, sub, color = '') => `
     <div class="card kpi">
@@ -284,12 +344,13 @@ function renderDataTonSummaryCards(parsedOnline, parsedOffline) {
   const onPct = grandTotal > 0 ? ((onCount / grandTotal) * 100).toFixed(1) : '0';
   const offPct = grandTotal > 0 ? ((offCount / grandTotal) * 100).toFixed(1) : '0';
   const poolPctOfOff = offCount > 0 ? ((poolCount / offCount) * 100).toFixed(1) : '0';
+  const overduePctOfPool = poolCount > 0 ? ((overduePoolCount / poolCount) * 100).toFixed(1) : '0';
 
   box.innerHTML =
     K('🌐 Tổng Tồn Online', `${n0(onCount)} <span style="font-size:13px;font-weight:400;color:var(--mut)">ticket</span>`, `Chiếm ${onPct}% tổng data tồn toàn hệ thống`, 'color:#38bdf8') +
     K('📋 Phân Loại CV Online', `${parsedOnline ? parsedOnline.jobs.length : 0} <span style="font-size:13px;font-weight:400;color:var(--mut)">nhóm</span>`, topJob ? `Lớn nhất: <b>${esc(topJob.name)}</b> (${n0(topJob.count)})` : 'Chưa có phân loại', 'color:#0ea5e9') +
     K('🏢 Tổng Tồn Offline', `${n0(offCount)} <span style="font-size:13px;font-weight:400;color:var(--mut)">ticket</span>`, `Đã gán SC: <b>${n0(offCount - poolCount)}</b> (${(100 - parseFloat(poolPctOfOff)).toFixed(1)}%)`, 'color:#f59e0b') +
-    K('🚨 Tồn Treo Ngoài Offline', `${n0(poolCount)} <span style="font-size:13px;font-weight:400;color:var(--mut)">ticket</span>`, topPoolProv ? `Chiếm ${poolPctOfOff}% tồn Offline · Top: <b>${esc(topPoolProv.name)}</b> (${n0(topPoolProv.count)})` : 'Không có ticket treo ngoài', 'color:#ef4444');
+    K('🚨 Tồn Treo Ngoài Offline', `${n0(poolCount)} <span style="font-size:13px;font-weight:400;color:var(--mut)">ticket</span>`, `Trễ SLA (≥10d): <b style="color:#ef4444">${n0(overduePoolCount)}</b> (${overduePctOfPool}%) ${topOverdueProv ? `· Top: <b>${esc(topOverdueProv.name)}</b> (${n0(topOverdueProv.count)})` : ''}`, 'color:#ef4444');
 }
 
 /**
@@ -333,6 +394,18 @@ function sortDataTonItems(items, sortCfg) {
     }
     if (k === 'pctOfProvince') {
       return dir * ((a.pctOfProvince || 0) - (b.pctOfProvince || 0));
+    }
+    if (k === 'poolCount') {
+      return dir * ((a.poolCount || 0) - (b.poolCount || 0));
+    }
+    if (k === 'pctOfPool') {
+      return dir * ((a.pctOfPool || 0) - (b.pctOfPool || 0));
+    }
+    if (k === 'maxDelay') {
+      return dir * ((a.maxDelay || 0) - (b.maxDelay || 0));
+    }
+    if (k === 'avgDelay') {
+      return dir * ((a.avgDelay || 0) - (b.avgDelay || 0));
     }
     return 0;
   });
@@ -597,12 +670,12 @@ function renderOfflinePoolProvinceTable(parsedOffline) {
   let thead = `
     <thead>
       <tr>
-        <th style="width:45px;text-align:center">STT</th>
+        <th style="width:40px;text-align:center">STT</th>
         <th style="text-align:left;cursor:pointer" onclick="onDataTonSort('offlinePoolProvince', 'name')">Tỉnh / Thành Phố${getArrow('name')}</th>
-        <th style="text-align:right;cursor:pointer;width:120px" onclick="onDataTonSort('offlinePoolProvince', 'count')">SL Treo Ngoài${getArrow('count')}</th>
-        <th style="text-align:right;cursor:pointer;width:115px" onclick="onDataTonSort('offlinePoolProvince', 'pct')">% / Tổng Treo${getArrow('pct')}</th>
-        <th style="text-align:right;cursor:pointer;width:115px" onclick="onDataTonSort('offlinePoolProvince', 'totalProv')">Tổng Tồn Tỉnh${getArrow('totalProv')}</th>
-        <th style="text-align:right;cursor:pointer;width:135px" onclick="onDataTonSort('offlinePoolProvince', 'pctOfProvince')">% Treo / Tồn Tỉnh${getArrow('pctOfProvince')}</th>
+        <th style="text-align:right;cursor:pointer;width:105px" onclick="onDataTonSort('offlinePoolProvince', 'count')">SL Treo Ngoài${getArrow('count')}</th>
+        <th style="text-align:right;cursor:pointer;width:95px" onclick="onDataTonSort('offlinePoolProvince', 'pct')">% / Treo${getArrow('pct')}</th>
+        <th style="text-align:right;cursor:pointer;width:100px" onclick="onDataTonSort('offlinePoolProvince', 'totalProv')">Tồn Tỉnh${getArrow('totalProv')}</th>
+        <th style="text-align:right;cursor:pointer;width:110px" onclick="onDataTonSort('offlinePoolProvince', 'pctOfProvince')">% Treo / Tồn${getArrow('pctOfProvince')}</th>
       </tr>
     </thead>`;
 
@@ -649,6 +722,84 @@ function renderOfflinePoolProvinceTable(parsedOffline) {
 }
 
 /**
+ * BẢNG 2.4: Offline Tồn Treo Ngoài Trễ SLA Theo Tỉnh / Thành Phố (>= 10 ngày)
+ */
+function renderOfflineOverdueProvinceTable(parsedOffline) {
+  const tbl = $('tblDataTonOfflineOverdueProvince');
+  if (!tbl || !parsedOffline) return;
+
+  let items = parsedOffline.overduePoolProvinces || [];
+  const q = DATATON_SEARCH.offlineOverdueProvince;
+  if (q) {
+    items = items.filter(it => it.name.toLowerCase().includes(q));
+  }
+  items = sortDataTonItems(items, DATATON_SORT.offlineOverdueProvince);
+
+  const getArrow = col => {
+    if (DATATON_SORT.offlineOverdueProvince.k !== col) return ' ⇅';
+    return DATATON_SORT.offlineOverdueProvince.dir === 1 ? ' ▲' : ' ▼';
+  };
+
+  let thead = `
+    <thead>
+      <tr>
+        <th style="width:40px;text-align:center">STT</th>
+        <th style="text-align:left;cursor:pointer" onclick="onDataTonSort('offlineOverdueProvince', 'name')">Tỉnh / Thành Phố${getArrow('name')}</th>
+        <th style="text-align:right;cursor:pointer;width:105px" onclick="onDataTonSort('offlineOverdueProvince', 'count')">Trễ SLA (≥10d)${getArrow('count')}</th>
+        <th style="text-align:right;cursor:pointer;width:95px" onclick="onDataTonSort('offlineOverdueProvince', 'pct')">% / Trễ${getArrow('pct')}</th>
+        <th style="text-align:right;cursor:pointer;width:95px" onclick="onDataTonSort('offlineOverdueProvince', 'poolCount')">Treo Tỉnh${getArrow('poolCount')}</th>
+        <th style="text-align:right;cursor:pointer;width:110px" onclick="onDataTonSort('offlineOverdueProvince', 'pctOfPool')">% Trễ / Treo${getArrow('pctOfPool')}</th>
+        <th style="text-align:right;cursor:pointer;width:95px" onclick="onDataTonSort('offlineOverdueProvince', 'maxDelay')">Lâu Nhất${getArrow('maxDelay')}</th>
+      </tr>
+    </thead>`;
+
+  let tbody = '<tbody>';
+  if (items.length === 0) {
+    tbody += '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--mut)">Không có dữ liệu tỉnh thành trễ SLA phù hợp</td></tr>';
+  } else {
+    items.forEach((it, idx) => {
+      const pctPoolVal = it.pctOfPool || 0;
+      let badgeStyle = 'background:rgba(16,185,129,0.15);color:#10b981;padding:2px 7px;border-radius:6px;font-weight:700';
+      if (pctPoolVal >= 60) {
+        badgeStyle = 'background:rgba(239,68,68,0.2);color:#ef4444;padding:2px 7px;border-radius:6px;font-weight:700';
+      } else if (pctPoolVal >= 25) {
+        badgeStyle = 'background:rgba(245,158,11,0.2);color:#f59e0b;padding:2px 7px;border-radius:6px;font-weight:700';
+      }
+
+      const delayColor = it.maxDelay >= 30 ? 'color:#dc2626;font-weight:700' : (it.maxDelay >= 20 ? 'color:#f59e0b;font-weight:600' : 'color:var(--tx)');
+
+      tbody += `
+        <tr style="cursor:pointer" onclick="openDataTonDrilldownModal('offline', 'Tỉnh thành trễ SLA (≥10 ngày)', '${esc(it.name)}', 'overdueProvince')" title="Nhấp để xem danh sách ticket trễ SLA của ${esc(it.name)}">
+          <td style="text-align:center;color:var(--mut)">${idx + 1}</td>
+          <td style="text-align:left;font-weight:600;color:var(--tx-heading)">${esc(it.name)}</td>
+          <td style="text-align:right;font-weight:700;color:#ef4444">${n0(it.count)}</td>
+          <td style="text-align:right;color:var(--mut);font-weight:600">${it.pct.toFixed(1)}%</td>
+          <td style="text-align:right;color:var(--tx);font-weight:600">${n0(it.poolCount)}</td>
+          <td style="text-align:right"><span class="badge" style="${badgeStyle}">${pctPoolVal.toFixed(1)}%</span></td>
+          <td style="text-align:right;${delayColor}">${it.maxDelay} ngày</td>
+        </tr>`;
+    });
+  }
+  tbody += '</tbody>';
+
+  const overallOverduePct = parsedOffline.totalPoolCount > 0 ? (parsedOffline.totalOverduePoolCount / parsedOffline.totalPoolCount * 100) : 0;
+  const tfoot = `
+    <tfoot>
+      <tr style="font-weight:800;background:var(--card-sub, var(--card))">
+        <td style="text-align:center;color:var(--mut)">★</td>
+        <td style="text-align:left;color:var(--tx-heading)">TỔNG TOÀN BỘ (${items.length} tỉnh trễ)</td>
+        <td style="text-align:right;color:#ef4444;font-size:14px">${n0(parsedOffline.totalOverduePoolCount)}</td>
+        <td style="text-align:right;color:var(--tx-heading)">100%</td>
+        <td style="text-align:right;color:var(--tx-heading)">${n0(parsedOffline.totalPoolCount)}</td>
+        <td style="text-align:right;color:#ef4444;font-size:13px">${overallOverduePct.toFixed(1)}%</td>
+        <td style="text-align:right;color:#dc2626;font-size:13px">${parsedOffline.overallMaxDelay || 0} ngày</td>
+      </tr>
+    </tfoot>`;
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
  * Mở modal danh sách chi tiết data tồn khi nhấp vào dòng bất kỳ
  */
 function openDataTonDrilldownModal(mode, filterLabel, filterValue, filterKey) {
@@ -673,13 +824,17 @@ function openDataTonDrilldownModal(mode, filterLabel, filterValue, filterKey) {
     filtered = parsed.records.filter(r => r.province === filterValue);
   } else if (filterKey === 'poolProvince') {
     filtered = (parsed.poolRecords || []).filter(r => r.province === filterValue);
+  } else if (filterKey === 'overdueProvince') {
+    filtered = (parsed.overduePoolRecords || []).filter(r => r.province === filterValue);
   } else {
     filtered = parsed.records;
   }
 
   t.textContent = `Danh sách Data Tồn: ${filterValue}`;
   if (s) {
-    const poolNote = filterKey === 'poolProvince' ? ' (Treo ngoài - CSKH Hỗ trợ trực tiếp)' : '';
+    let poolNote = '';
+    if (filterKey === 'poolProvince') poolNote = ' (Treo ngoài - CSKH Hỗ trợ trực tiếp)';
+    if (filterKey === 'overdueProvince') poolNote = ' (Treo ngoài trễ SLA ≥ 10 ngày)';
     s.textContent = `${filtered.length} ticket chưa làm${poolNote} · Nguồn: ${mode === 'online' ? 'ton online' : 'ton offline'}`;
   }
 
@@ -689,6 +844,12 @@ function openDataTonDrilldownModal(mode, filterLabel, filterValue, filterKey) {
     body.innerHTML = filtered.map((rec, idx) => {
       const extraInfo = [];
       if (rec.time) extraInfo.push(`📅 Tạo lúc: ${esc(rec.time)}`);
+      if (rec.diffDays !== undefined && rec.diffDays >= 0) {
+        const slaBadge = rec.isOverdue
+          ? `<span class="badge" style="background:rgba(239,68,68,0.2);color:#ef4444;font-weight:700">⏰ Chờ ${rec.diffDays} ngày (Trễ SLA)</span>`
+          : `<span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981">⏰ Chờ ${rec.diffDays} ngày</span>`;
+        extraInfo.push(slaBadge);
+      }
       if (rec.industry) extraInfo.push(`🏷️ Ngành: ${esc(rec.industry)}`);
       if (rec.product) extraInfo.push(`💻 ${esc(rec.product)}`);
       if (rec.job) extraInfo.push(`📋 ${esc(rec.job)}`);
@@ -734,6 +895,7 @@ function renderDataTon() {
     renderOfflineUserTable(parsedOffline);
     renderOfflineProvinceTable(parsedOffline);
     renderOfflinePoolProvinceTable(parsedOffline);
+    renderOfflineOverdueProvinceTable(parsedOffline);
   }
 }
 
@@ -991,6 +1153,35 @@ function exportDataTonOfflinePoolProvinceCsv() {
   );
 }
 
+function exportDataTonOfflineOverdueProvinceCsv() {
+  if (!DATATON_STATE.offline) {
+    showToast('Chưa có dữ liệu Offline Tồn để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizeDataTonOffline(DATATON_STATE.offline);
+  if (!parsed) return;
+
+  const rows = (parsed.overduePoolProvinces || []).map((it, idx) => [
+    idx + 1,
+    it.name,
+    it.count,
+    it.pct.toFixed(2) + '%',
+    it.poolCount,
+    it.pctOfPool.toFixed(2) + '%',
+    it.maxDelay + ' ngày'
+  ]);
+  const overallPct = parsed.totalPoolCount > 0 ? (parsed.totalOverduePoolCount / parsed.totalPoolCount * 100).toFixed(2) + '%' : '0%';
+  rows.push(['★', 'TỔNG CỘNG', parsed.totalOverduePoolCount, '100.00%', parsed.totalPoolCount, overallPct, (parsed.overallMaxDelay || 0) + ' ngày']);
+
+  exportGenericCsv(
+    'DATA TỒN OFFLINE - THỐNG KÊ TREO NGOÀI TRỄ SLA (>=10 NGÀY) THEO TỈNH THÀNH',
+    ['STT', 'Tỉnh / Thành Phố', 'SL Trễ SLA (≥10 ngày)', 'Tỷ Trọng / Tổng Trễ (%)', 'Tổng Treo Tỉnh', 'Tỷ Lệ Trễ / Tồn Treo (%)', 'Trễ Lâu Nhất'],
+    rows,
+    'DataTon_Offline_TreSLA_TheoTinhThanh',
+    'Đã xuất file CSV Tồn Treo Ngoài Trễ SLA Theo Tỉnh Thành thành công!'
+  );
+}
+
 function exportDataTonAllCsv() {
   if (!DATATON_STATE.online && !DATATON_STATE.offline) {
     showToast('Chưa có dữ liệu Data Tồn để xuất CSV!', false);
@@ -1051,6 +1242,15 @@ function exportDataTonAllCsv() {
       });
       const allPoolPct = parsedOff.totalCount > 0 ? (parsedOff.totalPoolCount / parsedOff.totalCount * 100).toFixed(2) + '%' : '0%';
       lines.push(['★', 'TỔNG CỘNG', parsedOff.totalPoolCount, '100.00%', parsedOff.totalCount, allPoolPct]);
+      lines.push([]);
+
+      lines.push(['--- 2.4: Tồn Treo Trễ SLA Theo Tỉnh / Thành Phố (≥10 Ngày - Pool CSKH Hỗ Trợ Trực Tiếp) ---']);
+      lines.push(['STT', 'Tỉnh / Thành Phố', 'SL Trễ SLA (≥10 ngày)', 'Tỷ Trọng / Tổng Trễ (%)', 'Tổng Treo Tỉnh', 'Tỷ Lệ Trễ / Tồn Treo (%)', 'Trễ Lâu Nhất']);
+      (parsedOff.overduePoolProvinces || []).forEach((it, idx) => {
+        lines.push([idx + 1, it.name, it.count, it.pct.toFixed(2) + '%', it.poolCount, it.pctOfPool.toFixed(2) + '%', it.maxDelay + ' ngày']);
+      });
+      const allOverduePct = parsedOff.totalPoolCount > 0 ? (parsedOff.totalOverduePoolCount / parsedOff.totalPoolCount * 100).toFixed(2) + '%' : '0%';
+      lines.push(['★', 'TỔNG CỘNG', parsedOff.totalOverduePoolCount, '100.00%', parsedOff.totalPoolCount, allOverduePct, (parsedOff.overallMaxDelay || 0) + ' ngày']);
       lines.push([]);
     }
   }
