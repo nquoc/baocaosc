@@ -23,6 +23,8 @@ const API_BAOCAOSC_KPI_ONLINE_T9 = API_BASE + '?sheet=baocaotuan&range=AJ2:AP5';
 const API_BAOCAOSC_KPI_OFFLINE_T10 = API_BASE + '?sheet=baocaotuan&range=AJ13:AP17'; // Mục 7.2: KPI Team Offline Tháng 10
 const API_BAOCAOSC_ADDON_T10 = API_BASE + '?sheet=baocaotuan&range=AJ22:AM29'; // Mục 7.3: Tư Vấn Chuyển Addon Tháng 10
 const API_KPI_ONLINE = API_BASE + '?sheet=KPI%20online'; // Endpoint cho Tab 7: KPI Team Online
+const API_DATATON_ONLINE = API_BASE + '?sheet=ton%20online'; // Endpoint cho Tab 8: Data Tồn Online
+const API_DATATON_OFFLINE = API_BASE + '?sheet=ton%20offline'; // Endpoint cho Tab 8: Data Tồn Offline
 
 // Quản lý Khóa Xác thực (Session Auth Key)
 const AUTH_STORAGE_KEY = 'tc_auth_token';
@@ -62,6 +64,7 @@ const CACHE_KEY_PHANCUNG_OCT = 'phancung_oct_data';
 const CACHE_KEY_PHANCUNG_SOURCE = 'phancung_source_data';
 const CACHE_KEY_BAOCAOSC = 'baocaosc_data_v2';
 const CACHE_KEY_KPI_ONLINE = 'kpi_online_data';
+const CACHE_KEY_DATATON = 'dataton_data';
 
 // Hằng số tính ngày công & bảng màu
 const SPLIT = 12 * 60 + 30; // 12:30
@@ -159,3 +162,18 @@ let KPI_ONLINE_TAB1_SORT = { k: 'stt', dir: 1 };
 let KPI_ONLINE_TAB2_SORT = { k: 'totalCall', dir: -1 };
 let KPI_ONLINE_TAB3_SORT = { k: 'stt', dir: 1 };
 let KPI_ONLINE_TAB4_SORT = { k: 'total', dir: -1 };
+
+// Trạng thái Tab 8: DATA TỒN (Online & Offline)
+let DATATON_STATE = { online: null, offline: null, savedAt: 0, timeStr: '' };
+let DATATON_SEARCH = {
+  onlineUser: '',
+  onlineJob: '',
+  offlineUser: '',
+  offlineProvince: ''
+};
+let DATATON_SORT = {
+  onlineUser: { k: 'count', dir: -1 },
+  onlineJob: { k: 'count', dir: -1 },
+  offlineUser: { k: 'count', dir: -1 },
+  offlineProvince: { k: 'count', dir: -1 }
+};

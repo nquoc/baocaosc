@@ -3,7 +3,7 @@
  */
 
 /* ---------- Chuyển đổi & Lưu vết Tab (F5 giữ nguyên tab hiện tại) ---------- */
-const VALID_TABS = ['overview', 'pivot', 'target', 'kpi', 'kpionline', 'phancung', 'baocaosc'];
+const VALID_TABS = ['overview', 'pivot', 'target', 'kpi', 'kpionline', 'phancung', 'baocaosc', 'dataton'];
 
 function switchTab(tab) {
   if (!VALID_TABS.includes(tab)) {
@@ -27,6 +27,7 @@ function switchTab(tab) {
   if ($('tabBtnKpiOnline')) $('tabBtnKpiOnline').className = 'tab-btn' + (tab === 'kpionline' ? ' active' : '');
   if ($('tabBtnPhanCung')) $('tabBtnPhanCung').className = 'tab-btn' + (tab === 'phancung' ? ' active' : '');
   if ($('tabBtnBaoCaoSc')) $('tabBtnBaoCaoSc').className = 'tab-btn' + (tab === 'baocaosc' ? ' active' : '');
+  if ($('tabBtnDataTon')) $('tabBtnDataTon').className = 'tab-btn' + (tab === 'dataton' ? ' active' : '');
 
   $('overviewSection').style.display = tab === 'overview' ? 'block' : 'none';
   $('pivotSection').style.display = tab === 'pivot' ? 'block' : 'none';
@@ -35,8 +36,9 @@ function switchTab(tab) {
   if ($('kpionlineSection')) $('kpionlineSection').style.display = tab === 'kpionline' ? 'block' : 'none';
   if ($('phancungSection')) $('phancungSection').style.display = tab === 'phancung' ? 'block' : 'none';
   if ($('baocaoscSection')) $('baocaoscSection').style.display = tab === 'baocaosc' ? 'block' : 'none';
+  if ($('datatonSection')) $('datatonSection').style.display = tab === 'dataton' ? 'block' : 'none';
 
-  $('filters').style.display = (tab === 'target' || tab === 'kpi' || tab === 'kpionline' || tab === 'phancung' || tab === 'baocaosc') ? 'none' : 'flex';
+  $('filters').style.display = (tab === 'target' || tab === 'kpi' || tab === 'kpionline' || tab === 'phancung' || tab === 'baocaosc' || tab === 'dataton') ? 'none' : 'flex';
 
   if (tab === 'overview' || tab === 'pivot') {
     if ((!S.month || S.month === 'all') && typeof getDefaultMonth === 'function') {
@@ -89,6 +91,12 @@ function switchTab(tab) {
       loadBaoCaoSc(false);
     } else {
       renderBaoCaoSc();
+    }
+  } else if (tab === 'dataton') {
+    if (!DATATON_STATE.online || !DATATON_STATE.offline) {
+      loadDataTon(false);
+    } else {
+      renderDataTon();
     }
   } else {
     // Resize charts nếu cần
