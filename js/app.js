@@ -64,11 +64,8 @@ function switchTab(tab) {
   if (tab === 'pivot') {
     renderPivot();
   } else if (tab === 'target') {
-    if (!MUCTIEU_STATE.offline || !MUCTIEU_STATE.online) {
-      loadMuctieu(false);
-    } else {
-      renderMuctieu();
-    }
+    switchTab('baocaosc');
+    return;
   } else if (tab === 'kpi') {
     if (!KPI_RAW_DATA.length) {
       loadKpi(false);
@@ -88,7 +85,7 @@ function switchTab(tab) {
       renderPhanCung();
     }
   } else if (tab === 'baocaosc') {
-    if (!BAOCAOSC_STATE.activeRate || !BAOCAOSC_STATE.fnbIssue || !BAOCAOSC_STATE.provinceImpact || !BAOCAOSC_STATE.headcountRegion || !BAOCAOSC_STATE.impactDataSource || !BAOCAOSC_STATE.impactIndustry || !BAOCAOSC_STATE.kpiOnlineT9 || !BAOCAOSC_STATE.kpiOfflineT10 || !BAOCAOSC_STATE.addonT10) {
+    if (!BAOCAOSC_STATE.muctieuOffline || !BAOCAOSC_STATE.muctieuOnline || !BAOCAOSC_STATE.activeRate || !BAOCAOSC_STATE.fnbIssue || !BAOCAOSC_STATE.provinceImpact || !BAOCAOSC_STATE.headcountRegion || !BAOCAOSC_STATE.impactDataSource || !BAOCAOSC_STATE.impactIndustry || !BAOCAOSC_STATE.kpiOnlineT9 || !BAOCAOSC_STATE.kpiOfflineT10 || !BAOCAOSC_STATE.addonT10) {
       loadBaoCaoSc(false);
     } else {
       renderBaoCaoSc();

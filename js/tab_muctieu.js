@@ -97,12 +97,18 @@ function renderOnlineTable(data) {
 }
 
 function renderMuctieu() {
-  if (MUCTIEU_STATE.offline) {
-    $('offlineTblContainer').innerHTML = renderOfflineTable(MUCTIEU_STATE.offline);
-  }
-  if (MUCTIEU_STATE.online) {
-    $('onlineTblContainer').innerHTML = renderOnlineTable(MUCTIEU_STATE.online);
-  }
+  const off1 = $('offlineTblContainer');
+  const on1 = $('onlineTblContainer');
+  const off2 = $('bscOfflineTblContainer');
+  const on2 = $('bscOnlineTblContainer');
+
+  const offHtml = MUCTIEU_STATE.offline ? renderOfflineTable(MUCTIEU_STATE.offline) : '';
+  const onHtml = MUCTIEU_STATE.online ? renderOnlineTable(MUCTIEU_STATE.online) : '';
+
+  if (off1 && offHtml) off1.innerHTML = offHtml;
+  if (on1 && onHtml) on1.innerHTML = onHtml;
+  if (off2 && offHtml) off2.innerHTML = offHtml;
+  if (on2 && onHtml) on2.innerHTML = onHtml;
 }
 
 async function loadMuctieu(force = false) {

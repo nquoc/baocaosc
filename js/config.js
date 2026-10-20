@@ -60,7 +60,7 @@ const CACHE_KEY_KPI = 'kpi_offline_data_v3';
 const CACHE_KEY_PHANCUNG = 'phancung_data';
 const CACHE_KEY_PHANCUNG_OCT = 'phancung_oct_data';
 const CACHE_KEY_PHANCUNG_SOURCE = 'phancung_source_data';
-const CACHE_KEY_BAOCAOSC = 'baocaosc_data';
+const CACHE_KEY_BAOCAOSC = 'baocaosc_data_v2';
 const CACHE_KEY_KPI_ONLINE = 'kpi_online_data';
 
 // Hằng số tính ngày công & bảng màu
@@ -139,7 +139,7 @@ let PHANCUNG_SOURCE_STATE = { data: null, savedAt: 0, timeStr: '' };
 let PHANCUNG_SOURCE_SORT = { k: 't10', dir: -1 };
 
 // Trạng thái Tab 6: BÁO CÁO SC
-let BAOCAOSC_STATE = { activeRate: null, careRate: null, fnbIssue: null, provinceImpact: null, headcountRegion: null, headcountProvince: null, impactDataSource: null, impactIndustry: null, kpiOnlineT9: null, kpiOfflineT10: null, addonT10: null, savedAt: 0, timeStr: '' };
+let BAOCAOSC_STATE = { muctieuOffline: null, muctieuOnline: null, activeRate: null, careRate: null, fnbIssue: null, provinceImpact: null, headcountRegion: null, headcountProvince: null, impactDataSource: null, impactIndustry: null, kpiOnlineT9: null, kpiOfflineT10: null, addonT10: null, savedAt: 0, timeStr: '' };
 let BAOCAOSC_SEARCH = '';
 let BAOCAOSC_SORT = { k: 'mNum', dir: 1 };
 let BAOCAOSC_CARE_SORT = { k: 'kyMoi', dir: -1 };
