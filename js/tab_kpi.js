@@ -11,11 +11,22 @@ function parseKpiNumber(val) {
 }
 
 function parseKpiPct(val) {
-  if (val == null || val === '') return 0;
-  if (typeof val === 'number') return val <= 1 ? val * 100 : val;
-  const s = String(val).replace('%', '').replace(/\./g, '').replace(/,/g, '.').trim();
+  if (val == null || val === '' || val === '-') return 0;
+  if (typeof val === 'number') {
+    return Math.abs(val) <= 5 ? val * 100 : val;
+  }
+  let s = String(val).trim();
+  const hasPct = s.includes('%');
+  s = s.replace('%', '').trim();
+  if (s.includes(',') && !s.includes('.')) {
+    s = s.replace(',', '.');
+  } else {
+    s = s.replace(/,/g, '');
+  }
   const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
+  if (isNaN(n)) return 0;
+  if (!hasPct && Math.abs(n) <= 5) return n * 100;
+  return n;
 }
 
 function normalizeKpiData(headers, data) {
@@ -24,24 +35,25 @@ function normalizeKpiData(headers, data) {
     const row = data[r];
     if (!row || !row.length || !row[0]) continue;
     const fullName = String(row[0] || '').trim();
+    if (!fullName) continue;
     const meta = scMeta(fullName);
     const level = String(row[1] || '').trim();
     const coach = String(row[2] || '').trim();
     const daLam = parseKpiNumber(row[3]);
     const actImpact = parseKpiNumber(row[4]);
-    const pctActive = parseKpiPct(row[5]);
+    const pctImpact = parseKpiPct(row[5]);
     const kpiActive = parseKpiNumber(row[6]);
     const active = parseKpiNumber(row[7]);
     const pctKpiActive = parseKpiPct(row[8]);
-    const kpiTong = parseKpiNumber(row[9]);
+    const kpiDiem = parseKpiNumber(row[9]);
     const tongDiem = parseKpiNumber(row[10]);
     const pctDiemTong = parseKpiPct(row[11]);
     const kpiAddon = parseKpiNumber(row[12]);
     const diemAddon = parseKpiNumber(row[13]);
     const pctDiemAddon = parseKpiPct(row[14]);
 
-    // ⭐ Cột KPI Tổng = 70% Điểm tổng + 30% Addon
-    const kpiFinal = (0.7 * pctDiemTong) + (0.3 * pctDiemAddon);
+    // ⭐ Cột 15: KPI Tổng lấy trực tiếp từ API (đã được tính sẵn từ Google Sheets, không tính lại bằng JS)
+    const kpiTong = parseKpiPct(row[15]);
 
     rows.push({
       fullName,
@@ -51,17 +63,20 @@ function normalizeKpiData(headers, data) {
       coach,
       daLam,
       actImpact,
-      pctActive,
+      pctImpact,
+      pctActive: pctImpact, // alias
       kpiActive,
       active,
       pctKpiActive,
-      kpiTong,
+      kpiDiem,
+      kpiTongCol9: kpiDiem, // alias
       tongDiem,
       pctDiemTong,
       kpiAddon,
       diemAddon,
       pctDiemAddon,
-      kpiFinal,
+      kpiTong,
+      kpiFinal: kpiTong, // Lấy trực tiếp từ API (Cột 15)
       raw: row
     });
   }
@@ -71,10 +86,13 @@ function normalizeKpiData(headers, data) {
 function getKpiScoreBadge(score) {
   let color = '#ef4444';
   let bg = 'rgba(239, 68, 68, 0.16)';
-  if (score >= 40) {
+  if (score >= 90) {
     color = '#10b981';
     bg = 'rgba(16, 185, 129, 0.18)';
-  } else if (score >= 25) {
+  } else if (score >= 80) {
+    color = '#0284c7';
+    bg = 'rgba(2, 132, 199, 0.18)';
+  } else if (score >= 70) {
     color = '#f59e0b';
     bg = 'rgba(245, 158, 11, 0.18)';
   }
@@ -88,17 +106,17 @@ const KPI_TABLE_COLS = [
   { k: 'coach', l: 'Coacher', a: 'l' },
   { k: 'daLam', l: 'Đã làm', a: '' },
   { k: 'actImpact', l: 'Act impact', a: '' },
-  { k: 'pctActive', l: '% active', a: '' },
+  { k: 'pctImpact', l: '% impact', a: '' },
   { k: 'kpiActive', l: 'KPI active', a: '' },
-  { k: 'active', l: 'Active', a: '' },
+  { k: 'active', l: 'active', a: '' },
   { k: 'pctKpiActive', l: '% KPI active', a: '' },
-  { k: 'kpiTong', l: 'KPI tổng', a: '' },
+  { k: 'kpiDiem', l: 'KPI Điểm', a: '' },
   { k: 'tongDiem', l: 'Tổng điểm', a: '' },
   { k: 'pctDiemTong', l: '% Điểm tổng', a: '' },
   { k: 'kpiAddon', l: 'KPI addon', a: '' },
   { k: 'diemAddon', l: 'Điểm addon', a: '' },
   { k: 'pctDiemAddon', l: '% Điểm addon', a: '' },
-  { k: 'kpiFinal', l: '⭐ KPI Tổng (70/30)', a: '', isFinal: true }
+  { k: 'kpiFinal', l: 'KPI Tổng', a: '', isFinal: true }
 ];
 
 function getFilteredKpiList() {
@@ -184,7 +202,7 @@ function renderKpiSummary() {
     K('👥 Số Nhân Sự SC', n, lvlStr) +
     K('📊 TB % Điểm Tổng', avgDiemTong.toFixed(2) + '%', 'Tỷ lệ hoàn thành điểm tổng', 'color:#38bdf8') +
     K('⚡ TB % Điểm Addon', avgDiemAddon.toFixed(2) + '%', 'Tỷ lệ hoàn thành addon', 'color:#f59e0b') +
-    K('⭐ TB KPI Tổng (70/30)', avgKpiFinal.toFixed(2) + '%', '70% Điểm tổng + 30% Addon', 'color:' + (avgKpiFinal >= 40 ? 'var(--ok)' : (avgKpiFinal >= 25 ? 'var(--warn)' : 'var(--bad)'))) +
+    K('⭐ TB KPI Tổng', avgKpiFinal.toFixed(2) + '%', 'Trung bình KPI Tổng của đội ngũ', 'color:' + (avgKpiFinal >= 80 ? 'var(--ok)' : (avgKpiFinal >= 70 ? 'var(--warn)' : 'var(--bad)'))) +
     K('🏆 Top 1 KPI Team', top1 ? esc(top1.name) : '–', top1 ? `Đạt ${top1.kpiFinal.toFixed(2)}% (${top1.coach})` : '', 'color:var(--ok)');
 }
 
@@ -227,23 +245,23 @@ function renderKpiTable() {
         else if (idx === 2) rankIcon = '🥉 ';
       }
       tbody += `<tr>
-        <td style="color:var(--mut);font-weight:600">${rankIcon}${idx + 1}</td>
+        <td style="color:var(--mut);font-weight:600;text-align:center">${rankIcon}${idx + 1}</td>
         <td class="sc-name">${esc(r.name)} <span class="mut sm" style="font-weight:400">(${r.ma})</span></td>
-        <td><span class="level-badge">${esc(r.level)}</span></td>
+        <td style="text-align:center"><span class="level-badge">${esc(r.level)}</span></td>
         <td style="text-align:left"><span class="dot" style="background:${coachCol}"></span> ${esc(r.coach)}</td>
-        <td>${r.daLam}</td>
-        <td>${r.actImpact}</td>
-        <td>${r.pctActive.toFixed(2)}%</td>
-        <td>${r.kpiActive}</td>
-        <td>${r.active}</td>
-        <td>${r.pctKpiActive.toFixed(2)}%</td>
-        <td style="font-weight:700">${r.kpiTong}</td>
-        <td style="color:#60a5fa;font-weight:700">${r.tongDiem}</td>
-        <td style="font-weight:700;color:#38bdf8">${r.pctDiemTong.toFixed(2)}%</td>
-        <td>${r.kpiAddon}</td>
-        <td style="color:#f59e0b;font-weight:700">${r.diemAddon}</td>
-        <td style="font-weight:700;color:#fbbf24">${r.pctDiemAddon.toFixed(2)}%</td>
-        <td class="kpi-final-col">${getKpiScoreBadge(r.kpiFinal)}</td>
+        <td style="text-align:right">${n0(r.daLam)}</td>
+        <td style="text-align:right">${n0(r.actImpact)}</td>
+        <td style="text-align:right;font-weight:600">${r.pctImpact.toFixed(2)}%</td>
+        <td style="text-align:right">${n0(r.kpiActive)}</td>
+        <td style="text-align:right">${n0(r.active)}</td>
+        <td style="text-align:right;font-weight:600">${r.pctKpiActive.toFixed(2)}%</td>
+        <td style="text-align:right;font-weight:700">${n0(r.kpiDiem)}</td>
+        <td style="text-align:right;color:#60a5fa;font-weight:700">${n0(r.tongDiem)}</td>
+        <td style="text-align:right;font-weight:700;color:#38bdf8">${r.pctDiemTong.toFixed(2)}%</td>
+        <td style="text-align:right">${n0(r.kpiAddon)}</td>
+        <td style="text-align:right;color:#f59e0b;font-weight:700">${n0(r.diemAddon)}</td>
+        <td style="text-align:right;font-weight:700;color:#fbbf24">${r.pctDiemAddon.toFixed(2)}%</td>
+        <td class="kpi-final-col" style="text-align:center">${getKpiScoreBadge(r.kpiFinal)}</td>
       </tr>`;
     });
   }
@@ -255,11 +273,11 @@ function renderKpiTable() {
     const n = list.length;
     const totDaLam = list.reduce((s, r) => s + r.daLam, 0);
     const totActImp = list.reduce((s, r) => s + r.actImpact, 0);
-    const avgPctActive = list.reduce((s, r) => s + r.pctActive, 0) / n;
+    const avgPctImpact = list.reduce((s, r) => s + r.pctImpact, 0) / n;
     const avgKpiAct = list.reduce((s, r) => s + r.kpiActive, 0) / n;
     const totActive = list.reduce((s, r) => s + r.active, 0);
     const avgPctKpiAct = list.reduce((s, r) => s + r.pctKpiActive, 0) / n;
-    const avgKpiTong = list.reduce((s, r) => s + r.kpiTong, 0) / n;
+    const avgKpiDiem = list.reduce((s, r) => s + r.kpiDiem, 0) / n;
     const avgTongDiem = list.reduce((s, r) => s + r.tongDiem, 0) / n;
     const avgPctDiemTong = list.reduce((s, r) => s + r.pctDiemTong, 0) / n;
     const avgKpiAddon = list.reduce((s, r) => s + r.kpiAddon, 0) / n;
@@ -269,19 +287,19 @@ function renderKpiTable() {
 
     tfoot = `<tfoot><tr>
       <td colspan="4" style="text-align:left;color:var(--acc);font-weight:800">📊 TỔNG CỘNG / TRUNG BÌNH (${n} SC)</td>
-      <td>${totDaLam}</td>
-      <td>${totActImp}</td>
-      <td>${avgPctActive.toFixed(2)}%</td>
-      <td>${avgKpiAct.toFixed(1)}</td>
-      <td>${totActive}</td>
-      <td>${avgPctKpiAct.toFixed(2)}%</td>
-      <td>${avgKpiTong.toFixed(0)}</td>
-      <td style="color:#60a5fa">${avgTongDiem.toFixed(1)}</td>
-      <td style="color:#38bdf8">${avgPctDiemTong.toFixed(2)}%</td>
-      <td>${avgKpiAddon.toFixed(1)}</td>
-      <td style="color:#f59e0b">${avgDiemAddon.toFixed(1)}</td>
-      <td style="color:#fbbf24">${avgPctDiemAddon.toFixed(2)}%</td>
-      <td class="kpi-final-col">${getKpiScoreBadge(avgKpiFinal)}</td>
+      <td style="text-align:right">${n0(totDaLam)}</td>
+      <td style="text-align:right">${n0(totActImp)}</td>
+      <td style="text-align:right">${avgPctImpact.toFixed(2)}%</td>
+      <td style="text-align:right">${avgKpiAct.toFixed(1)}</td>
+      <td style="text-align:right">${n0(totActive)}</td>
+      <td style="text-align:right">${avgPctKpiAct.toFixed(2)}%</td>
+      <td style="text-align:right">${avgKpiDiem.toFixed(0)}</td>
+      <td style="text-align:right;color:#60a5fa">${avgTongDiem.toFixed(1)}</td>
+      <td style="text-align:right;color:#38bdf8">${avgPctDiemTong.toFixed(2)}%</td>
+      <td style="text-align:right">${avgKpiAddon.toFixed(1)}</td>
+      <td style="text-align:right;color:#f59e0b">${avgDiemAddon.toFixed(1)}</td>
+      <td style="text-align:right;color:#fbbf24">${avgPctDiemAddon.toFixed(2)}%</td>
+      <td class="kpi-final-col" style="text-align:center">${getKpiScoreBadge(avgKpiFinal)}</td>
     </tr></tfoot>`;
   }
 
@@ -372,7 +390,7 @@ function exportKpiCsv() {
     showToast('Chưa có dữ liệu KPI để xuất CSV!', false);
     return;
   }
-  const head = ['STT', 'Tên SC', 'Level', 'Coacher', 'Đã làm', 'Act impact', '% active', 'KPI active', 'Active', '% KPI active', 'KPI tổng', 'Tổng điểm', '% Điểm tổng', 'KPI addon', 'Điểm addon', '% Điểm addon', 'KPI Tổng (70% Điểm + 30% Addon)'];
+  const head = ['STT', 'Tên SC', 'Level', 'Coacher', 'Đã làm', 'Act impact', '% impact', 'KPI active', 'active', '% KPI active', 'KPI Điểm', 'Tổng điểm', '% Điểm tổng', 'KPI addon', 'Điểm addon', '% Điểm addon', 'KPI Tổng'];
   const rows = list.map((r, idx) => [
     idx + 1,
     r.name,
@@ -380,11 +398,11 @@ function exportKpiCsv() {
     r.coach,
     r.daLam,
     r.actImpact,
-    r.pctActive.toFixed(2) + '%',
+    r.pctImpact.toFixed(2) + '%',
     r.kpiActive,
     r.active,
     r.pctKpiActive.toFixed(2) + '%',
-    r.kpiTong,
+    r.kpiDiem,
     r.tongDiem,
     r.pctDiemTong.toFixed(2) + '%',
     r.kpiAddon,
