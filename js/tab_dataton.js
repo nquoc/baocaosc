@@ -43,8 +43,8 @@ function normalizeDataTonOnline(rawData) {
   const colDistrict = findCol('xã/phường', 'quận/huyện');
   const colAddress = findCol('địa điểm', 'địa chỉ');
   const colJob = findCol('loại công việc', 'loai cong viec', 'công việc');
-  const colUser = findCol('người xử lý', 'nguoi xu ly', 'sc xử lý');
-  const colStatus = findCol('tình trạng xử lý', 'trạng thái xử lý');
+  const colUser = findCol('người xử lý', 'nguoi xu ly', 'sc xử lý', 'người phụ trách', 'nhân sự');
+  const colStatus = findCol('tình trạng xử lý', 'trạng thái xử lý', 'trạng thái', 'tình trạng');
 
   const records = [];
   const userMap = new Map();
@@ -143,8 +143,8 @@ function normalizeDataTonOffline(rawData) {
   const colContract = findCol('gói hợp đồng', 'hợp đồng');
   const colProduct = findCol('product', 'sản phẩm');
   const colDesc = findCol('mô tả', 'thực trạng trao đổi');
-  const colUser = findCol('người xử lý', 'nguoi xu ly', 'sc xử lý');
-  const colStatus = findCol('tình trạng xử lý', 'trạng thái xử lý');
+  const colUser = findCol('người xử lý', 'nguoi xu ly', 'sc xử lý', 'người phụ trách', 'nhân sự');
+  const colStatus = findCol('tình trạng xử lý', 'trạng thái xử lý', 'trạng thái', 'tình trạng');
 
   const records = [];
   const userMap = new Map();
@@ -215,10 +215,42 @@ function normalizeDataTonOffline(rawData) {
     records: list
   })).sort((a, b) => b.count - a.count);
 
+  // Lọc riêng các ticket treo ngoài thuộc pool "Chăm sóc khách hàng hỗ trợ trực tiếp"
+  const poolRecords = records.filter(r => {
+    const u = r.user.toLowerCase();
+    return u.includes('hỗ trợ trực tiếp') || u.includes('ho tro truc tiep');
+  });
+
+  const poolProvinceMap = new Map();
+  poolRecords.forEach(r => {
+    const p = r.province || '(Chưa xác định)';
+    if (!poolProvinceMap.has(p)) {
+      poolProvinceMap.set(p, []);
+    }
+    poolProvinceMap.get(p).push(r);
+  });
+
+  const totalPoolCount = poolRecords.length;
+
+  const poolProvinces = Array.from(poolProvinceMap.entries()).map(([name, list]) => {
+    const totalProv = provinceMap.has(name) ? provinceMap.get(name).length : list.length;
+    return {
+      name,
+      count: list.length,
+      pct: totalPoolCount > 0 ? (list.length / totalPoolCount) * 100 : 0,
+      pctOfProvince: totalProv > 0 ? (list.length / totalProv) * 100 : 0,
+      totalProv,
+      records: list
+    };
+  }).sort((a, b) => b.count - a.count);
+
   return {
     totalCount,
     users,
     provinces,
+    poolProvinces,
+    totalPoolCount,
+    poolRecords,
     records
   };
 }
@@ -236,10 +268,11 @@ function renderDataTonSummaryCards(parsedOnline, parsedOffline) {
 
   const onCount = parsedOnline ? parsedOnline.totalCount : 0;
   const offCount = parsedOffline ? parsedOffline.totalCount : 0;
+  const poolCount = parsedOffline ? parsedOffline.totalPoolCount : 0;
   const grandTotal = onCount + offCount;
 
   const topJob = parsedOnline && parsedOnline.jobs && parsedOnline.jobs.length ? parsedOnline.jobs[0] : null;
-  const topProv = parsedOffline && parsedOffline.provinces && parsedOffline.provinces.length ? parsedOffline.provinces[0] : null;
+  const topPoolProv = parsedOffline && parsedOffline.poolProvinces && parsedOffline.poolProvinces.length ? parsedOffline.poolProvinces[0] : null;
 
   const K = (label, val, sub, color = '') => `
     <div class="card kpi">
@@ -250,12 +283,13 @@ function renderDataTonSummaryCards(parsedOnline, parsedOffline) {
 
   const onPct = grandTotal > 0 ? ((onCount / grandTotal) * 100).toFixed(1) : '0';
   const offPct = grandTotal > 0 ? ((offCount / grandTotal) * 100).toFixed(1) : '0';
+  const poolPctOfOff = offCount > 0 ? ((poolCount / offCount) * 100).toFixed(1) : '0';
 
   box.innerHTML =
     K('🌐 Tổng Tồn Online', `${n0(onCount)} <span style="font-size:13px;font-weight:400;color:var(--mut)">ticket</span>`, `Chiếm ${onPct}% tổng data tồn toàn hệ thống`, 'color:#38bdf8') +
     K('📋 Phân Loại CV Online', `${parsedOnline ? parsedOnline.jobs.length : 0} <span style="font-size:13px;font-weight:400;color:var(--mut)">nhóm</span>`, topJob ? `Lớn nhất: <b>${esc(topJob.name)}</b> (${n0(topJob.count)})` : 'Chưa có phân loại', 'color:#0ea5e9') +
-    K('🏢 Tổng Tồn Offline', `${n0(offCount)} <span style="font-size:13px;font-weight:400;color:var(--mut)">ticket</span>`, `Chiếm ${offPct}% tổng data tồn toàn hệ thống`, 'color:#f59e0b') +
-    K('🗺️ Tỉnh Thành Tồn Offline', `${parsedOffline ? parsedOffline.provinces.length : 0} <span style="font-size:13px;font-weight:400;color:var(--mut)">tỉnh thành</span>`, topProv ? `Nhiều nhất: <b>${esc(topProv.name)}</b> (${n0(topProv.count)})` : 'Chưa có phân bổ', 'color:#d97706');
+    K('🏢 Tổng Tồn Offline', `${n0(offCount)} <span style="font-size:13px;font-weight:400;color:var(--mut)">ticket</span>`, `Đã gán SC: <b>${n0(offCount - poolCount)}</b> (${(100 - parseFloat(poolPctOfOff)).toFixed(1)}%)`, 'color:#f59e0b') +
+    K('🚨 Tồn Treo Ngoài Offline', `${n0(poolCount)} <span style="font-size:13px;font-weight:400;color:var(--mut)">ticket</span>`, topPoolProv ? `Chiếm ${poolPctOfOff}% tồn Offline · Top: <b>${esc(topPoolProv.name)}</b> (${n0(topPoolProv.count)})` : 'Không có ticket treo ngoài', 'color:#ef4444');
 }
 
 /**
@@ -293,6 +327,12 @@ function sortDataTonItems(items, sortCfg) {
     }
     if (k === 'count' || k === 'pct') {
       return dir * (a.count - b.count);
+    }
+    if (k === 'totalProv') {
+      return dir * ((a.totalProv || 0) - (b.totalProv || 0));
+    }
+    if (k === 'pctOfProvince') {
+      return dir * ((a.pctOfProvince || 0) - (b.pctOfProvince || 0));
     }
     return 0;
   });
@@ -536,6 +576,79 @@ function renderOfflineProvinceTable(parsedOffline) {
 }
 
 /**
+ * BẢNG 2.3: Offline Tồn Treo Ngoài Theo Tỉnh / Thành Phố (Pool: Chăm sóc khách hàng hỗ trợ trực tiếp)
+ */
+function renderOfflinePoolProvinceTable(parsedOffline) {
+  const tbl = $('tblDataTonOfflinePoolProvince');
+  if (!tbl || !parsedOffline) return;
+
+  let items = parsedOffline.poolProvinces || [];
+  const q = DATATON_SEARCH.offlinePoolProvince;
+  if (q) {
+    items = items.filter(it => it.name.toLowerCase().includes(q));
+  }
+  items = sortDataTonItems(items, DATATON_SORT.offlinePoolProvince);
+
+  const getArrow = col => {
+    if (DATATON_SORT.offlinePoolProvince.k !== col) return ' ⇅';
+    return DATATON_SORT.offlinePoolProvince.dir === 1 ? ' ▲' : ' ▼';
+  };
+
+  let thead = `
+    <thead>
+      <tr>
+        <th style="width:45px;text-align:center">STT</th>
+        <th style="text-align:left;cursor:pointer" onclick="onDataTonSort('offlinePoolProvince', 'name')">Tỉnh / Thành Phố${getArrow('name')}</th>
+        <th style="text-align:right;cursor:pointer;width:120px" onclick="onDataTonSort('offlinePoolProvince', 'count')">SL Treo Ngoài${getArrow('count')}</th>
+        <th style="text-align:right;cursor:pointer;width:115px" onclick="onDataTonSort('offlinePoolProvince', 'pct')">% / Tổng Treo${getArrow('pct')}</th>
+        <th style="text-align:right;cursor:pointer;width:115px" onclick="onDataTonSort('offlinePoolProvince', 'totalProv')">Tổng Tồn Tỉnh${getArrow('totalProv')}</th>
+        <th style="text-align:right;cursor:pointer;width:135px" onclick="onDataTonSort('offlinePoolProvince', 'pctOfProvince')">% Treo / Tồn Tỉnh${getArrow('pctOfProvince')}</th>
+      </tr>
+    </thead>`;
+
+  let tbody = '<tbody>';
+  if (items.length === 0) {
+    tbody += '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--mut)">Không tìm thấy tỉnh thành treo ngoài phù hợp</td></tr>';
+  } else {
+    items.forEach((it, idx) => {
+      const pctProvVal = it.pctOfProvince || 0;
+      let badgeStyle = 'background:rgba(16,185,129,0.15);color:#10b981;padding:3px 8px;border-radius:6px;font-weight:700'; // xanh <35%
+      if (pctProvVal >= 60) {
+        badgeStyle = 'background:rgba(239,68,68,0.18);color:#ef4444;padding:3px 8px;border-radius:6px;font-weight:700'; // đỏ >=60%
+      } else if (pctProvVal >= 35) {
+        badgeStyle = 'background:rgba(245,158,11,0.18);color:#f59e0b;padding:3px 8px;border-radius:6px;font-weight:700'; // cam 35-60%
+      }
+
+      tbody += `
+        <tr style="cursor:pointer" onclick="openDataTonDrilldownModal('offline', 'Tỉnh thành (Treo ngoài)', '${esc(it.name)}', 'poolProvince')" title="Nhấp để xem danh sách ticket treo ngoài của ${esc(it.name)}">
+          <td style="text-align:center;color:var(--mut)">${idx + 1}</td>
+          <td style="text-align:left;font-weight:600;color:var(--tx-heading)">${esc(it.name)}</td>
+          <td style="text-align:right;font-weight:700;color:#ef4444">${n0(it.count)}</td>
+          <td style="text-align:right;color:var(--mut);font-weight:600">${it.pct.toFixed(1)}%</td>
+          <td style="text-align:right;color:var(--tx);font-weight:600">${n0(it.totalProv)}</td>
+          <td style="text-align:right"><span class="badge" style="${badgeStyle}">${pctProvVal.toFixed(1)}%</span></td>
+        </tr>`;
+    });
+  }
+  tbody += '</tbody>';
+
+  const overallPct = parsedOffline.totalCount > 0 ? (parsedOffline.totalPoolCount / parsedOffline.totalCount * 100) : 0;
+  const tfoot = `
+    <tfoot>
+      <tr style="font-weight:800;background:var(--card-sub, var(--card))">
+        <td style="text-align:center;color:var(--mut)">★</td>
+        <td style="text-align:left;color:var(--tx-heading)">TỔNG TOÀN BỘ (${items.length} tỉnh thành có ticket treo)</td>
+        <td style="text-align:right;color:#ef4444;font-size:14px">${n0(parsedOffline.totalPoolCount)}</td>
+        <td style="text-align:right;color:var(--tx-heading)">100%</td>
+        <td style="text-align:right;color:var(--tx-heading)">${n0(parsedOffline.totalCount)}</td>
+        <td style="text-align:right;color:#ef4444;font-size:13px">${overallPct.toFixed(1)}%</td>
+      </tr>
+    </tfoot>`;
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
  * Mở modal danh sách chi tiết data tồn khi nhấp vào dòng bất kỳ
  */
 function openDataTonDrilldownModal(mode, filterLabel, filterValue, filterKey) {
@@ -558,12 +671,17 @@ function openDataTonDrilldownModal(mode, filterLabel, filterValue, filterKey) {
     filtered = parsed.records.filter(r => r.job === filterValue);
   } else if (filterKey === 'province') {
     filtered = parsed.records.filter(r => r.province === filterValue);
+  } else if (filterKey === 'poolProvince') {
+    filtered = (parsed.poolRecords || []).filter(r => r.province === filterValue);
   } else {
     filtered = parsed.records;
   }
 
   t.textContent = `Danh sách Data Tồn: ${filterValue}`;
-  if (s) s.textContent = `${filtered.length} ticket chưa làm · Nguồn: ${mode === 'online' ? 'ton online' : 'ton offline'}`;
+  if (s) {
+    const poolNote = filterKey === 'poolProvince' ? ' (Treo ngoài - CSKH Hỗ trợ trực tiếp)' : '';
+    s.textContent = `${filtered.length} ticket chưa làm${poolNote} · Nguồn: ${mode === 'online' ? 'ton online' : 'ton offline'}`;
+  }
 
   if (filtered.length === 0) {
     body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--mut)">Không có dữ liệu tồn nào.</div>';
@@ -615,6 +733,7 @@ function renderDataTon() {
   if (parsedOffline) {
     renderOfflineUserTable(parsedOffline);
     renderOfflineProvinceTable(parsedOffline);
+    renderOfflinePoolProvinceTable(parsedOffline);
   }
 }
 
@@ -844,6 +963,34 @@ function exportDataTonOfflineProvinceCsv() {
   );
 }
 
+function exportDataTonOfflinePoolProvinceCsv() {
+  if (!DATATON_STATE.offline) {
+    showToast('Chưa có dữ liệu Offline Tồn để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizeDataTonOffline(DATATON_STATE.offline);
+  if (!parsed) return;
+
+  const rows = (parsed.poolProvinces || []).map((it, idx) => [
+    idx + 1,
+    it.name,
+    it.count,
+    it.pct.toFixed(2) + '%',
+    it.totalProv,
+    it.pctOfProvince.toFixed(2) + '%'
+  ]);
+  const overallPct = parsed.totalCount > 0 ? (parsed.totalPoolCount / parsed.totalCount * 100).toFixed(2) + '%' : '0%';
+  rows.push(['★', 'TỔNG CỘNG', parsed.totalPoolCount, '100.00%', parsed.totalCount, overallPct]);
+
+  exportGenericCsv(
+    'DATA TỒN OFFLINE - THỐNG KÊ TREO NGOÀI THEO TỈNH THÀNH (CSKH HỖ TRỢ TRỰC TIẾP)',
+    ['STT', 'Tỉnh / Thành Phố', 'SL Treo Ngoài', 'Tỷ Trọng / Tổng Treo (%)', 'Tổng Tồn Tỉnh', 'Tỷ Lệ Treo / Tồn Tỉnh (%)'],
+    rows,
+    'DataTon_Offline_TreoNgoai_TheoTinhThanh',
+    'Đã xuất file CSV Tồn Treo Ngoài Offline Theo Tỉnh Thành thành công!'
+  );
+}
+
 function exportDataTonAllCsv() {
   if (!DATATON_STATE.online && !DATATON_STATE.offline) {
     showToast('Chưa có dữ liệu Data Tồn để xuất CSV!', false);
@@ -895,6 +1042,15 @@ function exportDataTonAllCsv() {
         lines.push([idx + 1, it.name, it.count, it.pct.toFixed(2) + '%']);
       });
       lines.push(['★', 'TỔNG CỘNG', parsedOff.totalCount, '100.00%']);
+      lines.push([]);
+
+      lines.push(['--- 2.3: Tồn Treo Ngoài Theo Tỉnh / Thành Phố (Pool CSKH Hỗ Trợ Trực Tiếp) ---']);
+      lines.push(['STT', 'Tỉnh / Thành Phố', 'SL Treo Ngoài', 'Tỷ Trọng / Tổng Treo (%)', 'Tổng Tồn Tỉnh', 'Tỷ Lệ Treo / Tồn Tỉnh (%)']);
+      (parsedOff.poolProvinces || []).forEach((it, idx) => {
+        lines.push([idx + 1, it.name, it.count, it.pct.toFixed(2) + '%', it.totalProv, it.pctOfProvince.toFixed(2) + '%']);
+      });
+      const allPoolPct = parsedOff.totalCount > 0 ? (parsedOff.totalPoolCount / parsedOff.totalCount * 100).toFixed(2) + '%' : '0%';
+      lines.push(['★', 'TỔNG CỘNG', parsedOff.totalPoolCount, '100.00%', parsedOff.totalCount, allPoolPct]);
       lines.push([]);
     }
   }

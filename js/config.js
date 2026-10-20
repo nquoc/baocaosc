@@ -169,11 +169,13 @@ let DATATON_SEARCH = {
   onlineUser: '',
   onlineJob: '',
   offlineUser: '',
-  offlineProvince: ''
+  offlineProvince: '',
+  offlinePoolProvince: ''
 };
 let DATATON_SORT = {
   onlineUser: { k: 'count', dir: -1 },
   onlineJob: { k: 'count', dir: -1 },
   offlineUser: { k: 'count', dir: -1 },
-  offlineProvince: { k: 'count', dir: -1 }
+  offlineProvince: { k: 'count', dir: -1 },
+  offlinePoolProvince: { k: 'count', dir: -1 }
 };
