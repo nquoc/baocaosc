@@ -8,7 +8,7 @@ function formatMuctieuVal(val, colIdx) {
   if (colIdx === 1 || colIdx === 2) {
     const num = Number(val);
     if (isNaN(num)) return String(val);
-    return Math.round(num).toString();
+    return Math.round(num).toLocaleString('vi-VN');
   }
   // Col 3-7: % đạt, Tuần 1, Tuần 2, Tuần 3, Tuần 4
   const num = Number(val);

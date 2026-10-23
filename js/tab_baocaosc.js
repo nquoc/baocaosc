@@ -21,14 +21,16 @@ function findMuctieuRow(data, keyword) {
   for (let r = 1; r < data.length; r++) {
     const row = data[r];
     if (row && String(row[0] || '').toLowerCase().includes(kw)) {
-      const target = Number(row[1]) || 0;
-      const actual = Number(row[2]) || 0;
+      const rawTarget = Number(row[1]) || 0;
+      const rawActual = Number(row[2]) || 0;
+      const target = Math.round(rawTarget);
+      const actual = Math.round(rawActual);
       let pct = null;
       if (row[3] != null && row[3] !== '') {
         const pNum = Number(row[3]);
         pct = isNaN(pNum) ? null : (pNum <= 5 ? pNum * 100 : pNum);
-      } else if (target > 0) {
-        pct = (actual / target) * 100;
+      } else if (rawTarget > 0) {
+        pct = (rawActual / rawTarget) * 100;
       }
       return {
         label: String(row[0] || '').trim(),
@@ -60,12 +62,12 @@ function renderBaoCaoScMuctieuSummaryCards(offData, onData) {
   const fmtVal = row => {
     if (!row) return '–';
     const pctStr = row.pct != null ? ` (${row.pct.toFixed(1)}%)` : '';
-    return `${n0(row.actual)} / ${n0(row.target)}${pctStr}`;
+    return `${n0(Math.round(row.actual))} / ${n0(Math.round(row.target))}${pctStr}`;
   };
 
   const fmtSub = (row, team) => {
     if (!row) return `Chưa có số liệu (${team})`;
-    return `Mục tiêu: ${n0(row.target)} · Thực đạt: ${n0(row.actual)}`;
+    return `Mục tiêu: ${n0(Math.round(row.target))} · Thực đạt: ${n0(Math.round(row.actual))}`;
   };
 
   box.innerHTML =

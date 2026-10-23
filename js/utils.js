@@ -6,7 +6,7 @@
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const nf = (n, d = 1) => (n == null || isNaN(n)) ? '–' : Number(n).toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
-const n0 = n => Number(n).toLocaleString('vi-VN');
+const n0 = n => (n == null || isNaN(Number(n))) ? '–' : Math.round(Number(n)).toLocaleString('vi-VN');
 const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(Math.round(m % 60)).padStart(2, '0');
 const groupBy = (arr, f) => {
   const m = {};
