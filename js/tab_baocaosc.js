@@ -12,7 +12,7 @@
 
 /* ==========================================================================
    MỤC 1: BÁO CÁO MỤC TIÊU & TIẾN ĐỘ THÁNG (TEAM OFFLINE & TEAM ONLINE)
-   - Sheet: 'muctieu' (A1:H13 cho Offline & A14:H26 cho Online)
+   - Sheet: 'muctieu' (A2:H13 cho Offline & A16:H28 cho Online)
    ========================================================================== */
 
 function findMuctieuRow(data, keyword) {
@@ -26,7 +26,7 @@ function findMuctieuRow(data, keyword) {
       let pct = null;
       if (row[3] != null && row[3] !== '') {
         const pNum = Number(row[3]);
-        pct = isNaN(pNum) ? null : (pNum <= 1 ? pNum * 100 : pNum);
+        pct = isNaN(pNum) ? null : (pNum <= 5 ? pNum * 100 : pNum);
       } else if (target > 0) {
         pct = (actual / target) * 100;
       }

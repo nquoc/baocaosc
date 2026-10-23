@@ -192,8 +192,8 @@ Giao diện được chia thành 2 Tab chính:
 ### TAB 3: MỤC TIÊU (BÁO CÁO TEAM OFFLINE & ONLINE)
 1. **Mục tiêu & Nguồn dữ liệu**:
    * Đồng bộ trực tiếp từ sheet `muctieu` trên Google Sheets thông qua 2 API:
-     * **Team Offline**: `sheet=muctieu&range=A1:H13` (13 dòng: Tiêu đề + 12 chỉ tiêu).
-     * **Team Online**: `sheet=muctieu&range=A14:H26` (13 dòng: Tiêu đề + 12 chỉ tiêu).
+     * **Team Offline**: `sheet=muctieu&range=A2:H13` (12 dòng: Tiêu đề + 11 chỉ tiêu).
+     * **Team Online**: `sheet=muctieu&range=A16:H28` (13 dòng: Tiêu đề + 12 chỉ tiêu).
 2. **Thiết kế Giao diện theo phong cách Spreadsheet (Chuẩn 100% Excel)**:
    * **Tiêu đề cột**: Màu vàng sáng (`#ffff00`), chữ đậm màu đen.
    * **Highlight màu sắc theo phân loại nghiệp vụ**:
