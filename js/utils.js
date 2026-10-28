@@ -200,6 +200,7 @@ function initTheme() {
 
 function setTheme(theme) {
   document.body.setAttribute('data-theme', theme);
+  document.documentElement.classList.toggle('dark-theme', theme === 'dark');
   localStorage.setItem('tc_theme', theme);
 
   const btn = $('themeToggleBtn');

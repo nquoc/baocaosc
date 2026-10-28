@@ -1207,155 +1207,142 @@
 </div>
 
 <!-- ==================== TAB 8: BÁO CÁO ĐIỀU HÀNH TỰ ĐỘNG & BỘ SỬA TRỰC TIẾP WYSIWYG ==================== -->
-<div id="baocaoSection" style="display:none">
-  <!-- CONFIG BAR -->
-  <div class="card report-config-card" style="margin-bottom:14px;border:1px solid #3b82f640">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:10px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:20px">📝</span>
-        <div>
-          <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Báo Cáo Điều Hành & Bộ Sửa Trực Tiếp WYSIWYG</h2>
-          <div class="mut sm">Tự động tổng hợp số liệu điều hành, chỉnh sửa trực tiếp trên tài liệu, xuất Confluence & Word chuẩn</div>
+<!-- ==================== TAB 8: BÁO CÁO TUẦN TỰ ĐỘNG & BỘ SỬA TRỰC TIẾP WYSIWYG ==================== -->
+<div id="baocaoSection" class="tab-content hidden wr-page" style="display:none">
+        <style id="weeklyReportExportStyles">
+            .wr-document{max-width:1100px;margin:0 auto;background:#fff;color:#172033;padding:34px 42px;border-radius:14px;box-shadow:0 8px 30px rgba(15,23,42,.08);font-family:Arial,"Segoe UI",sans-serif;line-height:1.55}
+            .wr-doc-title{text-align:center;font-size:27px;font-weight:800;color:#17365d;letter-spacing:.2px}.wr-doc-subtitle{text-align:center;color:#64748b;margin:4px 0 24px;font-size:13px}
+            .wr-document section{margin:0 0 26px}.wr-document h2{font-size:19px;color:#17365d;border-bottom:2px solid #d7e5f2;padding-bottom:7px;margin:22px 0 12px;text-align:left!important}.wr-document h3{font-size:15px;color:#2f5597;margin:16px 0 8px;text-align:left!important}.wr-document h4{font-size:13px;color:#475569;margin:8px 0;text-align:left!important}
+            .wr-document p{margin:7px 0}.wr-document ul,.wr-document ol{margin:7px 0 10px 22px;padding:0}.wr-document li{margin:4px 0}.wr-note{background:#eef6fb;border-left:4px solid #5b9bd5;padding:8px 10px;border-radius:6px}
+            .wr-table-wrap{overflow-x:auto;margin:10px 0 14px}.wr-table{width:100%;border-collapse:collapse;font-size:12.5px}.wr-table th,.wr-table td{border:1px solid #c9d4df;padding:7px 8px;text-align:center;vertical-align:middle}.wr-table th{background:#d9eaf7;color:#17365d;font-weight:700}.wr-table td:first-child{text-align:left}.wr-summary-table td:nth-child(odd){font-weight:700;background:#edf4fb;color:#17365d}.wr-two-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}.wr-generated-note{margin-top:30px;padding-top:10px;border-top:1px solid #e2e8f0;color:#94a3b8;text-align:center;font-size:11px}
+
+            /* BẢNG DASHBOARD GỐC — native HTML, tự đổi sáng/tối và KHÔNG kéo ngang trên desktop */
+            .wr-document{--wr-card:#ffffff;--wr-head:#e8eef7;--wr-cell:#ffffff;--wr-border:#cbd5e1;--wr-text:#1e293b;--wr-muted:#475569;--wr-total:#e2e8f0;--wr-hover:#f8fafc}
+            html.dark-theme .wr-document{background:#1e293b;color:#e2e8f0;border-color:#334155;--wr-card:#0f172a;--wr-head:#0b0f19;--wr-cell:#0f172a;--wr-border:#334155;--wr-text:#e2e8f0;--wr-muted:#94a3b8;--wr-total:#162032;--wr-hover:#1e293b}
+            html.dark-theme .wr-doc-title{color:#93c5fd} html.dark-theme .wr-doc-subtitle{color:#94a3b8}
+            html.dark-theme .wr-document h2{color:#bfdbfe;border-bottom-color:#334155} html.dark-theme .wr-document h3{color:#93c5fd} html.dark-theme .wr-document h4{color:#cbd5e1}
+            html.dark-theme .wr-note{background:#162032;border-left-color:#3b82f6;color:#cbd5e1}
+            html.dark-theme .wr-summary-table td{border-color:#334155;color:#e2e8f0} html.dark-theme .wr-summary-table td:nth-child(odd){background:#0f172a;color:#93c5fd}
+            .wr-native-card{margin:12px 0 18px;background:var(--wr-card);border:1px solid var(--wr-border);border-radius:9px;overflow:hidden;color:var(--wr-text);box-shadow:0 2px 8px rgba(15,23,42,.10)}
+            .wr-native-title{padding:10px 13px 7px;font-weight:800;color:var(--wr-text);font-size:13px;background:var(--wr-card)}.wr-native-subtitle{padding:0 13px 8px;font-size:11px;color:var(--wr-muted)}
+            .wr-native-scroll{overflow-x:auto;width:100%}.wr-native-table{width:100%;max-width:100%;border-collapse:collapse;white-space:nowrap;font-size:10px;color:var(--wr-text);background:var(--wr-card)}
+            .wr-native-table th{background:var(--wr-head);color:var(--wr-muted);text-transform:uppercase;font-size:9px;line-height:1.2;letter-spacing:0;font-weight:700;padding:6px 4px;border:1px solid var(--wr-border);text-align:center;white-space:nowrap}
+            .wr-native-table td{padding:6px 4px;border:1px solid var(--wr-border);text-align:center;background:var(--wr-cell);color:var(--wr-text);font-variant-numeric:tabular-nums;white-space:nowrap}.wr-native-table td.wr-name{text-align:left;font-weight:700;color:var(--wr-text);white-space:nowrap}
+            .wr-native-table tbody tr:hover td{background:var(--wr-hover)}.wr-native-total td{background:var(--wr-total)!important;color:var(--wr-text)!important;font-weight:800;border-top:2px solid var(--wr-border)!important}
+            .wr-kpi-native{font-size:9px}.wr-kpi-native th{font-size:8px;padding:5px 1px;letter-spacing:-0.2px}.wr-kpi-native td{padding:5px 1.5px;white-space:nowrap;font-size:8.5px;letter-spacing:-0.2px}.wr-kpi-native td.wr-name{white-space:normal;text-align:left}.wr-kpi-native th:nth-child(1),.wr-kpi-native td:nth-child(1){width:15%}.wr-kpi-native th:nth-child(2),.wr-kpi-native td:nth-child(2){width:4.5%}
+            .wr-performance-native th:nth-child(2),.wr-performance-native td:nth-child(2){width:16%}.wr-incoming-native{font-size:9px}.wr-incoming-native th,.wr-incoming-native td{padding:5px 2px}.wr-incoming-native th:first-child,.wr-incoming-native td:first-child{width:15%}.wr-duration-native th:first-child,.wr-duration-native td:first-child{width:16%}
+            .wr-kpi-good{background:#d1fae5!important;color:#047857!important;font-weight:800}.wr-kpi-medium{background:#fef3c7!important;color:#b45309!important;font-weight:800}.wr-kpi-bad{background:#fee2e2!important;color:#b91c1c!important;font-weight:800}
+            .wr-perf-good{background:#d1fae5!important;color:#047857!important;font-weight:800}.wr-perf-bad{background:#fee2e2!important;color:#b91c1c!important;font-weight:800}.wr-perf-warn{background:#fef3c7!important;color:#b45309!important;font-weight:800}.wr-total-accent{color:#dc2626!important;font-weight:800!important}.wr-strong{font-weight:800!important}.wr-incoming-avg{color:#2563eb!important;font-weight:800!important}
+            html.dark-theme .wr-kpi-good,html.dark-theme .wr-perf-good{background:rgba(16,185,129,.22)!important;color:#34d399!important} html.dark-theme .wr-kpi-medium,html.dark-theme .wr-perf-warn{background:rgba(245,158,11,.22)!important;color:#fbbf24!important} html.dark-theme .wr-kpi-bad,html.dark-theme .wr-perf-bad{background:rgba(239,68,68,.20)!important;color:#f87171!important}
+            .wr-two-native{display:grid;grid-template-columns:1fr 1fr;gap:14px}.wr-two-native .wr-native-card{margin-top:7px}.wr-compact-native th:nth-child(2),.wr-compact-native td:nth-child(2){width:110px}.wr-backlog-grand{margin:-6px 0 18px;padding:10px 12px;background:#eef2f7;border:1px solid #cbd5e1;border-radius:8px;color:#0f172a;font-size:12px} html.dark-theme .wr-backlog-grand{background:#111827;border-color:#334155;color:#f8fafc}
+            .wr-native-legend,.wr-duration-legend{padding:9px 12px;color:var(--wr-muted);font-size:10px;background:var(--wr-head);border-bottom:1px solid var(--wr-border)}.wr-native-badge,.wr-duration-chip{display:inline-block;border-radius:999px;padding:2px 8px;font-weight:800;font-size:10px;white-space:nowrap}.wr-badge-green{background:#d1fae5;color:#047857}.wr-badge-yellow{background:#fef3c7;color:#b45309}.wr-badge-red{background:#fee2e2;color:#b91c1c}.wr-drill-pill{display:inline-block;border:1px solid #818cf8;background:#eef2ff;color:#4338ca;padding:3px 8px;border-radius:7px;font-size:10px}
+            .wr-duration-chip{border-radius:4px;margin:0 3px}.wr-duration-low{background:#dbeafe!important;color:#1d4ed8!important}.wr-duration-mid{background:#93c5fd!important;color:#1e3a8a!important;font-weight:700}.wr-duration-high{background:#2563eb!important;color:#fff!important;font-weight:800}
+            .wr-custom-section{margin:0 0 26px}
+            .wr-custom-content{font-size:13px;line-height:1.6;color:inherit}
+            .wr-custom-content img{max-width:100%;height:auto;border-radius:8px;margin:12px 0;display:block;box-shadow:0 2px 8px rgba(15,23,42,.12)}
+            .wr-custom-content table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
+            .wr-custom-content th,.wr-custom-content td{border:1px solid var(--wr-border,#cbd5e1);padding:7px 10px;text-align:left;vertical-align:top}
+            .wr-custom-content th{background:var(--wr-head,#e8eef7);font-weight:700;color:var(--wr-text,#17365d)}
+            .wr-custom-content p{margin:6px 0}
+            .wr-custom-content ul,.wr-custom-content ol{margin:6px 0 10px 22px;padding:0}
+            html.dark-theme .wr-custom-content table th{background:#0f172a;color:#93c5fd;border-color:#334155} html.dark-theme .wr-custom-content table td{border-color:#334155;color:#e2e8f0}
+            @media(max-width:800px){.wr-two-native{grid-template-columns:1fr}.wr-native-scroll{overflow-x:auto}.wr-native-table{min-width:850px;font-size:9px}.wr-kpi-native{min-width:1100px}.wr-native-table th,.wr-native-table td{padding:5px 3px}}
+            @media(max-width:800px){.wr-document{padding:20px 16px}.wr-two-cols{grid-template-columns:1fr}.wr-doc-title{font-size:21px}.wr-table{font-size:11px}}
+            @media print{body{background:#fff!important}.wr-document{box-shadow:none!important;max-width:none;padding:0}.wr-document section{break-inside:auto}.wr-table{page-break-inside:auto}.wr-table tr{page-break-inside:avoid}}
+        </style>
+
+        <div class="wr-toolbar-card">
+            <div class="wr-toolbar-title">
+                <div><b>🧾 BÁO CÁO TUẦN TỰ ĐỘNG</b><small>Lấy số trực tiếp từ Dashboard → dựng lại đúng bảng gốc bằng HTML → copy sang Atlassian</small></div>
+                <div id="wrSnapshotInfo" class="wr-snapshot-info"></div>
+            </div>
+
+            <div class="wr-controls-grid">
+                <label><span>📅 Từ ngày</span><input type="date" id="wrFromDate"></label>
+                <label><span>📅 Đến ngày</span><input type="date" id="wrToDate"></label>
+                <label><span>🏠 Case đổi TT/địa chỉ</span><input type="number" min="0" id="wrAddressTotal" placeholder="VD: 29"></label>
+                <label><span>✅ Đã đổi trên OTP</span><input type="number" min="0" id="wrAddressDone" placeholder="VD: 29"></label>
+                <label style="grid-column: span 2;"><span>🏢 Tiêu đề báo cáo</span><input type="text" id="wrDocTitle" value="BÁO CÁO CHẤT LƯỢNG CUSTOMER SUCCESS (SC)" placeholder="VD: Báo cáo chất lượng Customer Success..."></label>
+                <label style="grid-column: span 2;"><span>👤 Kính gửi</span><input type="text" id="wrRecipient" value="anh Nguyễn Dũng Hải - SDM DVKH (Dịch Vụ Khách Hàng)" placeholder="VD: anh Nguyễn Dũng Hải SDM DVKH"></label>
+            </div>
+
+            <details class="wr-manual-details" id="wrManualDetails" open>
+                <summary>✍️ Nội dung bổ sung &amp; Mục tùy chỉnh (Tự đặt tiêu đề, viết nội dung, chèn ảnh, tạo bảng)</summary>
+                
+                <div class="wr-custom-sections-header" style="display:flex; justify-content:space-between; align-items:center; margin:14px 0 10px; flex-wrap:wrap; gap:10px;">
+                    <div style="font-weight:700; font-size:13.5px; color:inherit; display:flex; align-items:center; gap:6px;">
+                        <span>🎨 Các mục tùy chỉnh</span>
+                        <span style="font-size:11.5px; font-weight:normal; color:#64748b;">(Tự do đặt tên mục, viết văn bản, chèn/paste ảnh clipboard, tạo bảng)</span>
+                    </div>
+                    <button type="button" class="wr-btn wr-btn-blue" onclick="addWeeklyReportCustomSection()" style="padding:6px 12px; font-size:12px;">
+                        ➕ Thêm mục tùy chỉnh
+                    </button>
+                </div>
+
+                <div id="wrCustomSectionsContainer" class="wr-custom-sections-container">
+                    <!-- Dynamic custom section cards populated by JS -->
+                </div>
+
+                <div style="font-weight:700; font-size:13px; color:inherit; margin:16px 0 8px;">📝 Các ghi chú nhanh khác:</div>
+                <div class="wr-textarea-grid">
+                    <label><span>App Thu ngân F&amp;B</span><textarea id="wrAppFnb" rows="3" placeholder="Mỗi ý một dòng. VD: 290 ATC F&B; 12 case cài App Desktop..."></textarea></label>
+                    <label><span>Vấn đề nổi bật / case cần theo sát</span><textarea id="wrIssues" rows="3" placeholder="Mỗi ý một dòng. VD: Quậy Central - tiếp tục phối hợp PTSP/DEV..."></textarea></label>
+                    <label><span>Nội dung bổ sung khác</span><textarea id="wrExtra" rows="3" placeholder="Doanh số phần cứng, chương trình sticker/KV66... nếu cần"></textarea></label>
+                    <label><span>Kế hoạch tuần tiếp theo</span><textarea id="wrPlans" rows="5"></textarea></label>
+                </div>
+                <button type="button" class="wr-btn wr-btn-ghost" onclick="resetWeeklyReportManual()">🗑️ Xóa toàn bộ ghi chú thủ công</button>
+            </details>
+
+            <div class="wr-action-row">
+                <button id="wrGenerateBtn" class="wr-btn wr-btn-primary" onclick="generateWeeklyReport()">⚡ Tạo báo cáo tự động</button>
+                <button class="wr-btn wr-btn-success" onclick="copyWeeklyReportForAtlassian()">📋 Copy sang Atlassian</button>
+                <button class="wr-btn wr-btn-blue" onclick="downloadWeeklyReportWord()">📄 Tải Word (.docx)</button>
+                <button class="wr-btn wr-btn-ghost" onclick="downloadWeeklyReportHtml()">🌐 Tải HTML</button>
+                <button class="wr-btn wr-btn-ghost" onclick="printWeeklyReport()">🖨️ In / PDF</button>
+                <button class="wr-btn wr-btn-warn" onclick="saveWeeklyReportSnapshot()">💾 Lưu mốc tuần</button>
+            </div>
+            <div id="wrStatus" class="wr-status">Chọn ngày rồi bấm <b>Tạo báo cáo tự động</b>. Lần đầu có thể mất vài giây để tải đủ dữ liệu.</div>
         </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <button class="btn-bc-act" onclick="generateExecutiveReport(true)" style="background:#2563eb;color:#fff;border-color:#1d4ed8;font-weight:700">⚡ Tạo Báo Cáo Tự Động</button>
-        <button class="btn-bc-act" onclick="addCustomSection()" style="background:#0f766e;color:#fff;border-color:#0d9488">➕ Thêm Mục Tùy Chỉnh</button>
-        <button class="btn-bc-act" onclick="saveReportSnapshot()" style="background:#7c3aed;color:#fff;border-color:#6d28d9">💾 Lưu Mốc Tuần</button>
-        <button class="btn-bc-act" onclick="copyReportToConfluence()" style="background:#0284c7;color:#fff;border-color:#0369a1;font-weight:700">📋 Copy Confluence</button>
-        <button class="btn-bc-act" onclick="exportReportToDocx()" style="background:#15803d;color:#fff;border-color:#16a34a;font-weight:700">📄 Tải Word (.docx)</button>
-        <button class="btn-bc-act" onclick="exportReportToHtml()" style="background:var(--card-sub);color:var(--tx)">🌐 Tải HTML</button>
-        <button class="btn-bc-act" onclick="printReport()" style="background:var(--card-sub);color:var(--tx)">🖨️ In / PDF</button>
-        <button id="bcBtnToggleEdit" class="btn-bc-act" onclick="toggleEditMode()" style="background:#2563eb;color:#fff">🔓 Đang Mở Sửa</button>
-      </div>
+
+        <div id="wrEditBar" class="wr-edit-bar" style="display:none;">
+            <div class="wr-edit-info">
+                <span class="wr-edit-badge">✏️ SỬA TRỰC TIẾP</span>
+                <span class="wr-edit-hint">Click chuột trực tiếp vào bất kỳ chữ, số hoặc ô bảng nào bên dưới để sửa nội dung trước khi xuất.</span>
+            </div>
+            <div class="wr-edit-actions">
+                <button type="button" class="wr-tb-btn" onmousedown="event.preventDefault()" onclick="wrExecDocFormat('bold')" title="In đậm (Ctrl+B)"><b>B</b></button>
+                <button type="button" class="wr-tb-btn" onmousedown="event.preventDefault()" onclick="wrExecDocFormat('italic')" title="In nghiêng (Ctrl+I)"><i>I</i></button>
+                <button type="button" class="wr-tb-btn" onmousedown="event.preventDefault()" onclick="wrExecDocFormat('underline')" title="Gạch chân (Ctrl+U)"><u>U</u></button>
+                <button type="button" class="wr-tb-btn" onmousedown="event.preventDefault()" onclick="wrExecDocFormat('insertUnorderedList')" title="Danh sách gạch đầu dòng">• List</button>
+                <span class="wr-tb-sep"></span>
+                <button type="button" class="wr-tb-btn" onmousedown="event.preventDefault()" onclick="wrAddTableRow('doc')" title="Thêm hàng vào bảng đang chọn (ngay dưới con trỏ)">➕ Hàng</button>
+                <button type="button" class="wr-tb-btn wr-tb-danger" onmousedown="event.preventDefault()" onclick="wrDeleteTableRow('doc')" title="Xóa hàng đang đặt con trỏ">➖ Xóa hàng</button>
+                <button type="button" class="wr-tb-btn" onmousedown="event.preventDefault()" onclick="wrAddTableCol('doc')" title="Thêm cột vào bảng đang chọn (ngay bên phải con trỏ)">➕ Cột</button>
+                <button type="button" class="wr-tb-btn wr-tb-danger" onmousedown="event.preventDefault()" onclick="wrDeleteTableCol('doc')" title="Xóa cột đang đặt con trỏ">➖ Xóa cột</button>
+                <span class="wr-tb-sep"></span>
+                <div class="wr-dropdown-wrap">
+                    <button type="button" class="wr-tb-btn wr-dropdown-btn" onmousedown="event.preventDefault()" onclick="wrToggleDropdown('wrBgPopover_doc')" title="Sửa màu nền ô, hàng hoặc bảng">🪣 Nền ô/bảng ▾</button>
+                    <div class="wr-color-popover" id="wrBgPopover_doc" style="display:none;" onmousedown="event.stopPropagation()"></div>
+                </div>
+                <div class="wr-dropdown-wrap">
+                    <button type="button" class="wr-tb-btn wr-dropdown-btn" onmousedown="event.preventDefault()" onclick="wrToggleDropdown('wrTextColPopover_doc')" title="Sửa màu chữ">🎨 Màu chữ ▾</button>
+                    <div class="wr-color-popover" id="wrTextColPopover_doc" style="display:none;" onmousedown="event.stopPropagation()"></div>
+                </div>
+                <div class="wr-dropdown-wrap">
+                    <button type="button" class="wr-tb-btn wr-dropdown-btn" onmousedown="event.preventDefault()" onclick="wrToggleDropdown('wrHilitePopover_doc')" title="Sửa màu nền chữ (bút dạ quang highlight)">🖍️ Nền chữ ▾</button>
+                    <div class="wr-color-popover" id="wrHilitePopover_doc" style="display:none;" onmousedown="event.stopPropagation()"></div>
+                </div>
+                <span class="wr-tb-sep"></span>
+                <button type="button" class="wr-tb-btn" onclick="wrToggleEditMode()" id="wrToggleEditBtn" title="Bật/Khóa chỉnh sửa">🔓 Đang mở sửa</button>
+                <button type="button" class="wr-tb-btn wr-btn-reset-report" onclick="wrResetToOriginalReport()" title="Khôi phục lại nội dung và số liệu gốc ban đầu">🔄 Khôi phục số liệu gốc</button>
+            </div>
+        </div>
+
+        <div id="weeklyReportPreview" class="wr-preview-shell">
+            <div class="wr-empty">Chưa tạo báo cáo. Dữ liệu KPI, hiệu suất, data treo, data đổ mới, ATC tự tạo và thời lượng hỗ trợ sẽ được hệ thống tổng hợp tự động.</div>
+        </div>
     </div>
-
-    <!-- Cấu hình thông tin báo cáo -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;align-items:flex-end">
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--mut);display:block;margin-bottom:3px">MẪU BÁO CÁO</label>
-        <select id="bcSelectTemplate" onchange="onTemplateSelectChange(this.value)" style="width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--tx)">
-          <option value="month">Định kỳ Tháng SC (Tháng 09 18-30)</option>
-          <option value="week">Định kỳ Tuần SC (Tuần 2+3)</option>
-          <option value="master">Báo Cáo Điều Hành Tổng Thể</option>
-        </select>
-      </div>
-      <div style="grid-column:span 2">
-        <label style="font-size:11px;font-weight:700;color:var(--mut);display:block;margin-bottom:3px">TIÊU ĐỀ BÁO CÁO</label>
-        <input type="text" id="bcInputTitle" onchange="onReportConfigChange()" style="width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--tx)">
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--mut);display:block;margin-bottom:3px">KỲ BÁO CÁO</label>
-        <input type="text" id="bcInputPeriod" onchange="onReportConfigChange()" style="width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--tx)">
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--mut);display:block;margin-bottom:3px">KÍNH GỬI</label>
-        <input type="text" id="bcInputRecipient" onchange="onReportConfigChange()" style="width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--tx)">
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--mut);display:block;margin-bottom:3px">ĐƠN VỊ LẬP BÁO CÁO</label>
-        <input type="text" id="bcInputDepartment" onchange="onReportConfigChange()" style="width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--tx)">
-      </div>
-    </div>
-  </div>
-
-  <!-- CUSTOM SECTIONS MANAGER -->
-  <div class="card" style="margin-bottom:14px;padding:12px 16px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-size:13px;font-weight:700;color:var(--tx-heading)">📑 Danh Sách Các Mục Tùy Chỉnh (Custom Sections)</div>
-      <button onclick="addCustomSection()" style="font-size:11px;padding:3px 10px;background:#0f766e;color:#fff;border-color:#0d9488;cursor:pointer">➕ Thêm Mục Mới</button>
-    </div>
-    <div id="bcCustomSectionsList"></div>
-  </div>
-
-  <!-- WYSIWYG STICKY TOOLBAR -->
-  <div id="bcWysiwygToolbar" class="report-toolbar">
-    <div class="tb-grp">
-      <button type="button" class="tb-btn" onclick="formatDoc('bold')" title="In đậm (Ctrl+B)"><b>B</b></button>
-      <button type="button" class="tb-btn" onclick="formatDoc('italic')" title="In nghiêng (Ctrl+I)"><i>I</i></button>
-      <button type="button" class="tb-btn" onclick="formatDoc('underline')" title="Gạch chân (Ctrl+U)"><u>U</u></button>
-      <button type="button" class="tb-btn" onclick="formatDoc('strikeThrough')" title="Gạch ngang"><s>S</s></button>
-    </div>
-
-    <div class="tb-sep"></div>
-
-    <div class="tb-grp">
-      <button type="button" class="tb-btn" onclick="formatBlockDoc('h2')" title="Tiêu đề H2"><b>H2</b></button>
-      <button type="button" class="tb-btn" onclick="formatBlockDoc('h3')" title="Tiêu đề H3"><b>H3</b></button>
-      <button type="button" class="tb-btn" onclick="formatBlockDoc('p')" title="Đoạn văn">P</button>
-      <button type="button" class="tb-btn" onclick="formatDoc('justifyLeft')" title="Căn trái">⬅</button>
-      <button type="button" class="tb-btn" onclick="formatDoc('justifyCenter')" title="Căn giữa">⬌</button>
-      <button type="button" class="tb-btn" onclick="formatDoc('justifyRight')" title="Căn phải">➡</button>
-      <button type="button" class="tb-btn" onclick="formatDoc('insertUnorderedList')" title="Danh sách tròn">• L</button>
-      <button type="button" class="tb-btn" onclick="formatDoc('insertOrderedList')" title="Danh sách số">1. L</button>
-    </div>
-
-    <div class="tb-sep"></div>
-
-    <!-- DYNAMIC TABLE TOOLS -->
-    <div class="tb-grp">
-      <button type="button" class="tb-btn" onclick="insertDynamicTable()" title="Tạo bảng mới">⊞ Bảng</button>
-      <button type="button" class="tb-btn" onclick="insertTableRow('above')" title="Thêm hàng trên">➕ Hàng Trên</button>
-      <button type="button" class="tb-btn" onclick="insertTableRow('below')" title="Thêm hàng dưới">➕ Hàng Dưới</button>
-      <button type="button" class="tb-btn" onclick="insertTableCol('left')" title="Thêm cột trái">➕ Cột Trái</button>
-      <button type="button" class="tb-btn" onclick="insertTableCol('right')" title="Thêm cột phải">➕ Cột Phải</button>
-      <button type="button" class="tb-btn" onclick="deleteTableRow()" title="Xóa hàng hiện tại" style="color:#ef4444">➖ Hàng</button>
-      <button type="button" class="tb-btn" onclick="deleteTableCol()" title="Xóa cột hiện tại" style="color:#ef4444">➖ Cột</button>
-      <button type="button" class="tb-btn" onclick="deleteCurrentTable()" title="Xóa bảng hiện tại" style="color:#ef4444">🗑️ Xóa Bảng</button>
-    </div>
-
-    <div class="tb-sep"></div>
-
-    <!-- COLOR TOOLS -->
-    <div class="tb-grp" style="align-items:center;gap:4px">
-      <span style="font-size:11px;font-weight:700;color:var(--mut)">Tô nền:</span>
-      <select onchange="setColorScope(this.value)" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--line);background:var(--bg);color:var(--tx)">
-        <option value="cell">Ô</option>
-        <option value="row">Hàng</option>
-        <option value="table">Bảng</option>
-      </select>
-      <span class="color-chip" style="background:#dcfce7" onclick="applyReportBgColor('#dcfce7')" title="Xanh lá"></span>
-      <span class="color-chip" style="background:#fef9c3" onclick="applyReportBgColor('#fef9c3')" title="Vàng chanh"></span>
-      <span class="color-chip" style="background:#fee2e2" onclick="applyReportBgColor('#fee2e2')" title="Đỏ nhạt"></span>
-      <span class="color-chip" style="background:#dbeafe" onclick="applyReportBgColor('#dbeafe')" title="Lam nhạt"></span>
-      <span class="color-chip" style="background:#f1f5f9" onclick="applyReportBgColor('#f1f5f9')" title="Xám"></span>
-      <span class="color-chip" style="background:#1e3a8a" onclick="applyReportBgColor('#1e3a8a')" title="Navy Header"></span>
-      <span class="color-chip" style="background:#ffffff;border:1px solid #ccc" onclick="applyReportBgColor('#ffffff')" title="Trắng"></span>
-      <span class="color-chip chip-clear" onclick="applyReportBgColor('transparent')" title="Xóa màu nền">✕</span>
-      <input type="color" onchange="applyReportBgColor(this.value)" title="Màu nền tùy chọn" style="width:20px;height:20px;padding:0;border:none;cursor:pointer">
-    </div>
-
-    <div class="tb-sep"></div>
-
-    <!-- TEXT & HIGHLIGHT TOOLS -->
-    <div class="tb-grp" style="align-items:center;gap:4px">
-      <span style="font-size:11px;font-weight:700;color:var(--mut)">Chữ:</span>
-      <span class="color-chip" style="background:#0f172a" onclick="applyReportTextColor('#0f172a')" title="Đen"></span>
-      <span class="color-chip" style="background:#1e3a8a" onclick="applyReportTextColor('#1e3a8a')" title="Xanh Navy"></span>
-      <span class="color-chip" style="background:#dc2626" onclick="applyReportTextColor('#dc2626')" title="Đỏ"></span>
-      <span class="color-chip" style="background:#16a34a" onclick="applyReportTextColor('#16a34a')" title="Xanh lá"></span>
-      <input type="color" onchange="applyReportTextColor(this.value)" title="Màu chữ tùy chọn" style="width:20px;height:20px;padding:0;border:none;cursor:pointer">
-
-      <span style="font-size:11px;font-weight:700;color:var(--mut);margin-left:6px">Dạ quang:</span>
-      <span class="color-chip" style="background:#fef08a" onclick="applyReportHighlight('#fef08a')" title="Vàng Neon"></span>
-      <span class="color-chip" style="background:#86efac" onclick="applyReportHighlight('#86efac')" title="Xanh Neon"></span>
-      <span class="color-chip" style="background:#fbcfe8" onclick="applyReportHighlight('#fbcfe8')" title="Hồng Neon"></span>
-      <span class="color-chip chip-clear" onclick="applyReportHighlight('transparent')" title="Tẩy dạ quang">✕</span>
-    </div>
-
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
-      <span id="bcSaveStatusBadge" class="save-badge">Đã đồng bộ</span>
-    </div>
-  </div>
-
-  <!-- REPORT PAPER CANVAS -->
-  <div class="report-paper-wrap" id="bcPaperWrap">
-    <div id="reportDocument" class="report-paper" contenteditable="true" spellcheck="false">
-      <!-- Nội dung báo cáo sẽ được render tại đây -->
-    </div>
-  </div>
 </div>
-
 
 <p class="mut sm" style="line-height:1.6;margin-top:16px">
   <b>Cách tính ngày công</b>: sáng = có checkin trước 12:30; chiều = có checkin từ 13:00 (12:30–13:00 là giờ nghỉ trưa, làm lố không tính).

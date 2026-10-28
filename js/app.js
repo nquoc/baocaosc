@@ -288,7 +288,9 @@ function resetFilters() {
 /* ---------- Khởi tạo sau khi có dữ liệu (baocaotong) ---------- */
 function setData(headers, data, label, cls) {
   ALL_HEADERS = headers;
+  window.RAW = data;
   const recs = normalize(headers, data);
+  window.ALL_RECS = recs;
   DAYS = buildDays(recs);
   SCS = {};
   DAYS.forEach(d => { if (!SCS[d.sc]) SCS[d.sc] = scMeta(d.sc); });
