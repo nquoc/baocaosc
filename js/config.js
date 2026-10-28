@@ -11,17 +11,18 @@ const API_KPI = API_BASE + '?sheet=kpi&range=A1:P28';
 const API_PHANCUNG = API_BASE + '?sheet=phancung';
 const API_PHANCUNG_OCT = API_BASE + '?sheet=opp'; // Endpoint cho Mục 2: Chi Tiết Phần Cứng Tháng 10
 const API_PHANCUNG_SOURCE = API_BASE + '?sheet=phancung&range=T1:W9'; // Endpoint cho Mục 3: Bán Hàng Từ Nguồn
-const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14';
-const API_BAOCAOSC_CARE_RATE = API_BASE + '?sheet=baocaotuan&range=F2:I6';
-const API_BAOCAOSC_FNB_ISSUE = API_BASE + '?sheet=baocaotuan&range=AR2:AS9'; // Mục 3: Triển Khai Tệp FNB Lớn
-const API_BAOCAOSC_PROVINCE_IMPACT = API_BASE + '?sheet=baocaotuan&range=K2:Q19'; // Mục 4: Impact Theo Tỉnh Thành Phố
-const API_BAOCAOSC_IMPACT_DATA_SOURCE = API_BASE + '?sheet=baocaotuan&range=AD2:AG9'; // Mục 5: Impact theo Nguồn Data
-const API_BAOCAOSC_IMPACT_INDUSTRY = API_BASE + '?sheet=baocaotuan&range=AD13:AG17'; // Mục 5: Impact theo Ngành Hàng
-const API_BAOCAOSC_HEADCOUNT_REGION = API_BASE + '?sheet=baocaotuan&range=U2:AA5'; // Mục 6: Quân số theo Miền & Vị trí
-const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:V24'; // Mục 6: Quân số theo Tỉnh thành
-const API_BAOCAOSC_KPI_ONLINE_T9 = API_BASE + '?sheet=baocaotuan&range=AJ2:AP5'; // Mục 7.1: KPI Team Online Tháng 9
-const API_BAOCAOSC_KPI_OFFLINE_T10 = API_BASE + '?sheet=baocaotuan&range=AJ13:AP17'; // Mục 7.2: KPI Team Offline Tháng 10
-const API_BAOCAOSC_ADDON_T10 = API_BASE + '?sheet=baocaotuan&range=AJ22:AM29'; // Mục 7.3: Tư Vấn Chuyển Addon Tháng 10
+const API_BAOCAOSC_MONTHLY_INACTIVE = API_BASE + '?sheet=baocaotuan&range=AV2:BB15'; // Mục 2: Tỷ Lệ Inactive Theo Tháng Năm 2026
+const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14'; // Mục 3: Active Rate Năm 2026
+const API_BAOCAOSC_CARE_RATE = API_BASE + '?sheet=baocaotuan&range=F2:I6'; // Mục 4: Tỷ Lệ Chăm Khách New T10
+const API_BAOCAOSC_FNB_ISSUE = API_BASE + '?sheet=baocaotuan&range=AR2:AS9'; // Mục 5: Triển Khai Tệp FNB Lớn
+const API_BAOCAOSC_PROVINCE_IMPACT = API_BASE + '?sheet=baocaotuan&range=K2:Q19'; // Mục 6: Impact Theo Tỉnh Thành Phố
+const API_BAOCAOSC_IMPACT_DATA_SOURCE = API_BASE + '?sheet=baocaotuan&range=AD2:AG9'; // Mục 7.1: Impact theo Nguồn Data
+const API_BAOCAOSC_IMPACT_INDUSTRY = API_BASE + '?sheet=baocaotuan&range=AD13:AG17'; // Mục 7.2: Impact theo Ngành Hàng
+const API_BAOCAOSC_HEADCOUNT_REGION = API_BASE + '?sheet=baocaotuan&range=U2:AA5'; // Mục 8.1: Quân số theo Miền & Vị trí
+const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:V24'; // Mục 8.2: Quân số theo Tỉnh thành
+const API_BAOCAOSC_KPI_ONLINE_T9 = API_BASE + '?sheet=baocaotuan&range=AJ2:AP5'; // Mục 9.1: KPI Team Online Tháng 9
+const API_BAOCAOSC_KPI_OFFLINE_T10 = API_BASE + '?sheet=baocaotuan&range=AJ13:AP17'; // Mục 9.2: KPI Team Offline Tháng 10
+const API_BAOCAOSC_ADDON_T10 = API_BASE + '?sheet=baocaotuan&range=AJ22:AM29'; // Mục 9.3: Tư Vấn Chuyển Addon Tháng 10
 const API_KPI_ONLINE = API_BASE + '?sheet=KPI%20online'; // Endpoint cho Tab 7: KPI Team Online
 const API_DATATON_ONLINE = API_BASE + '?sheet=ton%20online'; // Endpoint cho Tab 8: Data Tồn Online
 const API_DATATON_OFFLINE = API_BASE + '?sheet=ton%20offline'; // Endpoint cho Tab 8: Data Tồn Offline
@@ -142,9 +143,11 @@ let PHANCUNG_SOURCE_STATE = { data: null, savedAt: 0, timeStr: '' };
 let PHANCUNG_SOURCE_SORT = { k: 't10', dir: -1 };
 
 // Trạng thái Tab 6: BÁO CÁO SC
-let BAOCAOSC_STATE = { muctieuOffline: null, muctieuOnline: null, activeRate: null, careRate: null, fnbIssue: null, provinceImpact: null, headcountRegion: null, headcountProvince: null, impactDataSource: null, impactIndustry: null, kpiOnlineT9: null, kpiOfflineT10: null, addonT10: null, savedAt: 0, timeStr: '' };
+let BAOCAOSC_STATE = { muctieuOffline: null, muctieuOnline: null, monthlyInactive: null, activeRate: null, careRate: null, fnbIssue: null, provinceImpact: null, headcountRegion: null, headcountProvince: null, impactDataSource: null, impactIndustry: null, kpiOnlineT9: null, kpiOfflineT10: null, addonT10: null, savedAt: 0, timeStr: '' };
 let BAOCAOSC_SEARCH = '';
 let BAOCAOSC_SORT = { k: 'mNum', dir: 1 };
+let BAOCAOSC_MONTHLY_INACTIVE_SEARCH = '';
+let BAOCAOSC_MONTHLY_INACTIVE_SORT = { k: 'mNum', dir: -1 };
 let BAOCAOSC_CARE_SORT = { k: 'kyMoi', dir: -1 };
 let BAOCAOSC_FNB_ISSUE_SORT = { k: 'count', dir: -1 };
 let BAOCAOSC_PROVINCE_SEARCH = '';

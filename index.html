@@ -531,12 +531,48 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 2: ACTIVE RATE NĂM 2026 ==================== -->
-  <div id="bscSecActiveRate" class="bsc-centered-block" style="margin-top:24px">
+  <!-- ==================== MỤC 2: TỶ LỆ INACTIVE THEO THÁNG NĂM 2026 ==================== -->
+  <div id="bscSecMonthlyInactive" class="bsc-centered-block" style="margin-top:24px">
     <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 2 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#10b981;color:#ffffff;letter-spacing:0.5px">MỤC 2</span>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#e11d48;color:#ffffff;letter-spacing:0.5px">MỤC 2</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Tỷ Lệ Inactive Theo Tháng Năm 2026</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Nguồn: Sheet <b>baocaotuan</b> (AV2:BB15) · Thống kê Gian hàng ký mới, Inactive &amp; Tỷ lệ SC Chăm sóc
+      </div>
+    </div>
+
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 2 -->
+    <div class="grid kpis" id="bscMonthlyInactiveSummaryCards" style="margin-bottom:16px"></div>
+
+    <!-- BẢNG CHI TIẾT TỶ LỆ INACTIVE THEO THÁNG -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📊 Bảng Chi Tiết Tỷ Lệ Inactive &amp; Chăm Sóc Theo Tháng (Tháng 1 – Tháng 10/2026)</span>
+            <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+          </h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="text" id="bscMonthlyInactiveSearch" placeholder="🔍 Lọc theo tháng..." oninput="onMonthlyInactiveSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
+          <button onclick="exportMonthlyInactiveCsv()" style="background:#e11d48;color:#fff;border-color:#f43f5e;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
+        </div>
+      </div>
+      <div class="wrap" style="max-height:650px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscMonthlyInactiveTable" class="kpi-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MỤC 3: ACTIVE RATE NĂM 2026 ==================== -->
+  <div id="bscSecActiveRate" class="bsc-centered-block" style="margin-top:24px">
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 3 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#10b981;color:#ffffff;letter-spacing:0.5px">MỤC 3</span>
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Active Rate Năm 2026 (Retail · F&amp;B · Booking)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
@@ -568,12 +604,12 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 3: TỶ LỆ CHĂM KHÁCH NEW T10 ==================== -->
+  <!-- ==================== MỤC 4: TỶ LỆ CHĂM KHÁCH NEW T10 ==================== -->
   <div id="bscSecCareRate" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 3 -->
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 4 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#0284c7;color:#ffffff;letter-spacing:0.5px">MỤC 3</span>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#0284c7;color:#ffffff;letter-spacing:0.5px">MỤC 4</span>
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Tỷ Lệ Chăm Khách New T10 (Ký Mới · Inactive · SC Chăm)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
@@ -581,10 +617,10 @@
       </div>
     </div>
 
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 3 -->
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 4 -->
     <div class="grid kpis" id="bscCareSummaryCards" style="margin-bottom:16px"></div>
 
-    <!-- BẢNG CHI TIẾT MỤC 3 -->
+    <!-- BẢNG CHI TIẾT MỤC 4 -->
     <div class="card" style="padding:14px 16px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div>
@@ -603,12 +639,12 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 4: TRIỂN KHAI TỆP FNB LỚN ==================== -->
+  <!-- ==================== MỤC 5: TRIỂN KHAI TỆP FNB LỚN ==================== -->
   <div id="bscSecFnbIssue" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 4 -->
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 5 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#ea580c;color:#ffffff;letter-spacing:0.5px">MỤC 4</span>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#ea580c;color:#ffffff;letter-spacing:0.5px">MỤC 5</span>
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Triển Khai Tệp F&amp;B Lớn (Chi Tiết Nhóm Vấn Đề / Lỗi Phát Sinh)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
@@ -616,10 +652,10 @@
       </div>
     </div>
 
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 4 -->
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 5 -->
     <div class="grid kpis" id="bscFnbIssueSummaryCards" style="margin-bottom:16px"></div>
 
-    <!-- BẢNG CHI TIẾT MỤC 4 -->
+    <!-- BẢNG CHI TIẾT MỤC 5 -->
     <div class="card" style="padding:14px 16px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div>
@@ -638,12 +674,12 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 5: IMPACT THEO TỈNH THÀNH PHỐ ==================== -->
+  <!-- ==================== MỤC 6: IMPACT THEO TỈNH THÀNH PHỐ ==================== -->
   <div id="bscSecProvinceImpact" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 5 -->
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 6 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#d97706;color:#ffffff;letter-spacing:0.5px">MỤC 5</span>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#d97706;color:#ffffff;letter-spacing:0.5px">MỤC 6</span>
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Impact Theo Tỉnh / Thành Phố (T7 – T12)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
@@ -651,10 +687,10 @@
       </div>
     </div>
 
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 5 -->
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 6 -->
     <div class="grid kpis" id="bscProvinceSummaryCards" style="margin-bottom:16px"></div>
 
-    <!-- BẢNG CHI TIẾT MỤC 5 -->
+    <!-- BẢNG CHI TIẾT MỤC 6 -->
     <div class="card" style="padding:14px 16px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div>
@@ -675,12 +711,12 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 6: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG ==================== -->
+  <!-- ==================== MỤC 7: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG ==================== -->
   <div id="bscSecImpactSourceIndustry" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 6 -->
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 7 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#0ea5e9;color:#ffffff;letter-spacing:0.5px">MỤC 6</span>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#0ea5e9;color:#ffffff;letter-spacing:0.5px">MỤC 7</span>
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Tỷ Lệ Impact Theo Nguồn Data &amp; Ngành Hàng</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
@@ -688,7 +724,7 @@
       </div>
     </div>
 
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 6 -->
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 7 -->
     <div class="grid kpis" id="bscImpactSummaryCards" style="margin-bottom:16px"></div>
 
     <!-- 2 BẢNG NẰM NGANG NHAU (SIDE BY SIDE) -->
@@ -727,12 +763,12 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 7: QUÂN SỐ ĐỘI NGŨ SC ==================== -->
+  <!-- ==================== MỤC 8: QUÂN SỐ ĐỘI NGŨ SC ==================== -->
   <div id="bscSecHeadcount" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 7 -->
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 8 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#8b5cf6;color:#ffffff;letter-spacing:0.5px">MỤC 7</span>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#8b5cf6;color:#ffffff;letter-spacing:0.5px">MỤC 8</span>
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Quân Số Đội Ngũ SC (Theo Miền, Vị Trí &amp; Tỉnh Thành)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
@@ -740,7 +776,7 @@
       </div>
     </div>
 
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 7 -->
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 8 -->
     <div class="grid kpis" id="bscHeadcountSummaryCards" style="margin-bottom:16px"></div>
 
     <!-- BẢNG 1: PHÂN BỔ QUÂN SỐ THEO MIỀN & VỊ TRÍ -->
@@ -782,12 +818,12 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 8: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON ==================== -->
+  <!-- ==================== MỤC 9: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON ==================== -->
   <div id="bscSecKpiAddon" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 8 -->
+    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 9 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#ec4899;color:#ffffff;letter-spacing:0.5px">MỤC 8</span>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#ec4899;color:#ffffff;letter-spacing:0.5px">MỤC 9</span>
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Hiệu Suất KPI Team &amp; Tư Vấn Chuyển Addon (Tháng 9 &amp; Tháng 10)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
@@ -795,7 +831,7 @@
       </div>
     </div>
 
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 8 -->
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 9 -->
     <div class="grid kpis" id="bscKpiAddonSummaryCards" style="margin-bottom:16px"></div>
 
     <!-- BẢNG 1: KPI TEAM ONLINE THÁNG 9 -->
@@ -803,7 +839,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div>
           <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>🌐 8.1: KPI Team Online Tháng 9</span>
+            <span>🌐 9.1: KPI Team Online Tháng 9</span>
             <span class="mut sm" style="font-weight:400">(Miền Bắc · Miền Nam · Toàn Quốc)</span>
           </h3>
         </div>
@@ -821,7 +857,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div>
           <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>🏢 8.2: KPI Team Offline Tháng 10</span>
+            <span>🏢 9.2: KPI Team Offline Tháng 10</span>
             <span class="mut sm" style="font-weight:400">(Theo từng Coacher quản lý &amp; Toàn Quốc)</span>
           </h3>
         </div>
@@ -839,7 +875,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div>
           <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>🔄 8.3: Tư Vấn Chuyển Addon Tháng 10</span>
+            <span>🔄 9.3: Tư Vấn Chuyển Addon Tháng 10</span>
             <span class="mut sm" style="font-weight:400">(So sánh Team Offline &amp; Team Online theo từng dịch vụ Addon)</span>
           </h3>
         </div>
@@ -853,11 +889,11 @@
     </div>
   </div>
 
-  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 9...) -->
+  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 10...) -->
   <div class="card bsc-centered-block" style="padding:18px 20px;margin-bottom:16px;border:1.5px dashed var(--line);text-align:center;background:transparent">
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--mut)">
       <span style="font-size:16px">➕</span>
-      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 9...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
+      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 10...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
     </div>
   </div>
 </div>
