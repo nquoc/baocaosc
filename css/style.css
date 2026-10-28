@@ -1860,4 +1860,41 @@ html.dark-theme, body[data-theme="dark"] .wr-edit-hint {
 @media(max-width:1000px){.wr-controls-grid{grid-template-columns:1fr 1fr}.wr-textarea-grid{grid-template-columns:1fr}.wr-toolbar-title{flex-direction:column}.wr-snapshot-info{text-align:left}}
 @media(max-width:600px){.wr-controls-grid{grid-template-columns:1fr}.wr-action-row .wr-btn{flex:1 1 45%}.wr-preview-shell{padding:8px}}
 
+/* ==========================================================================
+   BẢO MẬT & ĐIỂM DẤU BÍ MẬT CHO TAB BÁO CÁO ĐIỀU HÀNH
+   ========================================================================== */
+.secret-tab-spot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 32px;
+    margin-left: auto;
+    cursor: default;
+    opacity: 0.12;
+    user-select: none;
+    transition: opacity 0.25s ease, transform 0.2s ease;
+}
+.secret-tab-spot:hover {
+    opacity: 0.45;
+    transform: scale(1.15);
+}
+.secret-tab-spot::after {
+    content: '•';
+    font-size: 14px;
+    color: var(--text-muted, #94a3b8);
+    line-height: 1;
+}
+
+@keyframes secretRevealPulse {
+    0% { transform: scale(0.9); opacity: 0; box-shadow: 0 0 0 rgba(37, 99, 235, 0); }
+    50% { transform: scale(1.06); opacity: 1; box-shadow: 0 0 16px rgba(37, 99, 235, 0.45); }
+    100% { transform: scale(1); opacity: 1; box-shadow: none; }
+}
+
+.secret-revealed-pulse {
+    animation: secretRevealPulse 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
 

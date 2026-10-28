@@ -137,11 +137,17 @@ function switchTab(tab) {
  * Khôi phục tab trước đó khi F5 hoặc mở lại trình duyệt
  */
 function restoreActiveTab() {
+  initSecretBaoCaoTab();
+  const isUnlocked = localStorage.getItem('tc_unlocked_baocao') === 'true';
   const hash = (window.location.hash || '').replace(/^#/, '').trim();
   const saved = sessionStorage.getItem('tc_active_tab') || localStorage.getItem('tc_active_tab');
-  const targetTab = VALID_TABS.includes(hash)
+  let targetTab = VALID_TABS.includes(hash)
     ? hash
     : (VALID_TABS.includes(saved) ? saved : 'overview');
+
+  if (targetTab === 'baocao' && !isUnlocked) {
+    targetTab = 'overview';
+  }
 
   if (targetTab && targetTab !== 'overview') {
     switchTab(targetTab);
@@ -694,3 +700,80 @@ function checkAuthAndStart() {
 
 // Khởi chạy hệ thống sau khi kiểm tra xác thực
 checkAuthAndStart();
+
+
+// ==========================================================================
+// CƠ CHẾ BẢO MẬT & ĐIỂM DẤU BÍ MẬT CHO TAB BÁO CÁO ĐIỀU HÀNH
+// ==========================================================================
+let _secretClickCount = 0;
+let _secretClickTimer = null;
+
+function initSecretBaoCaoTab() {
+  const btn = document.getElementById('tabBtnBaoCao');
+  if (!btn) return;
+  const isUnlocked = localStorage.getItem('tc_unlocked_baocao') === 'true';
+  btn.style.display = isUnlocked ? 'inline-flex' : 'none';
+}
+
+function toggleSecretBaoCaoTab(forceState, showToastMsg = true) {
+  const btn = document.getElementById('tabBtnBaoCao');
+  if (!btn) return;
+  const currentlyHidden = btn.style.display === 'none' || getComputedStyle(btn).display === 'none';
+  const newState = (forceState !== undefined) ? forceState : currentlyHidden;
+
+  if (newState) {
+    btn.style.display = 'inline-flex';
+    localStorage.setItem('tc_unlocked_baocao', 'true');
+    btn.classList.add('secret-revealed-pulse');
+    setTimeout(() => btn.classList.remove('secret-revealed-pulse'), 1500);
+    switchTab('baocao');
+    if (showToastMsg && typeof showToast === 'function') {
+      showToast('🔓 Đã hiển thị Báo Cáo Điều Hành', true);
+    }
+  } else {
+    btn.style.display = 'none';
+    localStorage.setItem('tc_unlocked_baocao', 'false');
+    if (showToastMsg && typeof showToast === 'function') {
+      showToast('🔒 Đã ẩn nút Báo Cáo Điều Hành', true);
+    }
+    if (activeTab === 'baocao') {
+      switchTab('overview');
+    }
+  }
+}
+
+// Dấu 1: Click 3 lần liên tiếp vào Logo KiotViet hoặc chữ Báo Cáo Tổng Hợp SC
+function handleSecretHeaderClick(e) {
+  _secretClickCount++;
+  clearTimeout(_secretClickTimer);
+  _secretClickTimer = setTimeout(() => {
+    _secretClickCount = 0;
+  }, 1000);
+
+  if (_secretClickCount >= 3) {
+    _secretClickCount = 0;
+    toggleSecretBaoCaoTab();
+  }
+}
+
+// Dấu 2: Click 3 lần vào điểm dấu bí mật góc phải thanh tabs-nav
+function handleSecretTabClick(e) {
+  _secretClickCount++;
+  clearTimeout(_secretClickTimer);
+  _secretClickTimer = setTimeout(() => {
+    _secretClickCount = 0;
+  }, 1000);
+
+  if (_secretClickCount >= 3) {
+    _secretClickCount = 0;
+    toggleSecretBaoCaoTab();
+  }
+}
+
+// Dấu 3: Phím tắt bí mật Ctrl + Shift + B (hoặc Ctrl + Alt + B)
+window.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && (e.shiftKey || e.altKey) && (e.key === 'b' || e.key === 'B')) {
+    e.preventDefault();
+    toggleSecretBaoCaoTab();
+  }
+});
