@@ -52,6 +52,10 @@
   </div>
   <div class="header-actions">
     <span id="src" class="badge b-load">Đang tải…</span>
+    <span id="preloadBadge" class="badge" style="display:none;align-items:center;gap:5px;font-size:11.5px;background:rgba(139,92,246,0.16);color:#c084fc;border:1px solid rgba(139,92,246,0.3)" title="Tiến trình nạp ngầm toàn bộ dữ liệu tất cả các tab">
+      <span id="preloadIcon">⚡</span>
+      <span id="preloadTxt">Nạp sẵn dữ liệu…</span>
+    </span>
     <button id="btnLogoutBtn" onclick="handleLogout()" class="btn-logout" title="Đăng xuất và khóa bảo mật Dashboard" style="display:none">🔒 Khóa</button>
     <button id="themeToggleBtn" onclick="toggleTheme()" class="btn-theme" title="Chuyển chế độ Sáng / Tối">🌙 Tối</button>
     <button id="btnReloadApi" onclick="loadLive()">⟳ Tải lại API</button>

@@ -1071,15 +1071,15 @@ function renderBaoCaoSc() {
 /**
  * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1 đến Mục 9 song song)
  */
-async function loadBaoCaoSc(forceReload = false) {
+async function loadBaoCaoSc(forceReload = false, isSilent = false) {
   const btn = $('btnReloadBaoCaoSc');
   const badge = $('baocaoscSrcBadge');
 
-  if (btn) {
+  if (btn && !isSilent) {
     btn.disabled = true;
     btn.textContent = '⏳ Đang tải…';
   }
-  if (badge) {
+  if (badge && !isSilent) {
     badge.className = 'badge b-load';
     badge.textContent = 'Đang tải…';
   }
@@ -1119,7 +1119,9 @@ async function loadBaoCaoSc(forceReload = false) {
             btn.disabled = false;
             btn.textContent = '⟳ Tải lại Báo Cáo SC';
           }
-          showToast(`⚡ Đã tải tức thì Báo Cáo SC từ bộ nhớ đệm (${timeLabel}).`, true);
+          if (!isSilent) {
+            showToast(`⚡ Đã tải tức thì Báo Cáo SC từ bộ nhớ đệm (${timeLabel}).`, true);
+          }
           return;
         } else {
           BAOCAOSC_STATE = cached;
@@ -1239,7 +1241,9 @@ async function loadBaoCaoSc(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1 đến Mục 9) lúc ${timeStr}!`, true);
+    if (!isSilent) {
+      showToast(`Đã đồng bộ thành công Báo Cáo SC (Mục 1 đến Mục 9) lúc ${timeStr}!`, true);
+    }
   } catch (err) {
     console.error('Lỗi khi tải Báo Cáo SC:', err);
     if (BAOCAOSC_STATE.activeRate) {
@@ -1247,13 +1251,13 @@ async function loadBaoCaoSc(forceReload = false) {
         badge.className = 'badge b-err';
         badge.textContent = 'API bận — giữ dữ liệu cũ';
       }
-      showToast('Máy chủ Google đang bận — vẫn giữ nguyên dữ liệu Báo Cáo SC hiện tại.', false);
+      if (!isSilent) showToast('Máy chủ Google đang bận — vẫn giữ nguyên dữ liệu Báo Cáo SC hiện tại.', false);
     } else {
       if (badge) {
         badge.className = 'badge b-err';
         badge.textContent = 'Lỗi kết nối API';
       }
-      showToast('Lỗi khi tải Báo Cáo SC: ' + (err.message || 'Không kết nối được'), false);
+      if (!isSilent) showToast('Lỗi khi tải Báo Cáo SC: ' + (err.message || 'Không kết nối được'), false);
     }
   } finally {
     if (btn) {

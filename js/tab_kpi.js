@@ -306,11 +306,11 @@ function renderKpiTable() {
   tbl.innerHTML = thead + tbody + tfoot;
 }
 
-async function loadKpi(force = false) {
+async function loadKpi(force = false, isSilent = false) {
   const badge = $('kpiSrcBadge');
   const btn = $('btnReloadKpi');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Đang tải…'; }
-  if (badge) { badge.className = 'badge b-load'; badge.textContent = 'Đang tải API…'; }
+  if (btn && !isSilent) { btn.disabled = true; btn.textContent = '⏳ Đang tải…'; }
+  if (badge && !isSilent) { badge.className = 'badge b-load'; badge.textContent = 'Đang tải API…'; }
 
   // 1. Kiểm tra cache IndexedDB
   if (!force) {
@@ -367,17 +367,20 @@ async function loadKpi(force = false) {
     renderKpi();
 
     if (badge) { badge.className = 'badge b-live'; badge.textContent = `API trực tiếp ${timeStr}`; }
-    showToast(`Đã đồng bộ thành công dữ liệu KPI (${KPI_RAW_DATA.length} SC) lúc ${timeStr}!`, true);
+    if (!isSilent) {
+      showToast(`Đã đồng bộ thành công dữ liệu KPI (${KPI_RAW_DATA.length} SC) lúc ${timeStr}!`, true);
+    }
   } catch (e) {
     console.error('Lỗi khi tải KPI:', e);
     if (KPI_RAW_DATA.length) {
       if (badge) { badge.className = 'badge b-err'; badge.textContent = 'API bận — giữ dữ liệu cũ'; }
-      showToast('Máy chủ Google đang bận — bảng KPI vẫn giữ nguyên dữ liệu hiện tại.', false);
+      if (!isSilent) showToast('Máy chủ Google đang bận — bảng KPI vẫn giữ nguyên dữ liệu hiện tại.', false);
     } else {
       if (badge) { badge.className = 'badge b-err'; badge.textContent = 'Lỗi tải API KPI'; }
       const friendlyMsg = e.message && e.message.includes('trang web thay vì dữ liệu JSON')
         ? 'Máy chủ Google tạm thời bận, vui lòng bấm "⟳ Tải lại KPI" sau giây lát.'
         : (e.message || 'Mất kết nối');
+      if (!isSilent) showToast('Lỗi tải API KPI: ' + friendlyMsg, false);
     }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '⟳ Tải lại KPI'; }

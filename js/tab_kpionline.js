@@ -200,15 +200,15 @@ function onKpiOnlineSearch(query) {
 /**
  * Tải dữ liệu sheet 'KPI online' (IndexedDB Smart Cache + Trực tiếp)
  */
-async function loadKpiOnline(forceReload = false) {
+async function loadKpiOnline(forceReload = false, isSilent = false) {
   const badge = $('kpiOnlineSrcBadge');
   const btn = $('btnReloadKpiOnline');
 
-  if (badge) {
+  if (badge && !isSilent) {
     badge.className = 'badge b-load';
     badge.textContent = 'Đang tải KPI Online…';
   }
-  if (btn) btn.disabled = true;
+  if (btn && !isSilent) btn.disabled = true;
 
   // 1. Kiểm tra IndexedDB Cache nếu không forceReload
   if (!forceReload) {
@@ -272,14 +272,18 @@ async function loadKpiOnline(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast('Đồng bộ thành công dữ liệu KPI Online!', true);
+    if (!isSilent) {
+      showToast('Đồng bộ thành công dữ liệu KPI Online!', true);
+    }
   } catch (err) {
     console.error('Lỗi tải KPI Online:', err);
     if (badge) {
       badge.className = 'badge b-err';
       badge.textContent = 'Lỗi tải KPI Online';
     }
-    showToast('Lỗi tải KPI Online: ' + err.message, false);
+    if (!isSilent) {
+      showToast('Lỗi tải KPI Online: ' + err.message, false);
+    }
   } finally {
     if (btn) btn.disabled = false;
   }

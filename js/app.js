@@ -377,7 +377,9 @@ async function loadLive(isSilent = false) {
 
     console.log(`%c[API SUCCESS] ✅ Tải thành công ${rowCount.toLocaleString('vi-VN')} records từ sheet baocaotong lúc ${timeStr}!`, 'color:#10b981;font-weight:bold;font-size:12px');
     setData(j.data[0], j.data, 'API trực tiếp ' + timeStr, 'b-live');
-    showToast(`Đã đồng bộ thành công ${rowCount.toLocaleString('vi-VN')} records từ Google Sheets lúc ${timeStr}!`, true);
+    if (!isSilent) {
+      showToast(`Đã đồng bộ thành công ${rowCount.toLocaleString('vi-VN')} records từ Google Sheets lúc ${timeStr}!`, true);
+    }
   } catch (e) {
     console.error('[API ERROR] Lỗi khi gọi API Google Apps Script:', e);
     if (DAYS.length) {
@@ -401,6 +403,7 @@ async function loadLive(isSilent = false) {
       btn.disabled = false;
       btn.textContent = '⟳ Tải lại API';
     }
+    setTimeout(startBackgroundPrefetch, 1000);
   }
 }
 
@@ -418,6 +421,7 @@ async function initData() {
       console.log(`%c[CACHE HIT] ⚡ Dùng dữ liệu bộ nhớ đệm (${timeLabel}, ${rowCount.toLocaleString('vi-VN')} records). Không cần tải mạng.`, 'color:#06b6d4;font-weight:bold;font-size:12px');
       setData(cached.headers, cached.data, `Bộ nhớ đệm (${timeLabel})`, 'b-cache');
       showToast(`⚡ Đã tải tức thì ${rowCount.toLocaleString('vi-VN')} records từ bộ nhớ đệm (${timeLabel}). Bấm "⟳ Tải lại API" để cập nhật mới nhất nếu cần.`, true);
+      setTimeout(startBackgroundPrefetch, 1200);
       return;
     } else {
       // Hết hạn (> 20 phút): Hiển thị ngay bộ nhớ đệm cũ để người dùng xem ngay, đồng thời gọi API ngầm
@@ -433,6 +437,112 @@ async function initData() {
     setData(window.SNAPSHOT.headers, window.SNAPSHOT.data, 'Snapshot ' + window.SNAPSHOT.fetchedAt + ' (đang tải API…)', 'b-snap');
   }
   loadLive(false);
+}
+
+/* ==========================================================================
+   TỰ ĐỘNG NẠP TRƯỚC (BACKGROUND PREFETCH) TOÀN BỘ TAB DỮ LIỆU
+   - Nạp tuần tự ngầm các tab dữ liệu (KPI, Báo Cáo SC, Phần Cứng, Data Tồn...)
+   - Cách nhau 700ms để không nghẽn luồng và không làm chậm trải nghiệm tab chính
+   - Khi người dùng bấm sang tab khác là có sẵn dữ liệu mở tức thì < 0.01s!
+   ========================================================================== */
+
+let PRELOAD_STATUS = {
+  started: false,
+  running: false,
+  done: false
+};
+
+function updatePreloadBadge(text, state = 'loading') {
+  const badge = $('preloadBadge');
+  const icon = $('preloadIcon');
+  const txt = $('preloadTxt');
+  if (!badge) return;
+
+  badge.style.display = 'inline-flex';
+  if (state === 'loading') {
+    badge.style.background = 'rgba(139, 92, 246, 0.16)';
+    badge.style.color = '#c084fc';
+    badge.style.borderColor = 'rgba(139, 92, 246, 0.3)';
+    if (icon) icon.textContent = '⏳';
+  } else if (state === 'done') {
+    badge.style.background = 'rgba(16, 185, 129, 0.16)';
+    badge.style.color = '#34d399';
+    badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+    if (icon) icon.textContent = '⚡';
+  }
+  if (txt) txt.textContent = text;
+}
+
+async function startBackgroundPrefetch() {
+  if (PRELOAD_STATUS.started || PRELOAD_STATUS.done) return;
+  PRELOAD_STATUS.started = true;
+  PRELOAD_STATUS.running = true;
+
+  console.log('%c[PRELOAD] 🚀 Bắt đầu nạp ngầm tuần tự dữ liệu tất cả các tab...', 'color:#8b5cf6;font-weight:bold;font-size:12px');
+  updatePreloadBadge('Đang nạp ngầm dữ liệu...', 'loading');
+
+  const tasks = [
+    {
+      name: 'KPI Offline',
+      label: 'KPI Offline (1/5)',
+      check: () => typeof KPI_RAW_DATA !== 'undefined' && Array.isArray(KPI_RAW_DATA) && KPI_RAW_DATA.length > 0,
+      run: () => typeof loadKpi === 'function' ? loadKpi(false, true) : null
+    },
+    {
+      name: 'KPI Online',
+      label: 'KPI Online (2/5)',
+      check: () => typeof KPI_ONLINE_STATE !== 'undefined' && KPI_ONLINE_STATE && KPI_ONLINE_STATE.data,
+      run: () => typeof loadKpiOnline === 'function' ? loadKpiOnline(false, true) : null
+    },
+    {
+      name: 'Báo Cáo SC',
+      label: 'Báo Cáo SC (3/5)',
+      check: () => typeof BAOCAOSC_STATE !== 'undefined' && BAOCAOSC_STATE && BAOCAOSC_STATE.activeRate,
+      run: () => typeof loadBaoCaoSc === 'function' ? loadBaoCaoSc(false, true) : null
+    },
+    {
+      name: 'DS Phần Cứng',
+      label: 'Phần Cứng (4/5)',
+      check: () => typeof PHANCUNG_STATE !== 'undefined' && PHANCUNG_STATE && PHANCUNG_STATE.data,
+      run: () => typeof loadPhanCung === 'function' ? loadPhanCung(false, true) : null
+    },
+    {
+      name: 'Data Tồn',
+      label: 'Data Tồn (5/5)',
+      check: () => typeof DATATON_STATE !== 'undefined' && DATATON_STATE && DATATON_STATE.online,
+      run: () => typeof loadDataTon === 'function' ? loadDataTon(false, true) : null
+    }
+  ];
+
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i];
+
+    // Nghỉ 700ms giữa các tác vụ để luồng UI luôn mượt mà và không quá tải API
+    await new Promise(r => setTimeout(r, 700));
+
+    try {
+      if (!task.check()) {
+        updatePreloadBadge(`Nạp ngầm: ${task.label}…`, 'loading');
+        console.log(`%c[PRELOAD] ⏳ (${i + 1}/${tasks.length}) Đang nạp ngầm: ${task.name}...`, 'color:#6366f1;font-size:11px');
+        await task.run();
+        console.log(`%c[PRELOAD] ✅ (${i + 1}/${tasks.length}) Đã nạp xong: ${task.name}`, 'color:#10b981;font-size:11px');
+      } else {
+        console.log(`%c[PRELOAD] ⚡ (${i + 1}/${tasks.length}) ${task.name} đã sẵn sàng.`, 'color:#06b6d4;font-size:11px');
+      }
+    } catch (err) {
+      console.warn(`[PRELOAD] Lưu ý khi nạp ngầm ${task.name}:`, err);
+    }
+  }
+
+  PRELOAD_STATUS.running = false;
+  PRELOAD_STATUS.done = true;
+  updatePreloadBadge('Sẵn sàng 100% dữ liệu (5/5 tab)', 'done');
+  console.log('%c[PRELOAD] 🎉 Hoàn tất nạp trước toàn bộ các tab! Mọi tab hiện đã sẵn sàng xem tức thì.', 'color:#10b981;font-weight:bold;font-size:12px');
+
+  // Sau 4 giây, rút gọn badge lại thành thông báo ngắn gọn
+  setTimeout(() => {
+    updatePreloadBadge('Sẵn sàng tất cả tab', 'done');
+  }, 4000);
 }
 
 /* ==========================================================================
@@ -547,6 +657,8 @@ async function handleLoginSubmit(e) {
 
 async function handleLogout() {
   clearAuthKey();
+  PRELOAD_STATUS = { started: false, running: false, done: false };
+  if ($('preloadBadge')) $('preloadBadge').style.display = 'none';
   try {
     sessionStorage.removeItem('tc_active_tab');
     localStorage.removeItem('tc_active_tab');

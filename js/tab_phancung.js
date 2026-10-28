@@ -654,15 +654,15 @@ function renderPhanCung() {
 /**
  * Tải dữ liệu DS Phần Cứng từ IndexedDB hoặc API trực tiếp (Mục 1, Mục 2, Mục 3)
  */
-async function loadPhanCung(forceReload = false) {
+async function loadPhanCung(forceReload = false, isSilent = false) {
   const btn = $('btnReloadPhanCung');
   const badge = $('phancungSrcBadge');
 
-  if (btn) {
+  if (btn && !isSilent) {
     btn.disabled = true;
     btn.textContent = '⏳ Đang tải…';
   }
-  if (badge) {
+  if (badge && !isSilent) {
     badge.className = 'badge b-load';
     badge.textContent = 'Đang tải…';
   }
@@ -712,7 +712,9 @@ async function loadPhanCung(forceReload = false) {
             btn.disabled = false;
             btn.textContent = '⟳ Tải lại DS Phần Cứng';
           }
-          showToast(`⚡ Đã tải tức thì DS Phần Cứng (Mục 1, 2 & 3) từ bộ nhớ đệm (${timeLabel}).`, true);
+          if (!isSilent) {
+            showToast(`⚡ Đã tải tức thì DS Phần Cứng (Mục 1, 2 & 3) từ bộ nhớ đệm (${timeLabel}).`, true);
+          }
           return;
         } else {
           // Hiển thị tạm cache cũ và tải ngầm
@@ -789,7 +791,9 @@ async function loadPhanCung(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast(`Đã đồng bộ thành công DS Phần Cứng (Mục 1, 2 & 3) lúc ${timeStr}!`, true);
+    if (!isSilent) {
+      showToast(`Đã đồng bộ thành công DS Phần Cứng (Mục 1, 2 & 3) lúc ${timeStr}!`, true);
+    }
   } catch (err) {
     console.error('Lỗi khi tải DS Phần Cứng:', err);
     if (PHANCUNG_STATE.data) {
@@ -797,13 +801,13 @@ async function loadPhanCung(forceReload = false) {
         badge.className = 'badge b-err';
         badge.textContent = 'API bận — giữ dữ liệu cũ';
       }
-      showToast('Máy chủ Google đang bận — vẫn giữ nguyên dữ liệu Phần Cứng hiện tại.', false);
+      if (!isSilent) showToast('Máy chủ Google đang bận — vẫn giữ nguyên dữ liệu Phần Cứng hiện tại.', false);
     } else {
       if (badge) {
         badge.className = 'badge b-err';
         badge.textContent = 'Lỗi kết nối API';
       }
-      showToast('Lỗi khi tải DS Phần Cứng: ' + (err.message || 'Không kết nối được'), false);
+      if (!isSilent) showToast('Lỗi khi tải DS Phần Cứng: ' + (err.message || 'Không kết nối được'), false);
     }
   } finally {
     if (btn) {

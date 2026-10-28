@@ -902,15 +902,15 @@ function renderDataTon() {
 /**
  * Tải dữ liệu Data Tồn từ IndexedDB Smart Cache hoặc API song song
  */
-async function loadDataTon(forceReload = false) {
+async function loadDataTon(forceReload = false, isSilent = false) {
   const btn = $('btnReloadDataTon');
   const badge = $('datatonSrcBadge');
 
-  if (btn) {
+  if (btn && !isSilent) {
     btn.disabled = true;
     btn.textContent = '⏳ Đang tải…';
   }
-  if (badge) {
+  if (badge && !isSilent) {
     badge.className = 'badge b-load';
     badge.textContent = 'Đang tải…';
   }
@@ -942,7 +942,9 @@ async function loadDataTon(forceReload = false) {
             btn.disabled = false;
             btn.textContent = '⟳ Tải lại Data Tồn';
           }
-          showToast(`⚡ Đã tải tức thì Data Tồn từ bộ nhớ đệm (${timeLabel}).`, true);
+          if (!isSilent) {
+            showToast(`⚡ Đã tải tức thì Data Tồn từ bộ nhớ đệm (${timeLabel}).`, true);
+          }
           return;
         } else {
           DATATON_STATE = cached;
@@ -994,7 +996,9 @@ async function loadDataTon(forceReload = false) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;
     }
-    showToast(`Đã đồng bộ thành công Data Tồn (Online: ${n0(resOn.data.length - 1)}, Offline: ${n0(resOff.data.length - 1)}) lúc ${timeStr}!`, true);
+    if (!isSilent) {
+      showToast(`Đã đồng bộ thành công Data Tồn (Online: ${n0(resOn.data.length - 1)}, Offline: ${n0(resOff.data.length - 1)}) lúc ${timeStr}!`, true);
+    }
   } catch (err) {
     console.error('Lỗi khi tải Data Tồn:', err);
     if (DATATON_STATE.online && DATATON_STATE.offline) {
@@ -1002,13 +1006,13 @@ async function loadDataTon(forceReload = false) {
         badge.className = 'badge b-err';
         badge.textContent = 'API bận — giữ dữ liệu cũ';
       }
-      showToast('Máy chủ Google đang bận — vẫn giữ nguyên dữ liệu Data Tồn hiện tại.', false);
+      if (!isSilent) showToast('Máy chủ Google đang bận — vẫn giữ nguyên dữ liệu Data Tồn hiện tại.', false);
     } else {
       if (badge) {
         badge.className = 'badge b-err';
         badge.textContent = 'Lỗi kết nối API';
       }
-      showToast('Lỗi khi tải Data Tồn: ' + (err.message || 'Không kết nối được'), false);
+      if (!isSilent) showToast('Lỗi khi tải Data Tồn: ' + (err.message || 'Không kết nối được'), false);
     }
   } finally {
     if (btn) {
