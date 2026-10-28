@@ -23,11 +23,34 @@ function switchTab(tab) {
   $('tabBtnOverview').className = 'tab-btn' + (tab === 'overview' ? ' active' : '');
   $('tabBtnPivot').className = 'tab-btn' + (tab === 'pivot' ? ' active' : '');
   $('tabBtnTarget').className = 'tab-btn' + (tab === 'target' ? ' active' : '');
-  $('tabBtnKpi').className = 'tab-btn' + (tab === 'kpi' ? ' active' : '');
+  if ($('tabBtnKpi')) $('tabBtnKpi').className = 'tab-btn' + (tab === 'kpi' ? ' active' : '');
   if ($('tabBtnKpiOnline')) $('tabBtnKpiOnline').className = 'tab-btn' + (tab === 'kpionline' ? ' active' : '');
   if ($('tabBtnPhanCung')) $('tabBtnPhanCung').className = 'tab-btn' + (tab === 'phancung' ? ' active' : '');
   if ($('tabBtnBaoCaoSc')) $('tabBtnBaoCaoSc').className = 'tab-btn' + (tab === 'baocaosc' ? ' active' : '');
   if ($('tabBtnDataTon')) $('tabBtnDataTon').className = 'tab-btn' + (tab === 'dataton' ? ' active' : '');
+
+  // Cập nhật trạng thái Dropdown KPI SC
+  const isKpiActive = (tab === 'kpi' || tab === 'kpionline');
+  if ($('tabBtnKpiSc')) {
+    $('tabBtnKpiSc').className = 'tab-btn tab-dropdown-btn' + (isKpiActive ? ' active' : '');
+    let kpiLabel = '📈 KPI SC <span class="tab-caret">▼</span>';
+    if (tab === 'kpionline') {
+      kpiLabel = '📈 KPI SC: Online <span class="tab-caret">▼</span>';
+    } else if (tab === 'kpi') {
+      kpiLabel = '📈 KPI SC: Offline <span class="tab-caret">▼</span>';
+    }
+    $('tabBtnKpiSc').innerHTML = kpiLabel;
+  }
+  if ($('tabItemKpiOnline')) {
+    $('tabItemKpiOnline').className = 'tab-dropdown-item' + (tab === 'kpionline' ? ' active' : '');
+  }
+  if ($('tabItemKpiOffline')) {
+    $('tabItemKpiOffline').className = 'tab-dropdown-item' + (tab === 'kpi' ? ' active' : '');
+  }
+  const ddMenu = $('tabDropdownKpiMenu');
+  if (ddMenu) ddMenu.classList.remove('show');
+  const tabsNavEl = document.querySelector('.tabs-nav');
+  if (tabsNavEl) tabsNavEl.classList.remove('dropdown-open');
 
   $('overviewSection').style.display = tab === 'overview' ? 'block' : 'none';
   $('pivotSection').style.display = tab === 'pivot' ? 'block' : 'none';
@@ -124,6 +147,46 @@ window.addEventListener('hashchange', () => {
   const hash = (window.location.hash || '').replace(/^#/, '').trim();
   if (VALID_TABS.includes(hash) && hash !== activeTab) {
     switchTab(hash);
+  }
+});
+
+/* ---------- Xử lý Dropdown Menu KPI SC ---------- */
+/**
+ * Đóng mở menu dropdown KPI SC
+ */
+function toggleKpiDropdown(e) {
+  if (e) e.stopPropagation();
+  const menu = $('tabDropdownKpiMenu');
+  const tabsNavEl = document.querySelector('.tabs-nav');
+  if (menu) {
+    const isShowing = menu.classList.toggle('show');
+    if (tabsNavEl) {
+      if (isShowing) tabsNavEl.classList.add('dropdown-open');
+      else tabsNavEl.classList.remove('dropdown-open');
+    }
+  }
+}
+
+/**
+ * Chọn mục trong dropdown KPI SC
+ */
+function onSelectKpiTab(tab, e) {
+  if (e) e.stopPropagation();
+  const menu = $('tabDropdownKpiMenu');
+  if (menu) menu.classList.remove('show');
+  const tabsNavEl = document.querySelector('.tabs-nav');
+  if (tabsNavEl) tabsNavEl.classList.remove('dropdown-open');
+  switchTab(tab);
+}
+
+// Đóng dropdown khi click ra ngoài
+document.addEventListener('click', function(e) {
+  const dd = $('tabDropdownKpiSc');
+  if (dd && !dd.contains(e.target)) {
+    const menu = $('tabDropdownKpiMenu');
+    if (menu) menu.classList.remove('show');
+    const tabsNavEl = document.querySelector('.tabs-nav');
+    if (tabsNavEl) tabsNavEl.classList.remove('dropdown-open');
   }
 });
 

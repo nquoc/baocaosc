@@ -71,12 +71,23 @@
   <button id="tabBtnTarget" class="tab-btn" onclick="switchTab('target')" style="display:none">
     🎯 Mục Tiêu
   </button>
-  <button id="tabBtnKpi" class="tab-btn" onclick="switchTab('kpi')">
-    📈 KPI Team Offline
-  </button>
-  <button id="tabBtnKpiOnline" class="tab-btn" onclick="switchTab('kpionline')">
-    🌐 KPI Team Online
-  </button>
+  <div class="tab-dropdown" id="tabDropdownKpiSc">
+    <button id="tabBtnKpiSc" class="tab-btn tab-dropdown-btn" onclick="toggleKpiDropdown(event)">
+      📈 KPI SC <span class="tab-caret">▼</span>
+    </button>
+    <div class="tab-dropdown-menu" id="tabDropdownKpiMenu">
+      <div class="tab-dropdown-item" id="tabItemKpiOnline" onclick="onSelectKpiTab('kpionline', event)">
+        <span class="tab-item-icon">🌐</span>
+        <span class="tab-item-text">KPI Online</span>
+      </div>
+      <div class="tab-dropdown-item" id="tabItemKpiOffline" onclick="onSelectKpiTab('kpi', event)">
+        <span class="tab-item-icon">🏢</span>
+        <span class="tab-item-text">KPI Offline</span>
+      </div>
+    </div>
+  </div>
+  <button id="tabBtnKpi" style="display:none"></button>
+  <button id="tabBtnKpiOnline" style="display:none"></button>
   <button id="tabBtnPhanCung" class="tab-btn" onclick="switchTab('phancung')">
     💻 DS Phần Cứng
   </button>
