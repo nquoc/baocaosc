@@ -153,63 +153,8 @@ function renderImpactOnline() {
   const d1 = IMPACT_ONLINE_STATE.muc1;
   const d2 = IMPACT_ONLINE_STATE.muc2;
 
-  renderImpactOnlineSummaryCards(d1, d2);
   renderImpactOnlineTable(d1, 'impactOnlineTbl1Container', 'muc1');
   renderImpactOnlineTable(d2, 'impactOnlineTbl2Container', 'muc2');
-}
-
-/**
- * Render các thẻ tóm tắt KPI trên cùng
- */
-function renderImpactOnlineSummaryCards(d1, d2) {
-  const container = $('impactOnlineSummaryCards');
-  if (!container) return;
-
-  let totalItems1 = Array.isArray(d1) && d1.length > 1 ? d1.length - 1 : 0;
-  let totalItems2 = Array.isArray(d2) && d2.length > 1 ? d2.length - 1 : 0;
-
-  // Tìm dòng tổng cộng trong d1 hoặc d2 nếu có
-  let summaryTitle = 'Chỉ số Impact';
-  let summaryRate = '-';
-
-  if (Array.isArray(d1) && d1.length > 1) {
-    const lastRow = d1[d1.length - 1] || [];
-    const rName = String(lastRow[0] || '').toLowerCase();
-    if (rName.includes('tổng') || rName.includes('total') || rName.includes('trung bình')) {
-      for (let c = 1; c < lastRow.length; c++) {
-        const v = String(lastRow[c] || '');
-        if (v.includes('%') || (Number(v) > 0 && Number(v) <= 1)) {
-          summaryRate = formatImpactVal(lastRow[c], c, d1.length - 1);
-          break;
-        }
-      }
-    }
-  }
-
-  const cardsHtml = `
-    <div class="kpi-card" style="border-top: 3px solid #3b82f6;">
-      <div class="kpi-label">⚡ Tổng Số Chỉ Tiêu Mục 1</div>
-      <div class="kpi-val" style="color:#3b82f6">${totalItems1} <span style="font-size:13px;font-weight:500;color:var(--tx-muted)">chỉ tiêu (A1:H6)</span></div>
-      <div class="kpi-sub">Bảng tổng hợp Impact Online</div>
-    </div>
-    <div class="kpi-card" style="border-top: 3px solid #10b981;">
-      <div class="kpi-label">👥 Số Nhân Sự / Hạng Mục Mục 2</div>
-      <div class="kpi-val" style="color:#10b981">${totalItems2} <span style="font-size:13px;font-weight:500;color:var(--tx-muted)">dòng (A9:H23)</span></div>
-      <div class="kpi-sub">Chi tiết Impact Online</div>
-    </div>
-    <div class="kpi-card" style="border-top: 3px solid #f59e0b;">
-      <div class="kpi-label">📈 Tỷ Lệ Điển Hình</div>
-      <div class="kpi-val" style="color:#f59e0b">${summaryRate !== '-' ? summaryRate : 'Đang cập nhật'}</div>
-      <div class="kpi-sub">Hiệu suất thực tế từ Sheet</div>
-    </div>
-    <div class="kpi-card" style="border-top: 3px solid #8b5cf6;">
-      <div class="kpi-label">🔄 Cập Nhật Hệ Thống</div>
-      <div class="kpi-val" style="color:#8b5cf6;font-size:19px">${IMPACT_ONLINE_STATE.timeStr || 'Vừa xong'}</div>
-      <div class="kpi-sub">Đồng bộ sheet impactonline</div>
-    </div>
-  `;
-
-  container.innerHTML = cardsHtml;
 }
 
 /**
