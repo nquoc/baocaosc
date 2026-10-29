@@ -13,7 +13,7 @@
 
 /* ==========================================================================
    MỤC 1: BÁO CÁO MỤC TIÊU & TIẾN ĐỘ THÁNG (TEAM OFFLINE & TEAM ONLINE)
-   - Sheet: 'muctieu' (A2:H13 cho Offline & A16:H28 cho Online)
+   - Sheet: 'muctieu' (A2:I13 cho Offline & A16:I28 cho Online)
    ========================================================================== */
 
 function findMuctieuRow(data, keyword) {

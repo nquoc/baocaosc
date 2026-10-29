@@ -1664,7 +1664,7 @@ function wrRenderHeadcountProvinceTable(prov) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 6. Muctieu Table (Sheet muctieu A2:H13 & A16:H28)
+// 6. Muctieu Table (Sheet muctieu A2:I13 & A16:I28)
 function wrRenderMuctieuTable(rawArray, isOnline = false) {
     const headers = ['Chỉ tiêu vận hành', 'Mục tiêu', 'Đã thực hiện', 'Tỷ lệ hoàn thành', 'Đánh giá tiến độ'];
     let rows = [];

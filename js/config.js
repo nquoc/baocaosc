@@ -5,8 +5,8 @@
 // Google Apps Script API endpoints (Bảo mật bằng Secret Key)
 const API_BASE = 'https://script.google.com/macros/s/AKfycbzBneKTnuVmEJD0ra4MVxrbGvH_Wh2labnSOm-rNxIz6TRR2nF2NpunBKXXnU-uMWPguQ/exec';
 const API = API_BASE + '?sheet=baocaotong';
-const API_MUCTIEU_OFFLINE = API_BASE + '?sheet=muctieu&range=A2:H13';
-const API_MUCTIEU_ONLINE = API_BASE + '?sheet=muctieu&range=A16:H28';
+const API_MUCTIEU_OFFLINE = API_BASE + '?sheet=muctieu&range=A2:I13';
+const API_MUCTIEU_ONLINE = API_BASE + '?sheet=muctieu&range=A16:I28';
 const API_KPI = API_BASE + '?sheet=kpi&range=A1:P28';
 const API_PHANCUNG = API_BASE + '?sheet=phancung';
 const API_PHANCUNG_OCT = API_BASE + '?sheet=opp'; // Endpoint cho Mục 2: Chi Tiết Phần Cứng Tháng 10
@@ -58,12 +58,12 @@ const DB_VERSION = 1;
 const STORE_NAME = 'cache';
 const CACHE_TTL_MS = 20 * 60 * 1000; // 20 phút
 const CACHE_KEY = 'baocaotong_data';
-const CACHE_KEY_MUCTIEU = 'muctieu_data';
+const CACHE_KEY_MUCTIEU = 'muctieu_data_v2';
 const CACHE_KEY_KPI = 'kpi_offline_data_v3';
 const CACHE_KEY_PHANCUNG = 'phancung_data';
 const CACHE_KEY_PHANCUNG_OCT = 'phancung_oct_data';
 const CACHE_KEY_PHANCUNG_SOURCE = 'phancung_source_data';
-const CACHE_KEY_BAOCAOSC = 'baocaosc_data_v2';
+const CACHE_KEY_BAOCAOSC = 'baocaosc_data_v3';
 const CACHE_KEY_KPI_ONLINE = 'kpi_online_data';
 const CACHE_KEY_DATATON = 'dataton_data';
 

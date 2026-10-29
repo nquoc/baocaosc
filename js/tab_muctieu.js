@@ -10,10 +10,11 @@ function formatMuctieuVal(val, colIdx) {
     if (isNaN(num)) return String(val);
     return Math.round(num).toLocaleString('vi-VN');
   }
-  // Col 3-7: % đạt, Tuần 1, Tuần 2, Tuần 3, Tuần 4
+  // Col 3+: % đạt, Tuần 1, Tuần 2, Tuần 3, Tuần 4, Tuần 5...
   const num = Number(val);
   if (isNaN(num)) return String(val);
-  return (num * 100).toFixed(2) + '%';
+  const p = num <= 5 ? num * 100 : num;
+  return Math.round(p) + '%';
 }
 
 function renderOfflineTable(data) {
