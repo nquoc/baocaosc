@@ -22,7 +22,7 @@ const API_BAOCAOSC_HEADCOUNT_REGION = API_BASE + '?sheet=baocaotuan&range=U2:AA5
 const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:V24'; // Mục 8.2: Quân số theo Tỉnh thành
 const API_BAOCAOSC_KPI_ONLINE_T9 = API_BASE + '?sheet=baocaotuan&range=AJ2:AP5'; // Mục 9.1: KPI Team Online Tháng 9
 const API_BAOCAOSC_KPI_OFFLINE_T10 = API_BASE + '?sheet=baocaotuan&range=AJ13:AP17'; // Mục 9.2: KPI Team Offline Tháng 10
-const API_BAOCAOSC_ADDON_T10 = API_BASE + '?sheet=baocaotuan&range=AJ22:AM29'; // Mục 9.3: Tư Vấn Chuyển Addon Tháng 10
+const API_BAOCAOSC_ADDON_T10 = API_BASE + '?sheet=baocaotuan&range=AJ22:AO30'; // Mục 9.3: Tư Vấn Chuyển Addon Tháng 10
 const API_KPI_ONLINE = API_BASE + '?sheet=KPI%20online'; // Endpoint cho Tab 7: KPI Team Online
 const API_IMPACT_ONLINE_1 = API_BASE + '?sheet=impactonline&range=A1:H6'; // Endpoint cho Tab KPI: Impact Online Mục 1 (A1:H6)
 const API_IMPACT_ONLINE_2 = API_BASE + '?sheet=impactonline&range=A9:H23'; // Endpoint cho Tab KPI: Impact Online Mục 2 (A9:H23)
@@ -65,7 +65,7 @@ const CACHE_KEY_KPI = 'kpi_offline_data_v3';
 const CACHE_KEY_PHANCUNG = 'phancung_data';
 const CACHE_KEY_PHANCUNG_OCT = 'phancung_oct_data';
 const CACHE_KEY_PHANCUNG_SOURCE = 'phancung_source_data';
-const CACHE_KEY_BAOCAOSC = 'baocaosc_data_v3';
+const CACHE_KEY_BAOCAOSC = 'baocaosc_data_v4';
 const CACHE_KEY_KPI_ONLINE = 'kpi_online_data';
 const CACHE_KEY_IMPACT_ONLINE = 'impactonline_data_v1';
 const CACHE_KEY_DATATON = 'dataton_data';

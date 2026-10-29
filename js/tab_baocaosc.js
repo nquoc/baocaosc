@@ -3175,11 +3175,30 @@ function normalizeKpiOfflineT10Data(rawData) {
 }
 
 /**
- * Chuẩn hóa dữ liệu thô 6.3: Tư Vấn Chuyển Addon Tháng 10 (AJ22:AM29)
+ * Helper định dạng hiển thị cho các cột bổ sung của bảng Addon (Cột AN & AO)
+ */
+function formatAddonExtraCell(val) {
+  if (val == null || val === '' || val === '-') return '-';
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return '0';
+  if (str.endsWith('%')) return str;
+  const num = Number(val);
+  if (!isNaN(num)) {
+    if (Math.abs(num) <= 1 && num !== 0 && (str.includes('.') || str.includes(','))) {
+      return (num * 100).toFixed(2) + '%';
+    }
+    return Number.isInteger(num) ? num.toLocaleString('vi-VN') : num.toFixed(2);
+  }
+  return str;
+}
+
+/**
+ * Chuẩn hóa dữ liệu thô 9.3: Tư Vấn Chuyển Addon Tháng 10 (AJ22:AO30)
  */
 function normalizeAddonT10Data(rawData) {
   if (!Array.isArray(rawData) || rawData.length < 2) return null;
 
+  const rawHeaders = Array.isArray(rawData[0]) ? rawData[0] : [];
   const items = [];
   let totalRow = null;
 
@@ -3192,12 +3211,17 @@ function normalizeAddonT10Data(rawData) {
     const offline = parseBscDecimal(row[1]);
     const online = parseBscDecimal(row[2]);
     const total = parseBscDecimal(row[3]);
+    const col4 = row[4] != null ? row[4] : '';
+    const col5 = row[5] != null ? row[5] : '';
 
     const item = {
       name,
       offline,
       online,
       total,
+      col4,
+      col5,
+      rawRow: row,
       pct: 0
     };
 
@@ -3216,7 +3240,7 @@ function normalizeAddonT10Data(rawData) {
     totalRow.pct = 100;
   }
 
-  return { items, totalRow, grandTotal };
+  return { headers: rawHeaders, items, totalRow, grandTotal };
 }
 
 /**
@@ -3402,7 +3426,7 @@ function renderKpiOfflineT10Table(parsed) {
 }
 
 /**
- * BẢNG 3: TƯ VẤN CHUYỂN ADDON THÁNG 10
+ * BẢNG 3: TƯ VẤN CHUYỂN ADDON THÁNG 10 (AJ22:AO30)
  */
 function renderAddonT10Table(parsed) {
   const tbl = $('bscAddonT10Table');
@@ -3414,19 +3438,45 @@ function renderAddonT10Table(parsed) {
   if (k !== 'default') {
     items.sort((a, b) => {
       if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
-      return dir * ((a[k] || 0) - (b[k] || 0));
+      const valA = a[k] != null ? a[k] : '';
+      const valB = b[k] != null ? b[k] : '';
+      const numA = Number(valA);
+      const numB = Number(valB);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return dir * (numA - numB);
+      }
+      return dir * String(valA).localeCompare(String(valB), 'vi');
     });
   }
 
   const sortArrow = col => (BAOCAOSC_ADDON_T10_SORT.k === col ? (BAOCAOSC_ADDON_T10_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
 
+  const rawHeaders = parsed.headers || [];
+  const hName = rawHeaders[0] || 'Dịch Vụ Addon';
+  const hOffline = rawHeaders[1] || 'Team Offline';
+  const hOnline = rawHeaders[2] || 'Team Online';
+  const hTotal = rawHeaders[3] || 'Tổng Số Lượng';
+  const hasCol4 = rawHeaders.length > 4 && String(rawHeaders[4] || '').trim() !== '';
+  const hasCol5 = rawHeaders.length > 5 && String(rawHeaders[5] || '').trim() !== '';
+  const hCol4 = hasCol4 ? String(rawHeaders[4]).trim() : '';
+  const hCol5 = hasCol5 ? String(rawHeaders[5]).trim() : '';
+
   let thead = '<thead><tr>';
   thead += `<th style="width:55px;text-align:center">STT</th>`;
-  thead += `<th onclick="sortAddonT10('name')" style="cursor:pointer;text-align:center;min-width:180px">Dịch Vụ Addon${sortArrow('name')}</th>`;
-  thead += `<th onclick="sortAddonT10('offline')" style="cursor:pointer;text-align:center;min-width:130px">Team Offline${sortArrow('offline')}</th>`;
-  thead += `<th onclick="sortAddonT10('online')" style="cursor:pointer;text-align:center;min-width:130px">Team Online${sortArrow('online')}</th>`;
-  thead += `<th onclick="sortAddonT10('total')" style="cursor:pointer;text-align:center;min-width:130px">Tổng Số Lượng${sortArrow('total')}</th>`;
-  thead += `<th onclick="sortAddonT10('pct')" style="cursor:pointer;text-align:center;min-width:160px">Tỷ Trọng Đóng Góp${sortArrow('pct')}</th>`;
+  thead += `<th onclick="sortAddonT10('name')" style="cursor:pointer;text-align:center;min-width:180px">${esc(hName)}${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortAddonT10('offline')" style="cursor:pointer;text-align:center;min-width:120px">${esc(hOffline)}${sortArrow('offline')}</th>`;
+  thead += `<th onclick="sortAddonT10('online')" style="cursor:pointer;text-align:center;min-width:120px">${esc(hOnline)}${sortArrow('online')}</th>`;
+  thead += `<th onclick="sortAddonT10('total')" style="cursor:pointer;text-align:center;min-width:120px">${esc(hTotal)}${sortArrow('total')}</th>`;
+
+  if (hasCol4) {
+    thead += `<th onclick="sortAddonT10('col4')" style="cursor:pointer;text-align:center;min-width:130px">${esc(hCol4)}${sortArrow('col4')}</th>`;
+  }
+  if (hasCol5) {
+    thead += `<th onclick="sortAddonT10('col5')" style="cursor:pointer;text-align:center;min-width:130px">${esc(hCol5)}${sortArrow('col5')}</th>`;
+  }
+  if (!hasCol4) {
+    thead += `<th onclick="sortAddonT10('pct')" style="cursor:pointer;text-align:center;min-width:160px">Tỷ Trọng Đóng Góp${sortArrow('pct')}</th>`;
+  }
   thead += '</tr></thead>';
 
   let tbody = '<tbody>';
@@ -3443,14 +3493,27 @@ function renderAddonT10Table(parsed) {
     tbody += `<td style="text-align:center;font-weight:600">${item.offline.toLocaleString('vi-VN')}</td>`;
     tbody += `<td style="text-align:center;font-weight:600">${item.online.toLocaleString('vi-VN')}</td>`;
     tbody += `<td style="text-align:center;font-weight:800;color:#38bdf8">${item.total.toLocaleString('vi-VN')}</td>`;
-    tbody += `<td style="text-align:center">
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
-        <div style="flex:1;max-width:80px;height:6px;border-radius:3px;background:rgba(148,163,184,0.18);overflow:hidden">
-          <div style="width:${Math.min(100, item.pct)}%;height:100%;background:${barColor};border-radius:3px"></div>
+
+    if (hasCol4) {
+      const f4 = formatAddonExtraCell(item.col4);
+      const isPct4 = f4.endsWith('%');
+      tbody += `<td style="text-align:center;font-weight:${isPct4 ? '700;color:#10b981' : '600'}">${esc(f4)}</td>`;
+    }
+    if (hasCol5) {
+      const f5 = formatAddonExtraCell(item.col5);
+      const isPct5 = f5.endsWith('%');
+      tbody += `<td style="text-align:center;font-weight:${isPct5 ? '700;color:#a855f7' : '600'}">${esc(f5)}</td>`;
+    }
+    if (!hasCol4) {
+      tbody += `<td style="text-align:center">
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+          <div style="flex:1;max-width:80px;height:6px;border-radius:3px;background:rgba(148,163,184,0.18);overflow:hidden">
+            <div style="width:${Math.min(100, item.pct)}%;height:100%;background:${barColor};border-radius:3px"></div>
+          </div>
+          <span style="font-weight:800;color:${barColor};min-width:55px;text-align:right">${item.pct.toFixed(2)}%</span>
         </div>
-        <span style="font-weight:800;color:${barColor};min-width:55px;text-align:right">${item.pct.toFixed(2)}%</span>
-      </div>
-    </td>`;
+      </td>`;
+    }
     tbody += '</tr>';
   });
   tbody += '</tbody>';
@@ -3464,7 +3527,18 @@ function renderAddonT10Table(parsed) {
     tfoot += `<td style="text-align:center;font-weight:800">${tot.offline.toLocaleString('vi-VN')}</td>`;
     tfoot += `<td style="text-align:center;font-weight:800">${tot.online.toLocaleString('vi-VN')}</td>`;
     tfoot += `<td style="text-align:center;font-weight:800;color:#38bdf8">${tot.total.toLocaleString('vi-VN')}</td>`;
-    tfoot += `<td style="text-align:center;font-weight:800;color:#10b981">100.00%</td>`;
+
+    if (hasCol4) {
+      const f4 = formatAddonExtraCell(tot.col4);
+      tfoot += `<td style="text-align:center;font-weight:800;color:#10b981">${esc(f4 || '100%')}</td>`;
+    }
+    if (hasCol5) {
+      const f5 = formatAddonExtraCell(tot.col5);
+      tfoot += `<td style="text-align:center;font-weight:800;color:#a855f7">${esc(f5 || '-')}</td>`;
+    }
+    if (!hasCol4) {
+      tfoot += `<td style="text-align:center;font-weight:800;color:#10b981">100.00%</td>`;
+    }
     tfoot += '</tr></tfoot>';
   }
 
@@ -3654,32 +3728,51 @@ function exportAddonT10Csv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 9.3: TƯ VẤN CHUYỂN ADDON THÁNG 10 (AJ22:AM29)']);
+  lines.push(['BÁO CÁO SC - MỤC 9.3: TƯ VẤN CHUYỂN ADDON THÁNG 10 (AJ22:AO30)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
-  lines.push(['STT', 'Dịch Vụ Addon', 'Team Offline', 'Team Online', 'Tổng Số Lượng', 'Tỷ Trọng (%)']);
+
+  const rawHeaders = parsed.headers || [];
+  const hName = rawHeaders[0] || 'Dịch Vụ Addon';
+  const hOffline = rawHeaders[1] || 'Team Offline';
+  const hOnline = rawHeaders[2] || 'Team Online';
+  const hTotal = rawHeaders[3] || 'Tổng Số Lượng';
+  const hasCol4 = rawHeaders.length > 4 && String(rawHeaders[4] || '').trim() !== '';
+  const hasCol5 = rawHeaders.length > 5 && String(rawHeaders[5] || '').trim() !== '';
+
+  const headerRow = ['STT', hName, hOffline, hOnline, hTotal];
+  if (hasCol4) headerRow.push(String(rawHeaders[4]).trim());
+  if (hasCol5) headerRow.push(String(rawHeaders[5]).trim());
+  if (!hasCol4) headerRow.push('Tỷ Trọng (%)');
+  lines.push(headerRow);
 
   parsed.items.forEach((it, idx) => {
-    lines.push([
+    const row = [
       idx + 1,
       it.name,
       it.offline,
       it.online,
-      it.total,
-      it.pct.toFixed(2) + '%'
-    ]);
+      it.total
+    ];
+    if (hasCol4) row.push(formatAddonExtraCell(it.col4));
+    if (hasCol5) row.push(formatAddonExtraCell(it.col5));
+    if (!hasCol4) row.push(it.pct.toFixed(2) + '%');
+    lines.push(row);
   });
 
   if (parsed.totalRow) {
     const tot = parsed.totalRow;
-    lines.push([
+    const totalLine = [
       '★',
       'TỔNG CỘNG',
       tot.offline,
       tot.online,
-      tot.total,
-      '100.00%'
-    ]);
+      tot.total
+    ];
+    if (hasCol4) totalLine.push(formatAddonExtraCell(tot.col4) || '100%');
+    if (hasCol5) totalLine.push(formatAddonExtraCell(tot.col5) || '-');
+    if (!hasCol4) totalLine.push('100.00%');
+    lines.push(totalLine);
   }
 
   const csvContent = '\ufeff' + lines.map(row => {
