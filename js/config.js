@@ -24,6 +24,8 @@ const API_BAOCAOSC_KPI_ONLINE_T9 = API_BASE + '?sheet=baocaotuan&range=AJ2:AP5';
 const API_BAOCAOSC_KPI_OFFLINE_T10 = API_BASE + '?sheet=baocaotuan&range=AJ13:AP17'; // Mục 9.2: KPI Team Offline Tháng 10
 const API_BAOCAOSC_ADDON_T10 = API_BASE + '?sheet=baocaotuan&range=AJ22:AM29'; // Mục 9.3: Tư Vấn Chuyển Addon Tháng 10
 const API_KPI_ONLINE = API_BASE + '?sheet=KPI%20online'; // Endpoint cho Tab 7: KPI Team Online
+const API_IMPACT_ONLINE_1 = API_BASE + '?sheet=impactonline&range=A1:H6'; // Endpoint cho Tab KPI: Impact Online Mục 1 (A1:H6)
+const API_IMPACT_ONLINE_2 = API_BASE + '?sheet=impactonline&range=A9:H23'; // Endpoint cho Tab KPI: Impact Online Mục 2 (A9:H23)
 const API_DATATON_ONLINE = API_BASE + '?sheet=ton%20online'; // Endpoint cho Tab 8: Data Tồn Online
 const API_DATATON_OFFLINE = API_BASE + '?sheet=ton%20offline'; // Endpoint cho Tab 8: Data Tồn Offline
 
@@ -65,6 +67,7 @@ const CACHE_KEY_PHANCUNG_OCT = 'phancung_oct_data';
 const CACHE_KEY_PHANCUNG_SOURCE = 'phancung_source_data';
 const CACHE_KEY_BAOCAOSC = 'baocaosc_data_v3';
 const CACHE_KEY_KPI_ONLINE = 'kpi_online_data';
+const CACHE_KEY_IMPACT_ONLINE = 'impactonline_data_v1';
 const CACHE_KEY_DATATON = 'dataton_data';
 
 // Hằng số tính ngày công & bảng màu
@@ -158,6 +161,10 @@ let BAOCAOSC_HEADCOUNT_PROVINCE_SORT = { k: 'count', dir: -1 };
 // Trạng thái Tab 7: KPI Team Online
 let KPI_ONLINE_STATE = { data: null, savedAt: 0, timeStr: '' };
 let KPI_ONLINE_SEARCH = '';
+
+// Trạng thái Tab KPI SC: Impact Online (Sheet impactonline: A1:H6 & A9:H23)
+let IMPACT_ONLINE_STATE = { muc1: null, muc2: null, savedAt: 0, timeStr: '' };
+let IMPACT_ONLINE_SEARCH = '';
 let KPI_ONLINE_SHOW_ALL_DAYS = false; // Mặc định thu gọn ngày (chỉ hiện 1..ngày hiện tại)
 let KPI_ONLINE_SHOW_ALL_TALK_DAYS = false; // Xem toàn bộ tháng mục 3
 let KPI_ONLINE_SHOW_ALL_CALL_DAYS = false; // Xem toàn bộ tháng mục 4

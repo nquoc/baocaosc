@@ -88,10 +88,15 @@
         <span class="tab-item-icon">🏢</span>
         <span class="tab-item-text">KPI Offline</span>
       </div>
+      <div class="tab-dropdown-item" id="tabItemImpactOnline" onclick="onSelectKpiTab('impactonline', event)">
+        <span class="tab-item-icon">⚡</span>
+        <span class="tab-item-text">Impact Online</span>
+      </div>
     </div>
   </div>
   <button id="tabBtnKpi" style="display:none"></button>
   <button id="tabBtnKpiOnline" style="display:none"></button>
+  <button id="tabBtnImpactOnline" style="display:none"></button>
   <button id="tabBtnPhanCung" class="tab-btn" onclick="switchTab('phancung')">
     💻 DS Phần Cứng
   </button>
@@ -1031,6 +1036,66 @@
   </div>
 </div>
 
+<!-- ==================== TAB KPI: IMPACT TEAM ONLINE ==================== -->
+<div id="impactonlineSection" style="display:none">
+  <!-- THANH ĐIỀU KHIỂN & TRẠNG THÁI TAB -->
+  <div class="card" style="margin-bottom:16px;padding:14px 18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading);display:flex;align-items:center;gap:8px">
+          <span>⚡ Báo Cáo Impact Team Online</span>
+        </h2>
+        <div class="mut sm" style="margin-top:3px">
+          Nguồn dữ liệu: Google Sheets (sheet <b>impactonline</b>) · Vùng <b>A1:H6</b> &amp; <b>A9:H23</b> · Đồng bộ trực tiếp Google Sheets
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="impactOnlineSrcBadge" class="badge b-load">Đang tải…</span>
+        <input type="text" id="impactOnlineSearchInput" placeholder="🔍 Tìm kiếm trong bảng..." oninput="onImpactOnlineSearch(this.value)" style="width:200px;font-size:12px;padding:5px 9px">
+        <button id="btnReloadImpactOnline" onclick="loadImpactOnline(true)">⟳ Tải lại Impact Online</button>
+        <button onclick="exportImpactOnlineAllCsv()" style="background:#2563eb;color:#fff;border-color:#3b82f6;font-size:12px;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV Tất Cả</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CÁC THẺ KPI TÓM TẮT -->
+  <div class="grid kpis" id="impactOnlineSummaryCards" style="margin-bottom:16px"></div>
+
+  <!-- MỤC 1: TỔNG HỢP IMPACT ONLINE (A1:H6) -->
+  <div class="card" style="margin-bottom:18px;padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3 style="margin:0;font-size:15px;color:#facc15;display:flex;align-items:center;gap:6px">
+          <span>📊 Mục 1: Tổng Hợp Impact Online (A1:H6)</span>
+        </h3>
+      </div>
+      <div>
+        <button onclick="exportImpactOnlineCsv('muc1')" style="background:#2563eb;color:#fff;border-color:#3b82f6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV Mục 1</button>
+      </div>
+    </div>
+    <div class="excel-table-wrap">
+      <div id="impactOnlineTbl1Container" style="overflow-x:auto">Đang tải dữ liệu…</div>
+    </div>
+  </div>
+
+  <!-- MỤC 2: CHI TIẾT IMPACT ONLINE (A9:H23) -->
+  <div class="card" style="margin-bottom:18px;padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3 style="margin:0;font-size:15px;color:#38bdf8;display:flex;align-items:center;gap:6px">
+          <span>📋 Mục 2: Chi Tiết Impact Online (A9:H23)</span>
+        </h3>
+      </div>
+      <div>
+        <button onclick="exportImpactOnlineCsv('muc2')" style="background:#0284c7;color:#fff;border-color:#0ea5e9;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV Mục 2</button>
+      </div>
+    </div>
+    <div class="excel-table-wrap">
+      <div id="impactOnlineTbl2Container" style="overflow-x:auto">Đang tải dữ liệu…</div>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== TAB 8: DATA TỒN (ONLINE & OFFLINE) ==================== -->
 <div id="datatonSection" style="display:none">
   <!-- THANH ĐIỀU KHIỂN & TRẠNG THÁI TAB -->
@@ -1397,6 +1462,7 @@
 <script src="js/tab_phancung.js"></script>
 <script src="js/tab_baocaosc.js"></script>
 <script src="js/tab_kpionline.js"></script>
+<script src="js/tab_impactonline.js"></script>
 <script src="js/tab_dataton.js"></script>
 <script src="js/tab-bao-cao.js"></script>
 <script src="js/app.js"></script>

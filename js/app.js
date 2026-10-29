@@ -3,7 +3,7 @@
  */
 
 /* ---------- Chuyển đổi & Lưu vết Tab (F5 giữ nguyên tab hiện tại) ---------- */
-const VALID_TABS = ['overview', 'pivot', 'target', 'kpi', 'kpionline', 'phancung', 'baocaosc', 'dataton', 'baocao'];
+const VALID_TABS = ['overview', 'pivot', 'target', 'kpi', 'kpionline', 'impactonline', 'phancung', 'baocaosc', 'dataton', 'baocao'];
 
 function switchTab(tab) {
   if (!VALID_TABS.includes(tab)) {
@@ -31,7 +31,7 @@ function switchTab(tab) {
   if ($('tabBtnBaoCao')) $('tabBtnBaoCao').className = 'tab-btn' + (tab === 'baocao' ? ' active' : '');
 
   // Cập nhật trạng thái Dropdown KPI SC
-  const isKpiActive = (tab === 'kpi' || tab === 'kpionline');
+  const isKpiActive = (tab === 'kpi' || tab === 'kpionline' || tab === 'impactonline');
   if ($('tabBtnKpiSc')) {
     $('tabBtnKpiSc').className = 'tab-btn tab-dropdown-btn' + (isKpiActive ? ' active' : '');
     let kpiLabel = '📈 KPI SC <span class="tab-caret">▼</span>';
@@ -39,6 +39,8 @@ function switchTab(tab) {
       kpiLabel = '📈 KPI SC: Online <span class="tab-caret">▼</span>';
     } else if (tab === 'kpi') {
       kpiLabel = '📈 KPI SC: Offline <span class="tab-caret">▼</span>';
+    } else if (tab === 'impactonline') {
+      kpiLabel = '📈 KPI SC: Impact Online <span class="tab-caret">▼</span>';
     }
     $('tabBtnKpiSc').innerHTML = kpiLabel;
   }
@@ -47,6 +49,12 @@ function switchTab(tab) {
   }
   if ($('tabItemKpiOffline')) {
     $('tabItemKpiOffline').className = 'tab-dropdown-item' + (tab === 'kpi' ? ' active' : '');
+  }
+  if ($('tabItemImpactOnline')) {
+    $('tabItemImpactOnline').className = 'tab-dropdown-item' + (tab === 'impactonline' ? ' active' : '');
+  }
+  if ($('tabBtnImpactOnline')) {
+    $('tabBtnImpactOnline').className = 'tab-btn' + (tab === 'impactonline' ? ' active' : '');
   }
   const ddMenu = $('tabDropdownKpiMenu');
   if (ddMenu) ddMenu.classList.remove('show');
@@ -58,12 +66,13 @@ function switchTab(tab) {
   $('targetSection').style.display = tab === 'target' ? 'block' : 'none';
   $('kpiSection').style.display = tab === 'kpi' ? 'block' : 'none';
   if ($('kpionlineSection')) $('kpionlineSection').style.display = tab === 'kpionline' ? 'block' : 'none';
+  if ($('impactonlineSection')) $('impactonlineSection').style.display = tab === 'impactonline' ? 'block' : 'none';
   if ($('phancungSection')) $('phancungSection').style.display = tab === 'phancung' ? 'block' : 'none';
   if ($('baocaoscSection')) $('baocaoscSection').style.display = tab === 'baocaosc' ? 'block' : 'none';
   if ($('datatonSection')) $('datatonSection').style.display = tab === 'dataton' ? 'block' : 'none';
   if ($('baocaoSection')) $('baocaoSection').style.display = tab === 'baocao' ? 'block' : 'none';
 
-  $('filters').style.display = (tab === 'target' || tab === 'kpi' || tab === 'kpionline' || tab === 'phancung' || tab === 'baocaosc' || tab === 'dataton' || tab === 'baocao') ? 'none' : 'flex';
+  $('filters').style.display = (tab === 'target' || tab === 'kpi' || tab === 'kpionline' || tab === 'impactonline' || tab === 'phancung' || tab === 'baocaosc' || tab === 'dataton' || tab === 'baocao') ? 'none' : 'flex';
 
   if (tab === 'overview' || tab === 'pivot') {
     if ((!S.month || S.month === 'all') && typeof getDefaultMonth === 'function') {
@@ -104,6 +113,12 @@ function switchTab(tab) {
       loadKpiOnline(false);
     } else {
       renderKpiOnline();
+    }
+  } else if (tab === 'impactonline') {
+    if (!IMPACT_ONLINE_STATE.muc1 && !IMPACT_ONLINE_STATE.muc2) {
+      loadImpactOnline(false);
+    } else {
+      renderImpactOnline();
     }
   } else if (tab === 'phancung') {
     if (!PHANCUNG_STATE.data || !PHANCUNG_SOURCE_STATE.data) {
@@ -522,9 +537,15 @@ async function startBackgroundPrefetch() {
     },
     {
       name: 'Data Tồn',
-      label: 'Data Tồn (5/5)',
+      label: 'Data Tồn (5/6)',
       check: () => typeof DATATON_STATE !== 'undefined' && DATATON_STATE && DATATON_STATE.online,
       run: () => typeof loadDataTon === 'function' ? loadDataTon(false, true) : null
+    },
+    {
+      name: 'Impact Online',
+      label: 'Impact Online (6/6)',
+      check: () => typeof IMPACT_ONLINE_STATE !== 'undefined' && IMPACT_ONLINE_STATE && (IMPACT_ONLINE_STATE.muc1 || IMPACT_ONLINE_STATE.muc2),
+      run: () => typeof loadImpactOnline === 'function' ? loadImpactOnline(false, true) : null
     }
   ];
 
