@@ -10,10 +10,14 @@
  */
 function formatImpactVal(val, colIdx, rowIdx) {
   if (val === '' || val == null) return '-';
-  if (rowIdx === 0 || colIdx === 0) return String(val).trim();
+
+  const str = String(val).trim();
+  // Xử lý lỗi chia cho 0 từ Google Sheets: chuyển thành 0 nhìn cho đẹp mắt
+  if (str.toUpperCase().includes('#DIV/0')) return '0';
+
+  if (rowIdx === 0 || colIdx === 0) return str;
 
   // Kiểm tra nếu chuỗi đã có sẵn ký tự %
-  const str = String(val).trim();
   if (str.endsWith('%')) return str;
 
   const num = Number(val);

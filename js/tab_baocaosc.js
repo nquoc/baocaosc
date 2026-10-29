@@ -152,6 +152,8 @@ function exportMuctieuOnlineCsv() {
 // Helper parse số tỷ lệ phần trăm từ Google Sheet
 function parseActiveRateVal(val) {
   if (val == null || val === '' || val === '-') return null;
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return 0;
   if (typeof val === 'number') {
     if (isNaN(val)) return null;
     return val <= 1 ? val * 100 : val;
@@ -1618,6 +1620,8 @@ function exportFnbIssueCsv() {
 
 function parseProvinceImpactVal(val) {
   if (val == null || val === '' || val === '-') return null;
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return 0;
   if (typeof val === 'number') {
     if (isNaN(val)) return null;
     return (val >= -1 && val <= 1 && val !== 0) ? (val * 100) : (val === 0 ? 0 : val);
@@ -2535,6 +2539,8 @@ function exportHeadcountProvinceCsv() {
  */
 function parseBscNumber(val) {
   if (val == null || val === '' || val === '-') return 0;
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return 0;
   if (typeof val === 'number') return isNaN(val) ? 0 : Math.round(val);
   const s = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
   const n = parseFloat(s);
@@ -2546,6 +2552,8 @@ function parseBscNumber(val) {
  */
 function parseBscPct(val) {
   if (val == null || val === '' || val === '-') return 0;
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return 0;
   if (typeof val === 'number') {
     if (isNaN(val)) return 0;
     // Nếu là dạng số thập phân <= 10 (ví dụ 0.6148 -> 61.48% hoặc 1.3403 -> 134.03%)
@@ -3016,6 +3024,8 @@ let BAOCAOSC_ADDON_T10_SORT = { k: 'default', dir: -1 };
  */
 function parseBscDecimal(val) {
   if (val == null || val === '' || val === '-') return 0;
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return 0;
   if (typeof val === 'number') return isNaN(val) ? 0 : val;
   const s = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
   const n = parseFloat(s);

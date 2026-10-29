@@ -4,9 +4,24 @@
 
 // Tiện ích DOM & Định dạng dữ liệu
 const $ = id => document.getElementById(id);
-const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const nf = (n, d = 1) => (n == null || isNaN(n)) ? '–' : Number(n).toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
-const n0 = n => (n == null || isNaN(Number(n))) ? '–' : Math.round(Number(n)).toLocaleString('vi-VN');
+const esc = s => {
+  if (s == null) return '';
+  const str = String(s);
+  if (str.toUpperCase().includes('#DIV/0')) return '0';
+  return str.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+};
+const nf = (n, d = 1) => {
+  if (n == null) return '–';
+  if (String(n).toUpperCase().includes('#DIV/0')) return '0';
+  if (isNaN(n)) return '–';
+  return Number(n).toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
+};
+const n0 = n => {
+  if (n == null) return '–';
+  if (String(n).toUpperCase().includes('#DIV/0')) return '0';
+  if (isNaN(Number(n))) return '–';
+  return Math.round(Number(n)).toLocaleString('vi-VN');
+};
 const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(Math.round(m % 60)).padStart(2, '0');
 const groupBy = (arr, f) => {
   const m = {};

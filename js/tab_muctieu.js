@@ -4,15 +4,17 @@
 
 function formatMuctieuVal(val, colIdx) {
   if (val === '' || val == null) return '';
-  if (colIdx === 0) return String(val).trim();
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return '0';
+  if (colIdx === 0) return str;
   if (colIdx === 1 || colIdx === 2) {
     const num = Number(val);
-    if (isNaN(num)) return String(val);
+    if (isNaN(num)) return str;
     return Math.round(num).toLocaleString('vi-VN');
   }
   // Col 3+: % đạt, Tuần 1, Tuần 2, Tuần 3, Tuần 4, Tuần 5...
   const num = Number(val);
-  if (isNaN(num)) return String(val);
+  if (isNaN(num)) return str;
   const p = num <= 5 ? num * 100 : num;
   return Math.round(p) + '%';
 }

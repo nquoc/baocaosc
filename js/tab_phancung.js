@@ -4,6 +4,8 @@
 
 function parsePcNumber(val) {
   if (val == null || val === '' || val === '-') return 0;
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return 0;
   if (typeof val === 'number') return isNaN(val) ? 0 : val;
   const s = String(val).replace(/\./g, '').replace(/,/g, '').trim();
   const n = parseFloat(s);
@@ -12,6 +14,8 @@ function parsePcNumber(val) {
 
 function parsePcPct(val) {
   if (val == null || val === '' || val === '-') return 0;
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return 0;
   if (typeof val === 'number') return val <= 1 ? val * 100 : val;
   const s = String(val).replace('%', '').replace(/\./g, '').replace(/,/g, '.').trim();
   const n = parseFloat(s);

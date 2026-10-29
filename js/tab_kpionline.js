@@ -50,9 +50,12 @@ function formatTalktime(sec) {
  * Định dạng phần trăm
  */
 function formatKpiPct(val) {
-  if (val == null || val === '' || isNaN(val)) return '–';
+  if (val == null || val === '') return '–';
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return '0';
+  if (isNaN(val)) return '–';
   const n = typeof val === 'number' ? val : parseFloat(val);
-  if (isNaN(n)) return String(val);
+  if (isNaN(n)) return str;
   return (n * 100).toFixed(1) + '%';
 }
 
@@ -60,9 +63,12 @@ function formatKpiPct(val) {
  * Định dạng số nguyên hoặc số thực
  */
 function formatKpiNum(val, dec = 1) {
-  if (val == null || val === '' || isNaN(val)) return '–';
+  if (val == null || val === '') return '–';
+  const str = String(val).trim();
+  if (str.toUpperCase().includes('#DIV/0')) return '0';
+  if (isNaN(val)) return '–';
   const n = typeof val === 'number' ? val : parseFloat(val);
-  if (isNaN(n)) return String(val);
+  if (isNaN(n)) return str;
   return Number.isInteger(n) ? String(n) : n.toFixed(dec);
 }
 
