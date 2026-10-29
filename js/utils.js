@@ -149,6 +149,28 @@ async function setCachedData(data) {
 }
 
 /**
+ * Xóa sạch toàn bộ dữ liệu trong bộ nhớ đệm IndexedDB
+ */
+async function clearAllCache() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      store.clear();
+      tx.oncomplete = () => {
+        console.log('%c[CACHE] 🧹 Đã dọn sạch toàn bộ dữ liệu trong IndexedDB store!', 'color:#ec4899;font-weight:bold');
+        resolve(true);
+      };
+      tx.onerror = () => resolve(false);
+    });
+  } catch (e) {
+    console.warn('[CACHE] Không xóa được IndexedDB:', e);
+    return false;
+  }
+}
+
+/**
  * Tự động gắn Khóa bảo mật (Secret Key) vào URL API nếu chưa có
  */
 function appendAuthKey(url) {

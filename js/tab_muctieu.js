@@ -132,15 +132,12 @@ async function loadMuctieu(force = false) {
       });
       if (cached && cached.offline && cached.online) {
         const ageMs = Date.now() - (cached.savedAt || 0);
-        if (ageMs < CACHE_TTL_MS) {
-          MUCTIEU_STATE = cached;
-          renderMuctieu();
-          const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
-          const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
-          if (badge) { badge.className = 'badge b-cache'; badge.textContent = `Bộ nhớ đệm (${timeLabel})`; }
-          if (btn) { btn.disabled = false; btn.textContent = '⟳ Tải lại Mục Tiêu'; }
-          return;
-        }
+        MUCTIEU_STATE = cached;
+        renderMuctieu();
+        const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
+        const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
+        if (badge) { badge.className = 'badge b-load'; badge.textContent = `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`; }
+        // Không return! Tiếp tục gọi API Google Sheets
       }
     } catch (e) {
       console.warn('Lỗi đọc cache mục tiêu:', e);

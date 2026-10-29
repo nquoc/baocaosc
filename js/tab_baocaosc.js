@@ -1073,6 +1073,8 @@ function renderBaoCaoSc() {
 /**
  * Tải dữ liệu BÁO CÁO SC từ IndexedDB hoặc API trực tiếp (Mục 1 đến Mục 9 song song)
  */
+let _isFetchingBaoCaoSc = false;
+
 async function loadBaoCaoSc(forceReload = false, isSilent = false) {
   const btn = $('btnReloadBaoCaoSc');
   const badge = $('baocaoscSrcBadge');
@@ -1086,7 +1088,7 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
     badge.textContent = 'Đang tải…';
   }
 
-  // 1. Kiểm tra IndexedDB Smart Cache
+  // 1. Kiểm tra IndexedDB Smart Cache: Hiển thị tức thì < 0.05s và TỰ ĐỘNG đồng bộ từ Google Sheets (Stale-While-Revalidate)
   if (!forceReload) {
     try {
       const db = await openDB();
@@ -1102,50 +1104,29 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
 
-        if (ageMs < CACHE_TTL_MS) {
-          BAOCAOSC_STATE = cached;
-          if (typeof MUCTIEU_STATE !== 'undefined') {
-            MUCTIEU_STATE = {
-              offline: cached.muctieuOffline,
-              online: cached.muctieuOnline,
-              savedAt: cached.savedAt,
-              timeStr: cached.timeStr
-            };
-          }
-          renderBaoCaoSc();
-          if (badge) {
-            badge.className = 'badge b-cache';
-            badge.textContent = `Bộ nhớ đệm (${timeLabel})`;
-          }
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = '⟳ Tải lại Báo Cáo SC';
-          }
-          if (!isSilent) {
-            showToast(`⚡ Đã tải tức thì Báo Cáo SC từ bộ nhớ đệm (${timeLabel}).`, true);
-          }
-          return;
-        } else {
-          BAOCAOSC_STATE = cached;
-          if (typeof MUCTIEU_STATE !== 'undefined') {
-            MUCTIEU_STATE = {
-              offline: cached.muctieuOffline,
-              online: cached.muctieuOnline,
-              savedAt: cached.savedAt,
-              timeStr: cached.timeStr
-            };
-          }
-          renderBaoCaoSc();
-          if (badge) {
-            badge.className = 'badge b-load';
-            badge.textContent = `Bộ nhớ đệm cũ (${timeLabel}) · Đang cập nhật…`;
-          }
+        BAOCAOSC_STATE = cached;
+        if (typeof MUCTIEU_STATE !== 'undefined') {
+          MUCTIEU_STATE = {
+            offline: cached.muctieuOffline,
+            online: cached.muctieuOnline,
+            savedAt: cached.savedAt,
+            timeStr: cached.timeStr
+          };
         }
+        renderBaoCaoSc();
+        if (badge) {
+          badge.className = 'badge b-load';
+          badge.textContent = `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`;
+        }
+        // Không return! Tự động tiếp tục gọi API Google Sheets để kéo số mới nhất
       }
     } catch (e) {
       console.warn('Lỗi kiểm tra cache baocaosc:', e);
     }
   }
+
+  if (_isFetchingBaoCaoSc) return;
+  _isFetchingBaoCaoSc = true;
 
   // 2. Tải API trực tiếp song song (Mục 1 đến Mục 9)
   const urlMuctieuOffline = API_MUCTIEU_OFFLINE + (API_MUCTIEU_OFFLINE.includes('?') ? '&' : '?') + '_t=' + Date.now();
@@ -1262,6 +1243,7 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
       if (!isSilent) showToast('Lỗi khi tải Báo Cáo SC: ' + (err.message || 'Không kết nối được'), false);
     }
   } finally {
+    _isFetchingBaoCaoSc = false;
     if (btn) {
       btn.disabled = false;
       btn.textContent = '⟳ Tải lại Báo Cáo SC';

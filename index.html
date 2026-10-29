@@ -6,7 +6,7 @@
   <title>Báo cáo tổng hợp SC</title>
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png">
   <link rel="shortcut icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=20261029_1700">
 </head>
 <body>
 
@@ -58,7 +58,11 @@
     </span>
     <button id="btnLogoutBtn" onclick="handleLogout()" class="btn-logout" title="Đăng xuất và khóa bảo mật Dashboard" style="display:none">🔒 Khóa</button>
     <button id="themeToggleBtn" onclick="toggleTheme()" class="btn-theme" title="Chuyển chế độ Sáng / Tối">🌙 Tối</button>
-    <button id="btnReloadApi" onclick="loadLive()">⟳ Tải lại API</button>
+    <button id="btnReloadAll" onclick="reloadAllDashboardData()" class="btn-reload-all" title="Xóa bộ nhớ đệm và làm mới 100% số liệu từ Google Sheets cho toàn bộ các tab">
+      <span id="btnReloadAllIcon" class="reload-icon">🔄</span>
+      <span id="btnReloadAllTxt">Làm mới toàn bộ số liệu</span>
+    </button>
+    <button id="btnReloadApi" onclick="loadLive()" style="display:none">⟳ Tải lại API</button>
     <button onclick="resetFilters()">Đặt lại bộ lọc</button>
     <button onclick="exportCsv()">⬇ Xuất CSV (SC)</button>
   </div>
@@ -1447,18 +1451,18 @@
 <!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
-<script src="js/config.js?v=20261029_1610"></script>
-<script src="js/utils.js?v=20261029_1610"></script>
-<script src="js/tab_overview.js?v=20261029_1610"></script>
-<script src="js/tab_pivot.js?v=20261029_1610"></script>
-<script src="js/tab_muctieu.js?v=20261029_1610"></script>
-<script src="js/tab_kpi.js?v=20261029_1610"></script>
-<script src="js/tab_phancung.js?v=20261029_1610"></script>
-<script src="js/tab_baocaosc.js?v=20261029_1610"></script>
-<script src="js/tab_kpionline.js?v=20261029_1610"></script>
-<script src="js/tab_impactonline.js?v=20261029_1610"></script>
-<script src="js/tab_dataton.js?v=20261029_1610"></script>
-<script src="js/tab-bao-cao.js?v=20261029_1610"></script>
-<script src="js/app.js?v=20261029_1610"></script>
+<script src="js/config.js?v=20261029_1700"></script>
+<script src="js/utils.js?v=20261029_1700"></script>
+<script src="js/tab_overview.js?v=20261029_1700"></script>
+<script src="js/tab_pivot.js?v=20261029_1700"></script>
+<script src="js/tab_muctieu.js?v=20261029_1700"></script>
+<script src="js/tab_kpi.js?v=20261029_1700"></script>
+<script src="js/tab_phancung.js?v=20261029_1700"></script>
+<script src="js/tab_baocaosc.js?v=20261029_1700"></script>
+<script src="js/tab_kpionline.js?v=20261029_1700"></script>
+<script src="js/tab_impactonline.js?v=20261029_1700"></script>
+<script src="js/tab_dataton.js?v=20261029_1700"></script>
+<script src="js/tab-bao-cao.js?v=20261029_1700"></script>
+<script src="js/app.js?v=20261029_1700"></script>
 </body>
 </html>

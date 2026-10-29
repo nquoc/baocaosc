@@ -206,6 +206,8 @@ function onKpiOnlineSearch(query) {
 /**
  * Tải dữ liệu sheet 'KPI online' (IndexedDB Smart Cache + Trực tiếp)
  */
+let _isFetchingKpiOnline = false;
+
 async function loadKpiOnline(forceReload = false, isSilent = false) {
   const badge = $('kpiOnlineSrcBadge');
   const btn = $('btnReloadKpiOnline');
@@ -216,7 +218,7 @@ async function loadKpiOnline(forceReload = false, isSilent = false) {
   }
   if (btn && !isSilent) btn.disabled = true;
 
-  // 1. Kiểm tra IndexedDB Cache nếu không forceReload
+  // 1. Kiểm tra IndexedDB Cache nếu không forceReload: hiển thị ngay lập tức và đồng bộ từ Google Sheets
   if (!forceReload) {
     try {
       const db = await openDB();
@@ -231,16 +233,18 @@ async function loadKpiOnline(forceReload = false, isSilent = false) {
         KPI_ONLINE_STATE = cached;
         renderKpiOnline();
         if (badge) {
-          badge.className = 'badge b-cache';
-          badge.textContent = `Cache ${cached.timeStr || ''}`;
+          badge.className = 'badge b-load';
+          badge.textContent = `Bộ nhớ đệm (${cached.timeStr || 'vừa xong'}) · Đang đồng bộ…`;
         }
-        if (btn) btn.disabled = false;
-        return;
+        // Tiếp tục xuống dưới để lấy số mới nhất từ Google Sheets
       }
     } catch (e) {
       console.warn('Lỗi đọc Cache KPI Online:', e);
     }
   }
+
+  if (_isFetchingKpiOnline) return;
+  _isFetchingKpiOnline = true;
 
   // 2. Fetch API trực tiếp từ Google Apps Script
   const authKey = getAuthKey();
@@ -291,6 +295,7 @@ async function loadKpiOnline(forceReload = false, isSilent = false) {
       showToast('Lỗi tải KPI Online: ' + err.message, false);
     }
   } finally {
+    _isFetchingKpiOnline = false;
     if (btn) btn.disabled = false;
   }
 }

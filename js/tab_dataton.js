@@ -931,29 +931,13 @@ async function loadDataTon(forceReload = false, isSilent = false) {
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
 
-        if (ageMs < CACHE_TTL_MS) {
-          DATATON_STATE = cached;
-          renderDataTon();
-          if (badge) {
-            badge.className = 'badge b-cache';
-            badge.textContent = `Bộ nhớ đệm (${timeLabel})`;
-          }
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = '⟳ Tải lại Data Tồn';
-          }
-          if (!isSilent) {
-            showToast(`⚡ Đã tải tức thì Data Tồn từ bộ nhớ đệm (${timeLabel}).`, true);
-          }
-          return;
-        } else {
-          DATATON_STATE = cached;
-          renderDataTon();
-          if (badge) {
-            badge.className = 'badge b-load';
-            badge.textContent = `Bộ nhớ đệm cũ (${timeLabel}) · Đang cập nhật…`;
-          }
+        DATATON_STATE = cached;
+        renderDataTon();
+        if (badge) {
+          badge.className = 'badge b-load';
+          badge.textContent = `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`;
         }
+        // Không return! Tự động tiếp tục gọi API Google Sheets
       }
     } catch (e) {
       console.warn('Lỗi kiểm tra cache dataton:', e);

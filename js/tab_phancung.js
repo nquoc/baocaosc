@@ -706,31 +706,12 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
         if (cachedOct && cachedOct.data) PHANCUNG_OCT_STATE = cachedOct;
         PHANCUNG_SOURCE_STATE = cachedSource;
 
-        if (ageMs < CACHE_TTL_MS) {
-          renderPhanCung();
-          if (badge) {
-            badge.className = 'badge b-cache';
-            badge.textContent = `Bộ nhớ đệm (${timeLabel})`;
-          }
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = '⟳ Tải lại DS Phần Cứng';
-          }
-          if (!isSilent) {
-            showToast(`⚡ Đã tải tức thì DS Phần Cứng (Mục 1, 2 & 3) từ bộ nhớ đệm (${timeLabel}).`, true);
-          }
-          return;
-        } else {
-          // Hiển thị tạm cache cũ và tải ngầm
-          PHANCUNG_STATE = cachedYear;
-          if (cachedOct && cachedOct.data) PHANCUNG_OCT_STATE = cachedOct;
-          PHANCUNG_SOURCE_STATE = cachedSource;
-          renderPhanCung();
-          if (badge) {
-            badge.className = 'badge b-load';
-            badge.textContent = `Bộ nhớ đệm cũ (${timeLabel}) · Đang cập nhật…`;
-          }
+        renderPhanCung();
+        if (badge) {
+          badge.className = 'badge b-load';
+          badge.textContent = `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`;
         }
+        // Không return! Tự động tiếp tục gọi API Google Sheets
       }
     } catch (e) {
       console.warn('Lỗi kiểm tra cache phancung:', e);

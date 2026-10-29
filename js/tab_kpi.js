@@ -316,7 +316,7 @@ async function loadKpi(force = false, isSilent = false) {
   if (btn && !isSilent) { btn.disabled = true; btn.textContent = '⏳ Đang tải…'; }
   if (badge && !isSilent) { badge.className = 'badge b-load'; badge.textContent = 'Đang tải API…'; }
 
-  // 1. Kiểm tra cache IndexedDB
+  // 1. Kiểm tra cache IndexedDB: Hiển thị tức thì và TỰ ĐỘNG đồng bộ từ Google Sheets (Stale-While-Revalidate)
   if (!force) {
     try {
       const db = await openDB();
@@ -328,22 +328,22 @@ async function loadKpi(force = false, isSilent = false) {
       });
       if (cached && Array.isArray(cached.data) && cached.data.length > 1) {
         const ageMs = Date.now() - (cached.savedAt || 0);
-        if (ageMs < CACHE_TTL_MS) {
-          KPI_RAW_DATA = normalizeKpiData(cached.headers, cached.data);
-          KPI_COACHES = [...new Set(KPI_RAW_DATA.map(r => r.coach).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
-          buildKpiCoachPills();
-          renderKpi();
-          const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
-          const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
-          if (badge) { badge.className = 'badge b-cache'; badge.textContent = `Bộ nhớ đệm (${timeLabel})`; }
-          if (btn) { btn.disabled = false; btn.textContent = '⟳ Tải lại KPI'; }
-          return;
-        }
+        KPI_RAW_DATA = normalizeKpiData(cached.headers, cached.data);
+        KPI_COACHES = [...new Set(KPI_RAW_DATA.map(r => r.coach).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
+        buildKpiCoachPills();
+        renderKpi();
+        const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
+        const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
+        if (badge) { badge.className = 'badge b-load'; badge.textContent = `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`; }
+        // Không return! Tự động tiếp tục gọi API Google Sheets
       }
     } catch (e) {
       console.warn('Lỗi đọc cache KPI:', e);
     }
   }
+
+  if (typeof _isFetchingKpi !== 'undefined' && _isFetchingKpi) return;
+  window._isFetchingKpi = true;
 
   // 2. Tải API trực tiếp từ Google Apps Script
   try {
@@ -387,6 +387,7 @@ async function loadKpi(force = false, isSilent = false) {
       if (!isSilent) showToast('Lỗi tải API KPI: ' + friendlyMsg, false);
     }
   } finally {
+    window._isFetchingKpi = false;
     if (btn) { btn.disabled = false; btn.textContent = '⟳ Tải lại KPI'; }
   }
 }

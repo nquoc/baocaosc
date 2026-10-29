@@ -48,7 +48,7 @@ async function loadImpactOnline(forceReload = false, isSilent = false) {
     badge.textContent = 'Đang tải…';
   }
 
-  // 1. Kiểm tra IndexedDB Smart Cache
+  // 1. Kiểm tra IndexedDB Smart Cache: Hiển thị ngay < 0.05s và TỰ ĐỘNG đồng bộ từ Google Sheets (Stale-While-Revalidate)
   if (!forceReload) {
     try {
       const db = await openDB();
@@ -64,24 +64,21 @@ async function loadImpactOnline(forceReload = false, isSilent = false) {
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
 
-        if (ageMs < CACHE_TTL_MS) {
-          IMPACT_ONLINE_STATE = cached;
-          if (badge) {
-            badge.className = 'badge b-cache';
-            badge.textContent = `Bộ nhớ đệm (${timeLabel})`;
-          }
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = '⟳ Tải lại Impact Online';
-          }
-          renderImpactOnline();
-          return;
+        IMPACT_ONLINE_STATE = cached;
+        renderImpactOnline();
+        if (badge) {
+          badge.className = 'badge b-load';
+          badge.textContent = `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`;
         }
+        // Không return! Tự động tiếp tục gọi API Google Sheets để kéo số mới nhất
       }
     } catch (e) {
       console.warn('Impact Online Cache read error:', e);
     }
   }
+
+  if (typeof _isFetchingImpactOnline !== 'undefined' && _isFetchingImpactOnline) return;
+  window._isFetchingImpactOnline = true;
 
   // 2. Tải trực tiếp từ Google Apps Script API (sheet impactonline: A1:H6 & A9:H23)
   const t = Date.now();
@@ -143,6 +140,7 @@ async function loadImpactOnline(forceReload = false, isSilent = false) {
       c2.innerHTML = `<div style="padding:16px;color:#ef4444;text-align:center">⚠️ Không thể tải dữ liệu Mục 2 (A9:H23): ${esc(err.message || String(err))}</div>`;
     }
   } finally {
+    window._isFetchingImpactOnline = false;
     if (btn) {
       btn.disabled = false;
       btn.textContent = '⟳ Tải lại Impact Online';

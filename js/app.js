@@ -437,7 +437,7 @@ async function loadLive(isSilent = false) {
 }
 
 async function initData() {
-  // 1. Kiểm tra IndexedDB Smart Cache
+  // 1. Kiểm tra IndexedDB Smart Cache: Hiển thị tức thì < 0.05s và TỰ ĐỘNG đồng bộ số mới từ Google Sheets (Stale-While-Revalidate)
   const cached = await getCachedData();
   if (cached && Array.isArray(cached.data) && cached.data.length > 1) {
     const ageMs = Date.now() - (cached.savedAt || 0);
@@ -445,20 +445,12 @@ async function initData() {
     const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
     const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
 
-    if (ageMs < CACHE_TTL_MS) {
-      // Còn hạn (< 20 phút): Mở tức thì < 0.05s, không gọi mạng
-      console.log(`%c[CACHE HIT] ⚡ Dùng dữ liệu bộ nhớ đệm (${timeLabel}, ${rowCount.toLocaleString('vi-VN')} records). Không cần tải mạng.`, 'color:#06b6d4;font-weight:bold;font-size:12px');
-      setData(cached.headers, cached.data, `Bộ nhớ đệm (${timeLabel})`, 'b-cache');
-      showToast(`⚡ Đã tải tức thì ${rowCount.toLocaleString('vi-VN')} records từ bộ nhớ đệm (${timeLabel}). Bấm "⟳ Tải lại API" để cập nhật mới nhất nếu cần.`, true);
-      setTimeout(startBackgroundPrefetch, 1200);
-      return;
-    } else {
-      // Hết hạn (> 20 phút): Hiển thị ngay bộ nhớ đệm cũ để người dùng xem ngay, đồng thời gọi API ngầm
-      console.log(`%c[CACHE EXPIRED] ⏳ Dữ liệu bộ nhớ đệm đã cũ (${timeLabel}). Đang tải cập nhật ngầm từ API...`, 'color:#eab308;font-weight:bold;font-size:12px');
-      setData(cached.headers, cached.data, `Bộ nhớ đệm cũ (${timeLabel}) · Đang cập nhật…`, 'b-load');
-      loadLive(true);
-      return;
-    }
+    console.log(`%c[CACHE HIT] ⚡ Mở tức thì từ bộ nhớ đệm (${timeLabel}, ${rowCount.toLocaleString('vi-VN')} records). Đang tự động kéo số mới nhất từ Google Sheets...`, 'color:#06b6d4;font-weight:bold;font-size:12px');
+    setData(cached.headers, cached.data, `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`, 'b-load');
+    
+    // TỰ ĐỘNG GỌI API LẤY SỐ MỚI TỪ GOOGLE SHEETS
+    loadLive(true);
+    return;
   }
 
   // 2. Chưa có cache (lần đầu tiên mở): Dùng snapshot dự phòng nếu có, sau đó tải live
@@ -502,63 +494,64 @@ function updatePreloadBadge(text, state = 'loading') {
   if (txt) txt.textContent = text;
 }
 
-async function startBackgroundPrefetch() {
-  if (PRELOAD_STATUS.started || PRELOAD_STATUS.done) return;
+async function startBackgroundPrefetch(forceAll = false) {
+  if (PRELOAD_STATUS.running) return;
   PRELOAD_STATUS.started = true;
   PRELOAD_STATUS.running = true;
+  PRELOAD_STATUS.done = false;
 
   console.log('%c[PRELOAD] 🚀 Bắt đầu nạp ngầm tuần tự dữ liệu tất cả các tab...', 'color:#8b5cf6;font-weight:bold;font-size:12px');
-  updatePreloadBadge('Đang nạp ngầm dữ liệu...', 'loading');
+  updatePreloadBadge(forceAll ? 'Đang đồng bộ tất cả các tab…' : 'Đang nạp ngầm dữ liệu…', 'loading');
 
   const tasks = [
     {
       name: 'KPI Offline',
-      label: 'KPI Offline (1/5)',
-      check: () => typeof KPI_RAW_DATA !== 'undefined' && Array.isArray(KPI_RAW_DATA) && KPI_RAW_DATA.length > 0,
-      run: () => typeof loadKpi === 'function' ? loadKpi(false, true) : null
+      label: 'KPI Offline (1/6)',
+      check: () => !forceAll && typeof KPI_RAW_DATA !== 'undefined' && Array.isArray(KPI_RAW_DATA) && KPI_RAW_DATA.length > 0,
+      run: () => typeof loadKpi === 'function' ? loadKpi(forceAll, true) : null
     },
     {
       name: 'KPI Online',
-      label: 'KPI Online (2/5)',
-      check: () => typeof KPI_ONLINE_STATE !== 'undefined' && KPI_ONLINE_STATE && KPI_ONLINE_STATE.data,
-      run: () => typeof loadKpiOnline === 'function' ? loadKpiOnline(false, true) : null
+      label: 'KPI Online (2/6)',
+      check: () => !forceAll && typeof KPI_ONLINE_STATE !== 'undefined' && KPI_ONLINE_STATE && KPI_ONLINE_STATE.data,
+      run: () => typeof loadKpiOnline === 'function' ? loadKpiOnline(forceAll, true) : null
     },
     {
       name: 'Báo Cáo SC',
-      label: 'Báo Cáo SC (3/5)',
-      check: () => typeof BAOCAOSC_STATE !== 'undefined' && BAOCAOSC_STATE && BAOCAOSC_STATE.activeRate,
-      run: () => typeof loadBaoCaoSc === 'function' ? loadBaoCaoSc(false, true) : null
+      label: 'Báo Cáo SC (3/6)',
+      check: () => !forceAll && typeof BAOCAOSC_STATE !== 'undefined' && BAOCAOSC_STATE && BAOCAOSC_STATE.activeRate,
+      run: () => typeof loadBaoCaoSc === 'function' ? loadBaoCaoSc(forceAll, true) : null
     },
     {
       name: 'DS Phần Cứng',
-      label: 'Phần Cứng (4/5)',
-      check: () => typeof PHANCUNG_STATE !== 'undefined' && PHANCUNG_STATE && PHANCUNG_STATE.data,
-      run: () => typeof loadPhanCung === 'function' ? loadPhanCung(false, true) : null
+      label: 'Phần Cứng (4/6)',
+      check: () => !forceAll && typeof PHANCUNG_STATE !== 'undefined' && PHANCUNG_STATE && PHANCUNG_STATE.data,
+      run: () => typeof loadPhanCung === 'function' ? loadPhanCung(forceAll, true) : null
     },
     {
       name: 'Data Tồn',
       label: 'Data Tồn (5/6)',
-      check: () => typeof DATATON_STATE !== 'undefined' && DATATON_STATE && DATATON_STATE.online,
-      run: () => typeof loadDataTon === 'function' ? loadDataTon(false, true) : null
+      check: () => !forceAll && typeof DATATON_STATE !== 'undefined' && DATATON_STATE && DATATON_STATE.online,
+      run: () => typeof loadDataTon === 'function' ? loadDataTon(forceAll, true) : null
     },
     {
       name: 'Impact Online',
       label: 'Impact Online (6/6)',
-      check: () => typeof IMPACT_ONLINE_STATE !== 'undefined' && IMPACT_ONLINE_STATE && (IMPACT_ONLINE_STATE.muc1 || IMPACT_ONLINE_STATE.muc2),
-      run: () => typeof loadImpactOnline === 'function' ? loadImpactOnline(false, true) : null
+      check: () => !forceAll && typeof IMPACT_ONLINE_STATE !== 'undefined' && IMPACT_ONLINE_STATE && (IMPACT_ONLINE_STATE.muc1 || IMPACT_ONLINE_STATE.muc2),
+      run: () => typeof loadImpactOnline === 'function' ? loadImpactOnline(forceAll, true) : null
     }
   ];
 
   for (let i = 0; i < tasks.length; i++) {
     const task = tasks[i];
 
-    // Nghỉ 700ms giữa các tác vụ để luồng UI luôn mượt mà và không quá tải API
-    await new Promise(r => setTimeout(r, 700));
+    // Nghỉ 600ms giữa các tác vụ để luồng UI luôn mượt mà và không quá tải API
+    await new Promise(r => setTimeout(r, 600));
 
     try {
       if (!task.check()) {
-        updatePreloadBadge(`Nạp ngầm: ${task.label}…`, 'loading');
-        console.log(`%c[PRELOAD] ⏳ (${i + 1}/${tasks.length}) Đang nạp ngầm: ${task.name}...`, 'color:#6366f1;font-size:11px');
+        updatePreloadBadge(`Đồng bộ: ${task.label}…`, 'loading');
+        console.log(`%c[PRELOAD] ⏳ (${i + 1}/${tasks.length}) Đang đồng bộ: ${task.name}...`, 'color:#6366f1;font-size:11px');
         await task.run();
         console.log(`%c[PRELOAD] ✅ (${i + 1}/${tasks.length}) Đã nạp xong: ${task.name}`, 'color:#10b981;font-size:11px');
       } else {
@@ -571,13 +564,78 @@ async function startBackgroundPrefetch() {
 
   PRELOAD_STATUS.running = false;
   PRELOAD_STATUS.done = true;
-  updatePreloadBadge('Sẵn sàng 100% dữ liệu (5/5 tab)', 'done');
+  updatePreloadBadge('Đã đồng bộ mới nhất tất cả các tab (6/6)', 'done');
   console.log('%c[PRELOAD] 🎉 Hoàn tất nạp trước toàn bộ các tab! Mọi tab hiện đã sẵn sàng xem tức thì.', 'color:#10b981;font-weight:bold;font-size:12px');
 
   // Sau 4 giây, rút gọn badge lại thành thông báo ngắn gọn
   setTimeout(() => {
     updatePreloadBadge('Sẵn sàng tất cả tab', 'done');
   }, 4000);
+}
+
+/**
+ * ==========================================================================
+ * NÚT "🔄 LÀM MỚI TOÀN BỘ SỐ LIỆU":
+ * - Xóa sạch 100% cache IndexedDB
+ * - Gọi trực tiếp Google Sheets kéo số mới cho tab đang hiển thị
+ * - Tự động nạp mới toàn bộ các tab còn lại (background force reload)
+ * ==========================================================================
+ */
+async function reloadAllDashboardData() {
+  const btn = $('btnReloadAll');
+  const icon = $('btnReloadAllIcon');
+  const txt = $('btnReloadAllTxt');
+
+  if (btn) btn.disabled = true;
+  if (icon) icon.classList.add('spin-active');
+  if (txt) txt.textContent = 'Đang làm mới…';
+
+  showToast('🔄 Đang xóa bộ nhớ đệm và kéo dữ liệu mới nhất từ Google Sheets...', true);
+
+  try {
+    // 1. Xóa toàn bộ Cache trong IndexedDB
+    if (typeof clearAllCache === 'function') {
+      await clearAllCache();
+    } else {
+      const db = await openDB();
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).clear();
+      await new Promise(r => { tx.oncomplete = r; tx.onerror = r; });
+    }
+    console.log('%c[CACHE CLEARED] 🧹 Đã dọn sạch toàn bộ bộ nhớ đệm IndexedDB!', 'color:#ec4899;font-weight:bold');
+
+    // 2. Tải lại trực tiếp tab đang xem
+    if (activeTab === 'baocaosc') {
+      await loadBaoCaoSc(true, false);
+    } else if (activeTab === 'kpionline') {
+      await loadKpiOnline(true, false);
+    } else if (activeTab === 'impactonline') {
+      await loadImpactOnline(true, false);
+    } else if (activeTab === 'kpi') {
+      await loadKpi(true, false);
+    } else if (activeTab === 'phancung') {
+      await loadPhanCung(true, false);
+    } else if (activeTab === 'dataton') {
+      await loadDataTon(true, false);
+    } else {
+      // overview hoặc pivot
+      await loadLive(false);
+    }
+
+    // 3. Tải ngầm toàn bộ các tab còn lại với forceAll = true
+    PRELOAD_STATUS.running = false;
+    PRELOAD_STATUS.done = false;
+    startBackgroundPrefetch(true);
+
+    showToast('✅ Đã làm mới thành công toàn bộ số liệu từ Google Sheets!', true);
+  } catch (err) {
+    console.error('Lỗi khi làm mới toàn bộ số liệu:', err);
+    showToast('⚠️ Có lỗi khi làm mới: ' + (err.message || 'Không kết nối được Sheet'), false);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (icon) icon.classList.remove('spin-active');
+    if (txt) txt.textContent = 'Làm mới toàn bộ số liệu';
+  }
 }
 
 /* ==========================================================================

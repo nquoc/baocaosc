@@ -172,6 +172,48 @@ button { cursor: pointer; }
 button:hover { border-color: var(--acc); }
 button:disabled { opacity: 0.35; cursor: default; }
 
+/* Nút Làm Mới Toàn Bộ Số Liệu (Sync All Google Sheets) */
+.btn-reload-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 5px 13px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.btn-reload-all:hover {
+  background: linear-gradient(135deg, #0369a1, #1d4ed8);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5);
+  transform: translateY(-1px);
+}
+.btn-reload-all:active {
+  transform: translateY(0);
+}
+.btn-reload-all:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+.reload-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+.reload-icon.spin-active {
+  animation: spin-reload 0.8s linear infinite;
+}
+@keyframes spin-reload {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .btn-theme {
   display: inline-flex;
   align-items: center;
