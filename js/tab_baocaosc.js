@@ -3194,53 +3194,86 @@ function formatAddonExtraCell(val) {
 
 /**
  * Chuẩn hóa dữ liệu thô 9.3: Tư Vấn Chuyển Addon Tháng 10 (AJ22:AO30)
+ * Dòng 22 là tiêu đề bảng, dòng 24 là header thực tế:
+ *   [Dịch vụ Addon, Mục tiêu, Team offline, Team online, Tổng, Tỷ lệ đạt]
  */
 function normalizeAddonT10Data(rawData) {
   if (!Array.isArray(rawData) || rawData.length < 2) return null;
 
-  const rawHeaders = Array.isArray(rawData[0]) ? rawData[0] : [];
-  const items = [];
-  let totalRow = null;
+  // 1. Tự động tìm dòng header thực tế
+  let headerRowIdx = 0;
+  for (let r = 0; r < rawData.length; r++) {
+    const row = rawData[r] || [];
+    const joined = row.map(c => String(c || '').toLowerCase()).join(' ');
+    if (joined.includes('mục tiêu') || joined.includes('offline') || joined.includes('online')) {
+      headerRowIdx = r;
+      break;
+    }
+  }
 
-  for (let r = 1; r < rawData.length; r++) {
+  const items = [];
+  let totTarget = 0;
+  let totOffline = 0;
+  let totOnline = 0;
+  let totTotal = 0;
+
+  for (let r = headerRowIdx + 1; r < rawData.length; r++) {
     const row = rawData[r];
     if (!row || !row.length) continue;
     const name = String(row[0] || '').trim();
     if (!name) continue;
 
-    const offline = parseBscDecimal(row[1]);
-    const online = parseBscDecimal(row[2]);
-    const total = parseBscDecimal(row[3]);
-    const col4 = row[4] != null ? row[4] : '';
-    const col5 = row[5] != null ? row[5] : '';
+    // Bỏ qua dòng trống hoặc dòng lặp lại tiêu đề
+    if (name.toLowerCase().includes('dịch vụ addon') || name.toLowerCase().includes('tư vấn chuyển')) continue;
+
+    const rawTarget = parseBscDecimal(row[1]);
+    const target = Math.round(rawTarget);
+    const offline = parseBscNumber(row[2]);
+    const online = parseBscNumber(row[3]);
+    const total = parseBscNumber(row[4]);
+    let pct = parseBscPct(row[5]);
+    if (!pct && target > 0) {
+      pct = (total / target) * 100;
+    }
 
     const item = {
       name,
+      target,
+      rawTarget,
       offline,
       online,
       total,
-      col4,
-      col5,
-      rawRow: row,
-      pct: 0
+      pct,
+      rawRow: row
     };
 
-    if (name.toLowerCase().includes('tổng') || name.toLowerCase() === 'total') {
-      totalRow = item;
+    if (name.toLowerCase().includes('tổng cộng') || name.toLowerCase() === 'tổng') {
+      // Nếu có sẵn dòng tổng từ sheet thì có thể dùng
     } else {
       items.push(item);
+      totTarget += rawTarget;
+      totOffline += offline;
+      totOnline += online;
+      totTotal += total;
     }
   }
 
-  const grandTotal = totalRow ? totalRow.total : items.reduce((s, it) => s + it.total, 0);
-  items.forEach(it => {
-    it.pct = grandTotal > 0 ? (it.total / grandTotal) * 100 : 0;
-  });
-  if (totalRow) {
-    totalRow.pct = 100;
-  }
+  const totalRow = {
+    name: 'TỔNG CỘNG',
+    target: Math.round(totTarget),
+    rawTarget: totTarget,
+    offline: totOffline,
+    online: totOnline,
+    total: totTotal,
+    pct: totTarget > 0 ? (totTotal / totTarget) * 100 : 0
+  };
 
-  return { headers: rawHeaders, items, totalRow, grandTotal };
+  return {
+    headers: ['Dịch Vụ Addon', 'Mục Tiêu', 'Team Offline', 'Team Online', 'Tổng Thực Đạt', 'Tỷ Lệ Đạt'],
+    items,
+    totalRow,
+    grandTotal: totTotal
+  };
 }
 
 /**
@@ -3291,7 +3324,8 @@ function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedA
     const tot = parsedAddon.totalRow;
     const off = tot.offline.toLocaleString('vi-VN');
     const on = tot.online.toLocaleString('vi-VN');
-    html += K('Tư Vấn Addon (T10)', `${tot.total.toLocaleString('vi-VN')}`, `Offline: ${off} · Online: ${on}`, 'color:#10b981');
+    const tar = tot.target.toLocaleString('vi-VN');
+    html += K('Tư Vấn Addon (T10)', `${tot.total.toLocaleString('vi-VN')}`, `Offline: ${off} · Online: ${on} · Mục tiêu: ${tar} (${tot.pct.toFixed(1)}%)`, 'color:#10b981');
   } else {
     html += K('Tư Vấn Addon (T10)', '–', 'Đang cập nhật', 'color:var(--mut)');
   }
@@ -3438,82 +3472,57 @@ function renderAddonT10Table(parsed) {
   if (k !== 'default') {
     items.sort((a, b) => {
       if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
-      const valA = a[k] != null ? a[k] : '';
-      const valB = b[k] != null ? b[k] : '';
-      const numA = Number(valA);
-      const numB = Number(valB);
-      if (!isNaN(numA) && !isNaN(numB)) {
-        return dir * (numA - numB);
-      }
-      return dir * String(valA).localeCompare(String(valB), 'vi');
+      return dir * ((a[k] || 0) - (b[k] || 0));
     });
   }
 
   const sortArrow = col => (BAOCAOSC_ADDON_T10_SORT.k === col ? (BAOCAOSC_ADDON_T10_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
 
-  const rawHeaders = parsed.headers || [];
-  const hName = rawHeaders[0] || 'Dịch Vụ Addon';
-  const hOffline = rawHeaders[1] || 'Team Offline';
-  const hOnline = rawHeaders[2] || 'Team Online';
-  const hTotal = rawHeaders[3] || 'Tổng Số Lượng';
-  const hasCol4 = rawHeaders.length > 4 && String(rawHeaders[4] || '').trim() !== '';
-  const hasCol5 = rawHeaders.length > 5 && String(rawHeaders[5] || '').trim() !== '';
-  const hCol4 = hasCol4 ? String(rawHeaders[4]).trim() : '';
-  const hCol5 = hasCol5 ? String(rawHeaders[5]).trim() : '';
-
   let thead = '<thead><tr>';
   thead += `<th style="width:55px;text-align:center">STT</th>`;
-  thead += `<th onclick="sortAddonT10('name')" style="cursor:pointer;text-align:center;min-width:180px">${esc(hName)}${sortArrow('name')}</th>`;
-  thead += `<th onclick="sortAddonT10('offline')" style="cursor:pointer;text-align:center;min-width:120px">${esc(hOffline)}${sortArrow('offline')}</th>`;
-  thead += `<th onclick="sortAddonT10('online')" style="cursor:pointer;text-align:center;min-width:120px">${esc(hOnline)}${sortArrow('online')}</th>`;
-  thead += `<th onclick="sortAddonT10('total')" style="cursor:pointer;text-align:center;min-width:120px">${esc(hTotal)}${sortArrow('total')}</th>`;
-
-  if (hasCol4) {
-    thead += `<th onclick="sortAddonT10('col4')" style="cursor:pointer;text-align:center;min-width:130px">${esc(hCol4)}${sortArrow('col4')}</th>`;
-  }
-  if (hasCol5) {
-    thead += `<th onclick="sortAddonT10('col5')" style="cursor:pointer;text-align:center;min-width:130px">${esc(hCol5)}${sortArrow('col5')}</th>`;
-  }
-  if (!hasCol4) {
-    thead += `<th onclick="sortAddonT10('pct')" style="cursor:pointer;text-align:center;min-width:160px">Tỷ Trọng Đóng Góp${sortArrow('pct')}</th>`;
-  }
+  thead += `<th onclick="sortAddonT10('name')" style="cursor:pointer;text-align:center;min-width:180px">Dịch Vụ Addon${sortArrow('name')}</th>`;
+  thead += `<th onclick="sortAddonT10('target')" style="cursor:pointer;text-align:center;min-width:110px">Mục Tiêu${sortArrow('target')}</th>`;
+  thead += `<th onclick="sortAddonT10('offline')" style="cursor:pointer;text-align:center;min-width:120px">Team Offline${sortArrow('offline')}</th>`;
+  thead += `<th onclick="sortAddonT10('online')" style="cursor:pointer;text-align:center;min-width:120px">Team Online${sortArrow('online')}</th>`;
+  thead += `<th onclick="sortAddonT10('total')" style="cursor:pointer;text-align:center;min-width:130px">Tổng Thực Đạt${sortArrow('total')}</th>`;
+  thead += `<th onclick="sortAddonT10('pct')" style="cursor:pointer;text-align:center;min-width:150px">Tỷ Lệ Đạt${sortArrow('pct')}</th>`;
   thead += '</tr></thead>';
 
   let tbody = '<tbody>';
   items.forEach((item, idx) => {
     let barColor = '#38bdf8';
-    if (item.pct >= 30) barColor = '#10b981';
-    else if (item.pct >= 15) barColor = '#38bdf8';
-    else if (item.pct >= 5) barColor = '#a855f7';
-    else barColor = '#f59e0b';
+    let badgeBg = 'rgba(56, 189, 248, 0.15)';
+    if (item.pct >= 100) {
+      barColor = '#10b981';
+      badgeBg = 'rgba(16, 185, 129, 0.16)';
+    } else if (item.pct >= 50) {
+      barColor = '#38bdf8';
+      badgeBg = 'rgba(56, 189, 248, 0.16)';
+    } else if (item.pct >= 25) {
+      barColor = '#f59e0b';
+      badgeBg = 'rgba(245, 158, 11, 0.16)';
+    } else {
+      barColor = '#f43f5e';
+      badgeBg = 'rgba(244, 63, 94, 0.16)';
+    }
 
     tbody += '<tr>';
     tbody += `<td style="text-align:center;color:var(--mut);font-weight:700">${idx + 1}</td>`;
     tbody += `<td style="text-align:left;font-weight:700;color:var(--tx-heading)">${esc(item.name)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:600;color:var(--tx-muted)">${item.target.toLocaleString('vi-VN')}</td>`;
     tbody += `<td style="text-align:center;font-weight:600">${item.offline.toLocaleString('vi-VN')}</td>`;
     tbody += `<td style="text-align:center;font-weight:600">${item.online.toLocaleString('vi-VN')}</td>`;
     tbody += `<td style="text-align:center;font-weight:800;color:#38bdf8">${item.total.toLocaleString('vi-VN')}</td>`;
-
-    if (hasCol4) {
-      const f4 = formatAddonExtraCell(item.col4);
-      const isPct4 = f4.endsWith('%');
-      tbody += `<td style="text-align:center;font-weight:${isPct4 ? '700;color:#10b981' : '600'}">${esc(f4)}</td>`;
-    }
-    if (hasCol5) {
-      const f5 = formatAddonExtraCell(item.col5);
-      const isPct5 = f5.endsWith('%');
-      tbody += `<td style="text-align:center;font-weight:${isPct5 ? '700;color:#a855f7' : '600'}">${esc(f5)}</td>`;
-    }
-    if (!hasCol4) {
-      tbody += `<td style="text-align:center">
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px">
-          <div style="flex:1;max-width:80px;height:6px;border-radius:3px;background:rgba(148,163,184,0.18);overflow:hidden">
-            <div style="width:${Math.min(100, item.pct)}%;height:100%;background:${barColor};border-radius:3px"></div>
-          </div>
-          <span style="font-weight:800;color:${barColor};min-width:55px;text-align:right">${item.pct.toFixed(2)}%</span>
+    tbody += `<td style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <div style="flex:1;max-width:65px;height:6px;border-radius:3px;background:rgba(148,163,184,0.18);overflow:hidden">
+          <div style="width:${Math.min(100, Math.max(0, item.pct))}%;height:100%;background:${barColor};border-radius:3px"></div>
         </div>
-      </td>`;
-    }
+        <span style="display:inline-block;padding:2px 7px;border-radius:5px;font-weight:800;font-size:12px;color:${barColor};background:${badgeBg};min-width:60px;text-align:center">
+          ${item.pct.toFixed(2)}%
+        </span>
+      </div>
+    </td>`;
     tbody += '</tr>';
   });
   tbody += '</tbody>';
@@ -3521,24 +3530,15 @@ function renderAddonT10Table(parsed) {
   let tfoot = '';
   if (parsed.totalRow) {
     const tot = parsed.totalRow;
+    let totColor = tot.pct >= 100 ? '#10b981' : (tot.pct >= 50 ? '#38bdf8' : '#f59e0b');
     tfoot += '<tfoot><tr>';
     tfoot += `<td style="text-align:center;color:var(--mut)">★</td>`;
     tfoot += `<td style="text-align:left;font-weight:800;color:var(--tx-heading)">TỔNG CỘNG</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800;color:var(--tx-muted)">${tot.target.toLocaleString('vi-VN')}</td>`;
     tfoot += `<td style="text-align:center;font-weight:800">${tot.offline.toLocaleString('vi-VN')}</td>`;
     tfoot += `<td style="text-align:center;font-weight:800">${tot.online.toLocaleString('vi-VN')}</td>`;
     tfoot += `<td style="text-align:center;font-weight:800;color:#38bdf8">${tot.total.toLocaleString('vi-VN')}</td>`;
-
-    if (hasCol4) {
-      const f4 = formatAddonExtraCell(tot.col4);
-      tfoot += `<td style="text-align:center;font-weight:800;color:#10b981">${esc(f4 || '100%')}</td>`;
-    }
-    if (hasCol5) {
-      const f5 = formatAddonExtraCell(tot.col5);
-      tfoot += `<td style="text-align:center;font-weight:800;color:#a855f7">${esc(f5 || '-')}</td>`;
-    }
-    if (!hasCol4) {
-      tfoot += `<td style="text-align:center;font-weight:800;color:#10b981">100.00%</td>`;
-    }
+    tfoot += `<td style="text-align:center;font-weight:800;color:${totColor}">${tot.pct.toFixed(2)}%</td>`;
     tfoot += '</tr></tfoot>';
   }
 
@@ -3732,47 +3732,31 @@ function exportAddonT10Csv() {
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
-  const rawHeaders = parsed.headers || [];
-  const hName = rawHeaders[0] || 'Dịch Vụ Addon';
-  const hOffline = rawHeaders[1] || 'Team Offline';
-  const hOnline = rawHeaders[2] || 'Team Online';
-  const hTotal = rawHeaders[3] || 'Tổng Số Lượng';
-  const hasCol4 = rawHeaders.length > 4 && String(rawHeaders[4] || '').trim() !== '';
-  const hasCol5 = rawHeaders.length > 5 && String(rawHeaders[5] || '').trim() !== '';
-
-  const headerRow = ['STT', hName, hOffline, hOnline, hTotal];
-  if (hasCol4) headerRow.push(String(rawHeaders[4]).trim());
-  if (hasCol5) headerRow.push(String(rawHeaders[5]).trim());
-  if (!hasCol4) headerRow.push('Tỷ Trọng (%)');
-  lines.push(headerRow);
+  lines.push(['STT', 'Dịch Vụ Addon', 'Mục Tiêu', 'Team Offline', 'Team Online', 'Tổng Thực Đạt', 'Tỷ Lệ Đạt (%)']);
 
   parsed.items.forEach((it, idx) => {
-    const row = [
+    lines.push([
       idx + 1,
       it.name,
+      it.target,
       it.offline,
       it.online,
-      it.total
-    ];
-    if (hasCol4) row.push(formatAddonExtraCell(it.col4));
-    if (hasCol5) row.push(formatAddonExtraCell(it.col5));
-    if (!hasCol4) row.push(it.pct.toFixed(2) + '%');
-    lines.push(row);
+      it.total,
+      it.pct.toFixed(2) + '%'
+    ]);
   });
 
   if (parsed.totalRow) {
     const tot = parsed.totalRow;
-    const totalLine = [
+    lines.push([
       '★',
       'TỔNG CỘNG',
+      tot.target,
       tot.offline,
       tot.online,
-      tot.total
-    ];
-    if (hasCol4) totalLine.push(formatAddonExtraCell(tot.col4) || '100%');
-    if (hasCol5) totalLine.push(formatAddonExtraCell(tot.col5) || '-');
-    if (!hasCol4) totalLine.push('100.00%');
-    lines.push(totalLine);
+      tot.total,
+      tot.pct.toFixed(2) + '%'
+    ]);
   }
 
   const csvContent = '\ufeff' + lines.map(row => {
