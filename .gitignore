@@ -3,6 +3,9 @@ scratch/
 __pycache__/
 *.pyc
 
+# Generated report exports
+Bao_cao_*.html
+
 # OS generated files
 desktop.ini
 Thumbs.db

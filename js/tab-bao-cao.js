@@ -616,10 +616,7 @@ function wrSaveManual() {
     const manual = {
         addressTotal: document.getElementById('wrAddressTotal')?.value || '',
         addressDone: document.getElementById('wrAddressDone')?.value || '',
-        appFnb: document.getElementById('wrAppFnb')?.value || '',
-        issues: document.getElementById('wrIssues')?.value || '',
-        plans: document.getElementById('wrPlans')?.value || '',
-        extra: document.getElementById('wrExtra')?.value || '',
+        proposals: document.getElementById('wrProposals')?.value || '',
         customSections,
         docTitle: document.getElementById('wrDocTitle')?.value || '',
         recipient: document.getElementById('wrRecipient')?.value || ''
@@ -1508,36 +1505,35 @@ function wrRenderActiveRateTable(active) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 2. Care Rate (Chăm khách New Tháng 09)
+// 2. Care Rate (Chăm khách New Tháng 10 / Sheet baocaotuan F2:I6)
 function wrRenderCareRateTable(care) {
-    const headers = ['Ngành hàng', 'Khách ký mới', 'Inactive New', 'Tỷ lệ Inactive', 'SC đã chăm', 'Tỷ lệ SC chăm'];
+    const headers = ['Ngành hàng', 'Khách ký mới', 'Tỷ trọng ký mới', 'Tỷ lệ Inactive', 'Tỷ lệ SC chăm'];
     let rows = [];
 
     if (care && Array.isArray(care.items) && care.items.length) {
         rows = care.items.map(it => [
             wrEscapeHtml(it.name),
-            wrFmtVal(it.kyMoi),
-            wrFmtVal(it.inactive),
-            `<b>${it.inactiveRate != null ? it.inactiveRate.toFixed(2) + '%' : '-'}</b>`,
-            wrFmtVal(it.scCham),
-            `<b>${it.scChamRate != null ? it.scChamRate.toFixed(2) + '%' : '-'}</b>`
+            wrInt(it.kyMoi),
+            `${it.share != null ? it.share.toFixed(2) + '%' : '-'}`,
+            `<span class="${it.inactive > 35 ? 'wr-kpi-bad' : 'wr-kpi-medium'}">${it.inactive != null ? it.inactive.toFixed(2) + '%' : '-'}</span>`,
+            `<b class="wr-kpi-good">${it.scCham != null ? it.scCham.toFixed(2) + '%' : '-'}</b>`
         ]);
-        if (care.total) {
+        const tot = care.totalRow || care.total;
+        if (tot) {
             rows.push([
-                `<b>${wrEscapeHtml(care.total.name || 'TỔNG CỘNG')}</b>`,
-                `<b>${wrFmtVal(care.total.kyMoi)}</b>`,
-                `<b>${wrFmtVal(care.total.inactive)}</b>`,
-                `<b>${care.total.inactiveRate != null ? care.total.inactiveRate.toFixed(2) + '%' : '-'}</b>`,
-                `<b>${wrFmtVal(care.total.scCham)}</b>`,
-                `<b>${care.total.scChamRate != null ? care.total.scChamRate.toFixed(2) + '%' : '-'}</b>`
+                `<b>${wrEscapeHtml(tot.name || 'TỔNG CỘNG')}</b>`,
+                `<b>${wrInt(tot.kyMoi || care.totKyMoi)}</b>`,
+                `<b>100.00%</b>`,
+                `<b>${(tot.inactive != null ? tot.inactive : care.avgInactive).toFixed(2)}%</b>`,
+                `<b>${(tot.scCham != null ? tot.scCham : care.avgScCham).toFixed(2)}%</b>`
             ]);
         }
     } else {
         rows = [
-            ['Retail', '3.220', '1.481', '45.99%', '934', '29.01%'],
-            ['F&B', '1.787', '666', '37.27%', '776', '43.42%'],
-            ['Booking', '322', '125', '38.82%', '149', '46.27%'],
-            ['<b>TỔNG CỘNG</b>', '<b>5.239</b>', '<b>2.272</b>', '<b>42.63%</b>', '<b>1.859</b>', '<b>34.88%</b>']
+            ['Retail', '2.900', '64.46%', '43.69%', '33.66%'],
+            ['F&B', '1.334', '29.65%', '26.24%', '51.95%'],
+            ['Booking', '265', '5.89%', '27.74%', '53.96%'],
+            ['<b>TỔNG CỘNG</b>', '<b>4.499</b>', '<b>100.00%</b>', '<b>38.16%</b>', '<b>40.28%</b>']
         ];
     }
 
@@ -1546,40 +1542,43 @@ function wrRenderCareRateTable(care) {
 
 // 3. Monthly Inactive 2026 (Sheet baocaotuan AV2:BB15)
 function wrRenderMonthlyInactiveTable(inactive) {
-    const headers = ['Tháng / Kỳ', 'Retail', 'F&B', 'Booking', 'Toàn quốc', 'Tỷ lệ SC chăm'];
+    const headers = ['Tháng Ký', 'Tổng Gian Hàng', 'Số GH Inactive', 'Tỷ Lệ Inactive', 'SL SC Chăm Sóc', 'Tỷ Lệ SC Chăm', 'Tỷ Lệ SC Onboard'];
     let rows = [];
 
     if (inactive && Array.isArray(inactive.items) && inactive.items.length) {
         rows = inactive.items.map(it => [
             wrEscapeHtml(it.label || it.name),
-            it.retail != null ? it.retail.toFixed(2) + '%' : '-',
-            it.fnb != null ? it.fnb.toFixed(2) + '%' : '-',
-            it.booking != null ? it.booking.toFixed(2) + '%' : '-',
-            `<b>${it.total != null ? it.total.toFixed(2) + '%' : '-'}</b>`,
-            it.scChamRate != null ? it.scChamRate.toFixed(2) + '%' : '-'
+            wrInt(it.noRetailer),
+            wrInt(it.noInactive),
+            `<span class="${it.pctInactive >= 40 ? 'wr-kpi-bad' : (it.pctInactive <= 30 ? 'wr-kpi-good' : 'wr-kpi-medium')}">${it.pctInactive != null ? it.pctInactive.toFixed(2) + '%' : '-'}</span>`,
+            wrInt(it.numSccs),
+            `<span class="${it.pctSccs >= 85 ? 'wr-kpi-good' : (it.pctSccs < 70 ? 'wr-kpi-bad' : 'wr-kpi-medium')}">${it.pctSccs != null ? it.pctSccs.toFixed(2) + '%' : '-'}</span>`,
+            `${it.pctSccsOnboarding != null ? it.pctSccsOnboarding.toFixed(2) + '%' : '-'}`
         ]);
-        if (inactive.totalItem) {
+        const tot = inactive.totalItem || inactive.total;
+        if (tot) {
             rows.push([
-                `<b>${wrEscapeHtml(inactive.totalItem.label || 'TRUNG BÌNH')}</b>`,
-                `<b>${inactive.totalItem.retail != null ? inactive.totalItem.retail.toFixed(2) + '%' : '-'}</b>`,
-                `<b>${inactive.totalItem.fnb != null ? inactive.totalItem.fnb.toFixed(2) + '%' : '-'}</b>`,
-                `<b>${inactive.totalItem.booking != null ? inactive.totalItem.booking.toFixed(2) + '%' : '-'}</b>`,
-                `<b>${inactive.totalItem.total != null ? inactive.totalItem.total.toFixed(2) + '%' : '-'}</b>`,
-                `<b>${inactive.totalItem.scChamRate != null ? inactive.totalItem.scChamRate.toFixed(2) + '%' : '-'}</b>`
+                `<b>${wrEscapeHtml(tot.label || 'TỔNG CỘNG')}</b>`,
+                `<b>${wrInt(tot.noRetailer)}</b>`,
+                `<b>${wrInt(tot.noInactive)}</b>`,
+                `<b>${tot.pctInactive != null ? tot.pctInactive.toFixed(2) + '%' : '-'}</b>`,
+                `<b>${wrInt(tot.numSccs)}</b>`,
+                `<b>${tot.pctSccs != null ? tot.pctSccs.toFixed(2) + '%' : '-'}</b>`,
+                `<b>${tot.pctSccsOnboarding != null ? tot.pctSccsOnboarding.toFixed(2) + '%' : '-'}</b>`
             ]);
         }
     } else {
         rows = [
-            ['Tháng 1', '34.20%', '28.50%', '31.00%', '32.10%', '78.40%'],
-            ['Tháng 2', '36.10%', '29.80%', '33.20%', '34.00%', '76.20%'],
-            ['Tháng 3', '35.00%', '28.10%', '32.50%', '32.90%', '79.50%'],
-            ['Tháng 4', '37.40%', '30.20%', '34.10%', '35.10%', '77.00%'],
-            ['Tháng 5', '38.20%', '31.50%', '35.00%', '36.00%', '75.80%'],
-            ['Tháng 6', '39.00%', '32.00%', '35.80%', '36.80%', '78.10%'],
-            ['Tháng 7', '38.50%', '31.80%', '35.20%', '36.30%', '80.20%'],
-            ['Tháng 8', '39.80%', '33.10%', '36.00%', '37.40%', '81.00%'],
-            ['Tháng 9', '45.99%', '37.27%', '38.82%', '42.63%', '81.82%'],
-            ['<b>TRUNG BÌNH 9 THÁNG</b>', '<b>38.24%</b>', '<b>31.36%</b>', '<b>34.62%</b>', '<b>35.69%</b>', '<b>78.67%</b>']
+            ['Tháng 9', '4.499', '1.717', '38.16%', '1.812', '40.28%', '40.28%'],
+            ['Tháng 8', '5.589', '1.321', '23.64%', '4.994', '89.35%', '89.35%'],
+            ['Tháng 7', '5.863', '1.685', '28.74%', '5.360', '91.42%', '91.42%'],
+            ['Tháng 6', '6.525', '1.984', '30.41%', '5.978', '91.62%', '91.59%'],
+            ['Tháng 5', '6.229', '2.023', '32.48%', '5.767', '92.58%', '92.45%'],
+            ['Tháng 4', '6.588', '2.199', '33.38%', '6.021', '91.39%', '91.01%'],
+            ['Tháng 3', '8.873', '3.256', '36.70%', '8.018', '90.36%', '89.90%'],
+            ['Tháng 2', '10.215', '4.235', '41.46%', '9.390', '91.92%', '91.51%'],
+            ['Tháng 1', '4.995', '2.068', '41.40%', '4.649', '93.07%', '92.25%'],
+            ['<b>TỔNG CỘNG</b>', '<b>71.668</b>', '<b>25.617</b>', '<b>35.74%</b>', '<b>63.121</b>', '<b>88.07%</b>', '<b>87.66%</b>']
         ];
     }
 
@@ -1829,23 +1828,36 @@ function wrRenderFnbIssueTable(fnbIssue) {
 
 // 11. KPI Online T9 Table (Sheet baocaotuan AJ2:AP5)
 function wrRenderKpiOnlineT9Table(kpiOn) {
-    const headers = ['Chỉ số KPI Online', 'Mục tiêu', 'Đã thực hiện', 'Tỷ lệ hoàn thành', 'Đánh giá'];
+    const headers = ['Khu vực / Coacher', 'Số nhân sự', 'KPI Impact', 'KPI Điểm Tổng', 'KPI Addon', 'KPI Team', 'Talktime TB'];
     let rows = [];
 
     if (kpiOn && Array.isArray(kpiOn.items) && kpiOn.items.length) {
         rows = kpiOn.items.map(it => [
             wrEscapeHtml(it.name),
-            wrFmtVal(it.target),
-            `<b>${wrFmtVal(it.actual)}</b>`,
-            `<b>${it.pct != null ? it.pct.toFixed(1) + '%' : '-'}</b>`,
-            it.pct >= 100 ? '<span class="wr-kpi-good">Đạt</span>' : '<span class="wr-kpi-medium">Chưa đạt</span>'
+            wrInt(it.headcount),
+            `<span class="${it.kpiImpact >= 90 ? 'wr-kpi-good' : (it.kpiImpact >= 80 ? 'wr-kpi-medium' : 'wr-kpi-bad')}">${it.kpiImpact != null ? it.kpiImpact.toFixed(2) + '%' : '-'}</span>`,
+            `<span class="${it.kpiTotalScore >= 90 ? 'wr-kpi-good' : 'wr-kpi-medium'}">${it.kpiTotalScore != null ? it.kpiTotalScore.toFixed(2) + '%' : '-'}</span>`,
+            `<span class="${it.kpiAddon >= 100 ? 'wr-kpi-good' : 'wr-kpi-medium'}">${it.kpiAddon != null ? it.kpiAddon.toFixed(2) + '%' : '-'}</span>`,
+            `<b><span class="${it.kpiTeam >= 95 ? 'wr-kpi-good' : 'wr-kpi-medium'}">${it.kpiTeam != null ? it.kpiTeam.toFixed(2) + '%' : '-'}</span></b>`,
+            wrEscapeHtml(it.talktimeStr || '-')
         ]);
+        const tot = kpiOn.totalRow;
+        if (tot) {
+            rows.push([
+                `<b>${wrEscapeHtml(tot.name || 'TOÀN QUỐC')}</b>`,
+                `<b>${wrInt(tot.headcount)}</b>`,
+                `<b>${tot.kpiImpact != null ? tot.kpiImpact.toFixed(2) + '%' : '-'}</b>`,
+                `<b>${tot.kpiTotalScore != null ? tot.kpiTotalScore.toFixed(2) + '%' : '-'}</b>`,
+                `<b>${tot.kpiAddon != null ? tot.kpiAddon.toFixed(2) + '%' : '-'}</b>`,
+                `<b>${tot.kpiTeam != null ? tot.kpiTeam.toFixed(2) + '%' : '-'}</b>`,
+                `<b>${wrEscapeHtml(tot.talktimeStr || '-')}</b>`
+            ]);
+        }
     } else {
         rows = [
-            ['Khách hàng phân công chăm sóc', '1.800 KH', '<b>1.859 KH</b>', '<b class="wr-kpi-good">103.3%</b>', '✅ Vượt mục tiêu'],
-            ['Tỷ lệ Active khách hàng', '65.0%', '<b>66.8%</b>', '<b class="wr-kpi-good">102.8%</b>', '✅ Đạt chỉ tiêu'],
-            ['Tỷ lệ Impact Online', '50.0%', '<b>53.16%</b>', '<b class="wr-kpi-good">106.3%</b>', '✅ Tăng 8.37% so với T8'],
-            ['Chuyển đổi Add-on & Gia hạn', '90 hợp đồng', '<b>94 hợp đồng</b>', '<b class="wr-kpi-good">104.4%</b>', '✅ Vượt mục tiêu']
+            ['Miền Bắc', '6', '82.33%', '94.73%', '104.17%', '97.56%', '01:02:14'],
+            ['Miền Nam', '7', '96.82%', '94.90%', '108.64%', '99.02%', '01:02:50'],
+            ['<b>TOÀN QUỐC</b>', '<b>13</b>', '<b>89.58%</b>', '<b>94.82%</b>', '<b>106.41%</b>', '<b>98.29%</b>', '<b>01:02:32</b>']
         ];
     }
 
@@ -1914,13 +1926,12 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
             <div style="margin-top: 14px;">
                 ${wrTable(['Chỉ số điều hành', 'Kết quả đạt', 'Chỉ số điều hành', 'Kết quả đạt'], [
                     ['Active Rate F&B', '<b class="wr-kpi-good">75.10%</b>', 'Active Rate Retail', '<b class="wr-kpi-medium">67.30%</b>'],
-                    ['Active Rate Booking', '<b class="wr-kpi-medium">65.30%</b>', 'Impact Team Offline', '<b class="wr-kpi-good">66.71% - 69.22%</b>'],
-                    ['Tỷ lệ Inactive New', '<b>42.63%</b>', 'Tỷ lệ SC chăm khách New', '<b class="wr-kpi-good">81.82%</b>'],
+                    ['Active Rate Booking', '<b class="wr-kpi-medium">65.30%</b>', 'Active Rate Trung bình', '<b class="wr-kpi-good">69.23%</b>'],
+                    ['Tỷ lệ Inactive New', '<b>38.16%</b>', 'Tỷ lệ SC chăm khách New', '<b class="wr-kpi-good">40.28%</b>'],
                     ['Quân số hiện có / Định biên', '<b>47 / 50 (Thiếu 3)</b>', 'Nhân sự thử việc', '<b>6 nhân sự</b>'],
-                    ['KH Offline đi được', '<b>4.914 Act (91.68%)</b>', 'Active ngày check-in', '<b class="wr-kpi-good">86.41%</b>'],
+                    ['KH Offline đi được', '<b>5.152 KH (85%)</b>', 'Impact Team Offline', '<b class="wr-kpi-good">66.71% - 69.22%</b>'],
                     ['Impact Team Online', '<b class="wr-kpi-good">53.16% (+8.37%)</b>', 'Doanh thu phần cứng', '<b style="color:#047857">113.748.000 đ (100 đơn)</b>'],
-                    ['Gian hàng F&B lớn chăm sóc', '<b>608 gian hàng</b>', 'Tỷ lệ F&B phát sinh lỗi', '<b>29.93% (182 lỗi)</b>'],
-                    ['Năng suất ATC TB/ngày', `<b>${wrNumber(p.avgATC)} ATC/ngày</b>`, 'Thời gian hỗ trợ TB', `<b>${wrNumber(p.avgHours)} giờ/ngày</b>`]
+                    ['Gian hàng F&B lớn chăm sóc', '<b>608 gian hàng</b>', 'Tỷ lệ F&B phát sinh lỗi', '<b>29.93% (182 lỗi)</b>']
                 ], 'wr-summary-table')}
             </div>
         </section>
@@ -1939,7 +1950,7 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
             ${wrRenderActiveRateTable(bsc.activeRate)}
 
             <h3>2. Tỷ lệ Inactive New tháng 09 (Khách ký mới &amp; SC đã chăm)</h3>
-            <p>Trong tháng số khách hàng ký mới là <b>5.239</b> khách, phát sinh Inactive là <b>2.272</b> khách (tỷ lệ <b>42.63%</b>) → Đội ngũ SC đã chủ động liên hệ và chăm sóc được <b>1.859</b> khách (đạt <b>34.88%</b> trên tổng khách ký mới và <b>81.82%</b> trên tổng tệp inactive phát sinh):</p>
+            <p>Trong kỳ số khách hàng ký mới là <b>${bsc.careRate?.totKyMoi ? wrInt(bsc.careRate.totKyMoi) : '4.499'}</b> khách (Retail: 2.900, F&B: 1.334, Booking: 265). Tỷ lệ Inactive New bình quân toàn quốc là <b>${bsc.careRate?.avgInactive ? bsc.careRate.avgInactive.toFixed(2) + '%' : '38.16%'}</b>; Tỷ lệ khách mới đã được đội ngũ SC tiếp cận chăm sóc đạt <b>${bsc.careRate?.avgScCham ? bsc.careRate.avgScCham.toFixed(2) + '%' : '40.28%'}</b>:</p>
             ${wrRenderCareRateTable(bsc.careRate)}
 
             <h3>3. Tỷ lệ Inactive New theo tháng năm 2026 (Sheet baocaotuan AV2:BB15)</h3>
@@ -2006,19 +2017,6 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
             <h4>2.2 Bảng theo dõi KPI Team Online Tháng 09 (Sheet baocaotuan AJ2:AP5)</h4>
             ${wrRenderKpiOnlineT9Table(bsc.kpiOnlineT9)}
 
-            <h3>3. Năng suất làm việc và Đánh giá KPI Nhân sự SC</h3>
-            ${wrBullets([
-                `ATC trung bình toàn team đạt <b>${wrNumber(p.avgATC)} ATC/ngày</b>${p.avgATC >= 8 ? ', duy trì trên ngưỡng mục tiêu tối thiểu 8 ATC/ngày' : ', đang dưới ngưỡng 8 ATC/ngày'}.`,
-                p.highATC.length ? `Nhóm nhân sự có sản lượng dẫn đầu: ${p.highATC.map(r => `${wrEscapeHtml(r.name)} (<b>${wrNumber(r.avgATC)}</b> ATC/ngày)`).join(', ')}.` : '',
-                `Thời gian hỗ trợ khách hàng TB đạt <b>${wrNumber(p.avgHours)} giờ/ngày</b>; Quãng đường di chuyển TB đạt <b>${wrNumber(p.avgKM)} km/ngày</b>.`,
-                `Tổng data treo và tồn đọng trên toàn hệ thống hiện tại là <b>${wrInt(b.total)}</b> case; Tỷ lệ ATC tự tạo toàn team ở mức <b>${wrPct(sc.pct, 1)}</b>.`
-            ])}
-            ${wrRenderKpiDashboardTable(k)}
-            <div style="margin-top: 14px;">${wrRenderPerformanceDashboardTable(p)}</div>
-            <div style="margin-top: 14px;">${wrRenderBacklogDashboardTables(b)}</div>
-            <div style="margin-top: 14px;">${wrRenderIncomingDashboardTable(inc)}</div>
-            <div style="margin-top: 14px;">${wrRenderSelfCreatedDashboardTable(sc)}</div>
-            <div style="margin-top: 14px;">${wrRenderDurationDashboardTable(sd)}</div>
         </section>
 
         <!-- MỤC V: CHĂM SÓC KHÁCH HÀNG F&B LỚN VÀ XỬ LÝ LỖI TRỌNG ĐIỂM -->
@@ -2032,25 +2030,20 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
             ${wrRenderFnbIssueTable(bsc.fnbIssue)}
         </section>
 
-        <!-- MỤC VI: ĐỀ XUẤT ĐIỀU HÀNH & KẾ HOẠCH HÀNH ĐỘNG TUẦN TIẾP THEO -->
+        <!-- MỤC VI: ĐỀ XUẤT ĐIỀU HÀNH & KẾ HOẠCH HÀNH ĐỘNG -->
         <section>
             <h2>VI. ĐỀ XUẤT ĐIỀU HÀNH &amp; KẾ HOẠCH HÀNH ĐỘNG</h2>
-            <p>Để đảm bảo hoàn thành vượt mức các mục tiêu kinh doanh và kiểm soát chất lượng khách hàng trong các tuần tiếp theo, khối CS đề xuất các trọng tâm điều hành sau:</p>
+            <p>Để đảm bảo hoàn thành vượt mức các mục tiêu kinh doanh và kiểm soát chất lượng khách hàng trong các kỳ tiếp theo, khối CS đề xuất các trọng tâm điều hành sau:</p>
             ${wrBullets([
-                `<b>1. Tuyển dụng &amp; Ổn định quân số:</b> Đẩy nhanh tiến độ tuyển bù 03 định biên còn thiếu cho khu vực miền Trung và miền Nam; phân công kèm cặp 1-1 cho 06 nhân sự thử việc mới để sớm độc lập phụ trách địa bàn.`,
+                `<b>1. Tuyển dụng &amp; Ổn định quân số:</b> Đẩy nhanh tiến độ tuyển bù định biên còn thiếu cho khu vực miền Trung và miền Nam; phân công kèm cặp 1-1 cho các nhân sự thử việc mới để sớm độc lập phụ trách địa bàn.`,
                 `<b>2. Kiểm soát Active Rate &amp; Inactive New:</b> Triển khai quy trình tiếp cận tệp Inactive New ngay trong tuần đầu tiên phát sinh tín hiệu; ưu tiên nguồn lực chăm sóc tệp 3-4 tín hiệu Inactive để kéo khách quay trở lại sử dụng.`,
-                `<b>3. Nâng cao chất lượng hỗ trợ &amp; Năng suất:</b> Kiểm soát chặt chẽ tỷ lệ hỗ trợ dưới 5 phút, rà soát các case tự tạo, nâng cao tỷ lệ impact thực chất sau mỗi lượt ghé thăm.`,
+                `<b>3. Nâng cao chất lượng hỗ trợ &amp; Tỷ lệ Impact:</b> Nâng cao chất lượng mỗi lượt ghé thăm và tư vấn từ xa, tập trung chuyển hóa khách hàng có chuyển biến tích cực (Impact thực chất) sau chăm sóc.`,
                 `<b>4. Thúc đẩy Doanh thu Phần cứng &amp; Add-on:</b> Tăng cường tư vấn combo thiết bị máy in LAN/BT, giải pháp thanh toán QR Payment và tích hợp giao vận Kship cho các cửa hàng mới ký.`
             ])}
-            ${manual.plans ? `
+            ${manual.proposals ? `
             <div style="margin-top: 12px;">
-                <h4 style="color:#1d4ed8; font-weight:700;">Kế hoạch cụ thể tuần tiếp theo:</h4>
-                <ol>${wrLinesToList(manual.plans).map(x => `<li>${wrEscapeHtml(x.replace(/^[-•\d.)\s]+/, ''))}</li>`).join('')}</ol>
-            </div>` : ''}
-            ${manual.issues ? `
-            <div style="margin-top: 12px;">
-                <h4 style="color:#b91c1c; font-weight:700;">Vấn đề nổi bật cần lưu ý:</h4>
-                ${wrBullets(wrLinesToList(manual.issues).map(wrEscapeHtml))}
+                <h4 style="color:#1d4ed8; font-weight:700; margin:10px 0 6px;">Đề xuất điều hành &amp; Kế hoạch hành động bổ sung:</h4>
+                ${wrBullets(wrLinesToList(manual.proposals).map(x => `<b>${wrEscapeHtml(x)}</b>`))}
             </div>` : ''}
         </section>
 
@@ -2126,19 +2119,21 @@ async function generateWeeklyReport() {
         const toDate = new Date(toVal + 'T00:00:00');
         if (fromDate > toDate) throw new Error('Từ ngày không được lớn hơn Đến ngày.');
 
-        // Nạp song song dữ liệu KPI/Hiệu suất và dữ liệu Báo cáo SC từ Google Sheets
-        const [data] = await Promise.all([
-            wrEnsureAllData(),
-            (async () => {
-                if (typeof loadBaoCaoSc === 'function') {
-                    try {
-                        await loadBaoCaoSc(false, true);
-                    } catch (eBsc) {
-                        console.warn('[Báo cáo tuần] Cảnh báo khi tải Sheet baocaosc:', eBsc);
-                    }
+        // Đảm bảo dữ liệu Báo cáo SC từ Google Sheets đã được nạp đầy đủ
+        if (typeof loadBaoCaoSc === 'function') {
+            try {
+                if (!BAOCAOSC_STATE || !BAOCAOSC_STATE.activeRate || !BAOCAOSC_STATE.careRate || !BAOCAOSC_STATE.monthlyInactive) {
+                    await loadBaoCaoSc(false, true);
                 }
-            })()
-        ]);
+            } catch (eBsc) {
+                console.warn('[Báo cáo tuần] Cảnh báo khi tải Sheet baocaosc:', eBsc);
+            }
+        }
+        if (typeof loadMuctieu === 'function' && typeof MUCTIEU_STATE !== 'undefined' && (!MUCTIEU_STATE.offline || !MUCTIEU_STATE.online)) {
+            try { await loadMuctieu(false); } catch (eMt) {}
+        }
+
+        const data = await wrEnsureAllData();
 
         const kpi = wrBuildKpiMetrics(data.kpi);
         const performance = wrBuildPerformanceMetrics(data.hieusuat, data.ngaycong, fromDate, toDate);
@@ -2829,18 +2824,12 @@ function wrDownloadBlob(blob, filename) {
 }
 
 function resetWeeklyReportManual() {
-    if (!confirm('Xóa toàn bộ ghi chú và các mục tùy chỉnh của phần báo cáo?')) return;
+    if (!confirm('Xóa toàn bộ nội dung thủ công và các mục tùy chỉnh của phần báo cáo?')) return;
     localStorage.removeItem(WEEKLY_REPORT_MANUAL_KEY);
-    const ids = ['wrAddressTotal', 'wrAddressDone', 'wrAppFnb', 'wrIssues', 'wrExtra'];
+    const ids = ['wrAddressTotal', 'wrAddressDone', 'wrProposals'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const plan = document.getElementById('wrPlans');
-    if (plan) plan.value = wrDefaultPlans();
     const container = document.getElementById('wrCustomSectionsContainer');
     if (container) container.innerHTML = '';
-}
-
-function wrDefaultPlans() {
-    return `Duy trì KPI team đạt tối thiểu 100% cuối tháng và kiểm soát tiến độ theo từng tuần.\nDuy trì năng suất tối thiểu 8 ATC/ngày; ghi nhận khó khăn của nhân sự có sản lượng hoặc thời gian hỗ trợ thấp.\nCải thiện Impact của các nhân sự thấp thông qua kiểm tra case không phát sinh Impact và coaching trực tiếp.\nƯu tiên clear data đang nằm trên nhân sự và các khu vực còn tồn cao.\nTiếp tục kiểm soát tỷ lệ ATC tự tạo, đặc biệt các trường hợp trên 20%.\nƯu tiên phản hồi các case ảnh hưởng trực tiếp đến vận hành gian hàng lớn.`;
 }
 
 function initWeeklyReportTab() {
@@ -2859,21 +2848,10 @@ function initWeeklyReportTab() {
     const setVal = (id, val) => { const el = document.getElementById(id); if (el && !el.value) el.value = val || ''; };
     setVal('wrAddressTotal', manual.addressTotal);
     setVal('wrAddressDone', manual.addressDone);
-    setVal('wrAppFnb', manual.appFnb);
-    setVal('wrIssues', manual.issues);
-    setVal('wrExtra', manual.extra);
-    setVal('wrPlans', manual.plans || wrDefaultPlans());
+    setVal('wrProposals', manual.proposals || '');
     setVal('wrDocTitle', manual.docTitle || 'BÁO CÁO CHẤT LƯỢNG CUSTOMER SUCCESS (SC)');
     setVal('wrRecipient', manual.recipient || 'anh Nguyễn Dũng Hải - SDM DVKH (Dịch Vụ Khách Hàng)');
-    ['wrDocTitle', 'wrRecipient'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el && !el.dataset.wrBound) {
-            el.addEventListener('change', wrSaveManual);
-            el.dataset.wrBound = '1';
-        }
-    });
-
-    ['wrAddressTotal','wrAddressDone','wrAppFnb','wrIssues','wrExtra','wrPlans'].forEach(id => {
+    ['wrDocTitle', 'wrRecipient', 'wrAddressTotal', 'wrAddressDone', 'wrProposals'].forEach(id => {
         const el = document.getElementById(id);
         if (el && !el.dataset.wrBound) {
             el.addEventListener('change', wrSaveManual);

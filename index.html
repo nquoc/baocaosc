@@ -6,7 +6,7 @@
   <title>Báo cáo tổng hợp SC</title>
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png">
   <link rel="shortcut icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261029_1700">
+  <link rel="stylesheet" href="css/style.css?v=20261101_1130">
 </head>
 <body>
 
@@ -1331,8 +1331,16 @@
             </div>
 
             <details class="wr-manual-details" id="wrManualDetails" open>
-                <summary>✍️ Nội dung bổ sung &amp; Mục tùy chỉnh (Tự đặt tiêu đề, viết nội dung, chèn ảnh, tạo bảng)</summary>
+                <summary>✍️ Mục tùy chỉnh &amp; Đề xuất điều hành (Tự đặt tiêu đề, viết nội dung, chèn ảnh, tạo bảng)</summary>
                 
+                <!-- GỢI Ý & TỰ ĐIỀN THÊM CHO MỤC VI: ĐỀ XUẤT ĐIỀU HÀNH -->
+                <div style="margin: 14px 0 16px;">
+                    <label style="display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:13px;color:var(--tx-heading,#17365d)">
+                        <span>💡 VI. Đề xuất điều hành &amp; Kế hoạch hành động bổ sung (Tự điền thêm nếu có):</span>
+                        <textarea id="wrProposals" rows="3" style="width:100%;font-weight:400;font-size:12.5px;padding:8px 12px;border-radius:8px;border:1px solid var(--line,#cbd5e1);background:var(--card,#ffffff);color:var(--tx,#1e293b);font-family:inherit" placeholder="Nhập thêm đề xuất hoặc hành động riêng (mỗi ý 1 dòng). Báo cáo đã có sẵn 4 gợi ý điều hành chuẩn, bạn có thể điền thêm vào đây..."></textarea>
+                    </label>
+                </div>
+
                 <div class="wr-custom-sections-header" style="display:flex; justify-content:space-between; align-items:center; margin:14px 0 10px; flex-wrap:wrap; gap:10px;">
                     <div style="font-weight:700; font-size:13.5px; color:inherit; display:flex; align-items:center; gap:6px;">
                         <span>🎨 Các mục tùy chỉnh</span>
@@ -1347,14 +1355,9 @@
                     <!-- Dynamic custom section cards populated by JS -->
                 </div>
 
-                <div style="font-weight:700; font-size:13px; color:inherit; margin:16px 0 8px;">📝 Các ghi chú nhanh khác:</div>
-                <div class="wr-textarea-grid">
-                    <label><span>App Thu ngân F&amp;B</span><textarea id="wrAppFnb" rows="3" placeholder="Mỗi ý một dòng. VD: 290 ATC F&B; 12 case cài App Desktop..."></textarea></label>
-                    <label><span>Vấn đề nổi bật / case cần theo sát</span><textarea id="wrIssues" rows="3" placeholder="Mỗi ý một dòng. VD: Quậy Central - tiếp tục phối hợp PTSP/DEV..."></textarea></label>
-                    <label><span>Nội dung bổ sung khác</span><textarea id="wrExtra" rows="3" placeholder="Doanh số phần cứng, chương trình sticker/KV66... nếu cần"></textarea></label>
-                    <label><span>Kế hoạch tuần tiếp theo</span><textarea id="wrPlans" rows="5"></textarea></label>
+                <div style="margin-top: 14px;">
+                    <button type="button" class="wr-btn wr-btn-ghost" onclick="resetWeeklyReportManual()">🗑️ Xóa toàn bộ ghi chú thủ công</button>
                 </div>
-                <button type="button" class="wr-btn wr-btn-ghost" onclick="resetWeeklyReportManual()">🗑️ Xóa toàn bộ ghi chú thủ công</button>
             </details>
 
             <div class="wr-action-row">
@@ -1451,18 +1454,18 @@
 <!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
-<script src="js/config.js?v=20261029_1700"></script>
-<script src="js/utils.js?v=20261029_1700"></script>
-<script src="js/tab_overview.js?v=20261029_1700"></script>
-<script src="js/tab_pivot.js?v=20261029_1700"></script>
-<script src="js/tab_muctieu.js?v=20261029_1700"></script>
-<script src="js/tab_kpi.js?v=20261029_1700"></script>
-<script src="js/tab_phancung.js?v=20261029_1700"></script>
-<script src="js/tab_baocaosc.js?v=20261029_1700"></script>
-<script src="js/tab_kpionline.js?v=20261029_1700"></script>
-<script src="js/tab_impactonline.js?v=20261029_1700"></script>
-<script src="js/tab_dataton.js?v=20261029_1700"></script>
-<script src="js/tab-bao-cao.js?v=20261029_1700"></script>
-<script src="js/app.js?v=20261029_1700"></script>
+<script src="js/config.js?v=20261101_1130"></script>
+<script src="js/utils.js?v=20261101_1130"></script>
+<script src="js/tab_overview.js?v=20261101_1130"></script>
+<script src="js/tab_pivot.js?v=20261101_1130"></script>
+<script src="js/tab_muctieu.js?v=20261101_1130"></script>
+<script src="js/tab_kpi.js?v=20261101_1130"></script>
+<script src="js/tab_phancung.js?v=20261101_1130"></script>
+<script src="js/tab_baocaosc.js?v=20261101_1130"></script>
+<script src="js/tab_kpionline.js?v=20261101_1130"></script>
+<script src="js/tab_impactonline.js?v=20261101_1130"></script>
+<script src="js/tab_dataton.js?v=20261101_1130"></script>
+<script src="js/tab-bao-cao.js?v=20261101_1130"></script>
+<script src="js/app.js?v=20261101_1130"></script>
 </body>
 </html>
