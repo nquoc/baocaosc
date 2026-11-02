@@ -2200,7 +2200,7 @@ function normalizePhanCungSaleData(rawData) {
  * Hiển thị bảng chi tiết Mục 3.2: Thống Kê SL Đơn Từ Sale
  */
 function renderPhanCungSaleTable(parsed) {
-  const tbl = $('pcSaleTable');
+  const tbl = $('pcSaleQuarterTable');
   if (!tbl || !parsed) return;
 
   const { k, dir } = PHANCUNG_SALE_SORT;
