@@ -653,6 +653,7 @@ function renderPhanCung() {
   renderSaleDetailTable(parsed);
   renderPhanCungOct();
   renderPhanCungSource();
+  renderPhanCungSale();
 }
 
 /**
@@ -675,7 +676,7 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
   if (!forceReload) {
     try {
       const db = await openDB();
-      const [cachedYear, cachedOct, cachedSource] = await Promise.all([
+      const [cachedYear, cachedOct, cachedSource, cachedSale] = await Promise.all([
         new Promise(resolve => {
           const tx = db.transaction(STORE_NAME, 'readonly');
           const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG);
@@ -693,6 +694,12 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
           const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG_SOURCE);
           req.onsuccess = () => resolve(req.result || null);
           req.onerror = () => resolve(null);
+        }),
+        new Promise(resolve => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG_SALE);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
         })
       ]);
 
@@ -705,6 +712,7 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
         PHANCUNG_STATE = cachedYear;
         if (cachedOct && cachedOct.data) PHANCUNG_OCT_STATE = cachedOct;
         PHANCUNG_SOURCE_STATE = cachedSource;
+        if (cachedSale && cachedSale.data) PHANCUNG_SALE_STATE = cachedSale;
 
         renderPhanCung();
         if (badge) {
@@ -722,11 +730,13 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
   const urlYear = API_PHANCUNG + (API_PHANCUNG.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlOct = API_PHANCUNG_OCT + (API_PHANCUNG_OCT.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlSource = API_PHANCUNG_SOURCE + (API_PHANCUNG_SOURCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlSale = API_PHANCUNG_SALE + (API_PHANCUNG_SALE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   try {
-    const [resYear, resOct, resSource] = await Promise.all([
+    const [resYear, resOct, resSource, resSale] = await Promise.all([
       safeFetchJson(urlYear, 2),
       safeFetchJson(urlOct, 2),
-      safeFetchJson(urlSource, 2)
+      safeFetchJson(urlSource, 2),
+      safeFetchJson(urlSale, 2)
     ]);
 
     if (resYear.status !== 'success' || !Array.isArray(resYear.data) || resYear.data.length < 12) {
@@ -758,6 +768,14 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
       };
     }
 
+    if (resSale && resSale.status === 'success' && Array.isArray(resSale.data) && resSale.data.length >= 2) {
+      PHANCUNG_SALE_STATE = {
+        data: resSale.data,
+        savedAt: Date.now(),
+        timeStr: timeStr
+      };
+    }
+
     // Lưu IndexedDB
     try {
       const db = await openDB();
@@ -768,6 +786,9 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
       }
       if (PHANCUNG_SOURCE_STATE.data) {
         tx.objectStore(STORE_NAME).put(PHANCUNG_SOURCE_STATE, CACHE_KEY_PHANCUNG_SOURCE);
+      if (PHANCUNG_SALE_STATE.data) {
+        tx.objectStore(STORE_NAME).put(PHANCUNG_SALE_STATE, CACHE_KEY_PHANCUNG_SALE);
+      }
       }
     } catch (e) {}
 
@@ -2093,4 +2114,269 @@ function exportPhanCungSourceCsv() {
   a.download = `ban_hang_tu_nguon_phancung_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   showToast('Đã xuất thành công file CSV Bán Hàng Từ Nguồn (Mục 3)!', true);
+}
+
+
+// =========================================================================
+// MỤC 3.2: THỐNG KÊ SL ĐƠN TỪ SALE (Sheet phancung Y1:AB6)
+// =========================================================================
+
+/**
+ * Chuẩn hóa dữ liệu Thống kê SL đơn từ Sale (Y1:AB6)
+ */
+function normalizePhanCungSaleData(rawData) {
+  if (!rawData || !Array.isArray(rawData) || rawData.length < 2) return null;
+
+  const headerRow = rawData[0] || [];
+  const items = [];
+  let totalRow = null;
+
+  const parseNum = v => {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') return v;
+    const clean = String(v).replace(/[^0-9.-]/g, '');
+    const n = Number(clean);
+    return isFinite(n) ? n : null;
+  };
+
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row[0]) continue;
+    const name = String(row[0]).trim();
+    if (!name) continue;
+
+    const t10 = parseNum(row[1]);
+    const t11 = parseNum(row[2]);
+    const t12 = parseNum(row[3]);
+    const q4 = (t10 || 0) + (t11 || 0) + (t12 || 0);
+
+    const itemObj = {
+      name,
+      t10,
+      t11,
+      t12,
+      q4,
+      pct10: 0,
+      rawRow: row
+    };
+
+    if (/^tổng/i.test(name)) {
+      totalRow = itemObj;
+    } else {
+      items.push(itemObj);
+    }
+  }
+
+  const sumT10Items = items.reduce((s, it) => s + (it.t10 || 0), 0);
+  const sumT11Items = items.reduce((s, it) => s + (it.t11 || 0), 0);
+  const sumT12Items = items.reduce((s, it) => s + (it.t12 || 0), 0);
+  const sumQ4Items = items.reduce((s, it) => s + it.q4, 0);
+
+  const grandT10 = (totalRow && totalRow.t10 != null && totalRow.t10 > 0) ? totalRow.t10 : sumT10Items;
+  const grandT11 = (totalRow && totalRow.t11 != null && totalRow.t11 > 0) ? totalRow.t11 : sumT11Items;
+  const grandT12 = (totalRow && totalRow.t12 != null && totalRow.t12 > 0) ? totalRow.t12 : sumT12Items;
+  const grandQ4 = (totalRow && totalRow.q4 > 0) ? totalRow.q4 : sumQ4Items;
+
+  items.forEach(it => {
+    if (it.t10 != null && grandT10 > 0) {
+      it.pct10 = (it.t10 / grandT10) * 100;
+    } else {
+      it.pct10 = 0;
+    }
+  });
+
+  return {
+    headers: headerRow,
+    items,
+    totalRow: totalRow || { name: 'Tổng', t10: grandT10, t11: grandT11, t12: grandT12, q4: grandQ4, pct10: 100 },
+    grandT10,
+    grandT11,
+    grandT12,
+    grandQ4
+  };
+}
+
+/**
+ * Hiển thị bảng chi tiết Mục 3.2: Thống Kê SL Đơn Từ Sale
+ */
+function renderPhanCungSaleTable(parsed) {
+  const tbl = $('pcSaleTable');
+  if (!tbl || !parsed) return;
+
+  const { k, dir } = PHANCUNG_SALE_SORT;
+  const sortArrow = key => (k === key ? (dir > 0 ? ' ▲' : ' ▼') : ' ⇅');
+
+  const items = [...parsed.items];
+  items.sort((a, b) => {
+    if (k === 'name') {
+      return dir * String(a.name).localeCompare(String(b.name), 'vi');
+    }
+    let vA = a[k];
+    let vB = b[k];
+    vA = vA == null ? -Infinity : Number(vA);
+    vB = vB == null ? -Infinity : Number(vB);
+    return dir * (vA - vB);
+  });
+
+  let hHtml = `
+    <thead>
+      <tr style="background:var(--subtle);border-bottom:2px solid var(--line)">
+        <th onclick="sortPhanCungSale('stt')" style="cursor:pointer;text-align:center;width:50px" title="Sắp xếp theo STT">STT${sortArrow('stt')}</th>
+        <th onclick="sortPhanCungSale('name')" style="cursor:pointer;text-align:left;min-width:180px" title="Sắp xếp theo Nhân sự Sale">Nhân Sự Sale${sortArrow('name')}</th>
+        <th onclick="sortPhanCungSale('t10')" style="cursor:pointer;text-align:right;width:115px" title="Sắp xếp theo Số lượng Tháng 10">Tháng 10 (SL)${sortArrow('t10')}</th>
+        <th onclick="sortPhanCungSale('pct10')" style="cursor:pointer;text-align:left;min-width:160px" title="Sắp xếp theo Tỷ trọng % Tháng 10">Tỷ Trọng T10 (%)${sortArrow('pct10')}</th>
+        <th onclick="sortPhanCungSale('t11')" style="cursor:pointer;text-align:right;width:105px" title="Sắp xếp theo Tháng 11">Tháng 11 (SL)${sortArrow('t11')}</th>
+        <th onclick="sortPhanCungSale('t12')" style="cursor:pointer;text-align:right;width:105px" title="Sắp xếp theo Tháng 12">Tháng 12 (SL)${sortArrow('t12')}</th>
+        <th onclick="sortPhanCungSale('q4')" style="cursor:pointer;text-align:right;width:120px" title="Sắp xếp theo Tổng Quý 4">Tổng Quý 4 (SL)${sortArrow('q4')}</th>
+      </tr>
+    </thead>
+  `;
+
+  let bHtml = '<tbody>';
+  items.forEach((it, idx) => {
+    const pct = it.pct10 || 0;
+    let barColor = '#3b82f6';
+    if (pct >= 40) barColor = '#10b981';
+    else if (pct >= 20) barColor = '#38bdf8';
+    else if (pct >= 10) barColor = '#f59e0b';
+    else if (pct > 0) barColor = '#a855f7';
+    else barColor = 'rgba(148, 163, 184, 0.3)';
+
+    bHtml += `
+      <tr style="border-bottom:1px solid var(--line);transition:background 0.15s">
+        <td style="text-align:center;color:var(--mut);font-size:12px">${idx + 1}</td>
+        <td style="text-align:left;font-weight:700;color:var(--tx-heading)">
+          ${esc(it.name)}
+        </td>
+        <td style="text-align:right;font-weight:800;color:#38bdf8;font-size:13px">
+          ${it.t10 != null ? n0(it.t10) : '<span style="color:var(--mut)">-</span>'}
+        </td>
+        <td style="text-align:left">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="flex:1;max-width:80px;height:7px;background:rgba(148,163,184,0.18);border-radius:4px;overflow:hidden">
+              <div style="width:${Math.min(100, pct)}%;height:100%;background:${barColor};border-radius:4px"></div>
+            </div>
+            <span style="font-weight:700;font-size:12px;color:${barColor};min-width:44px;text-align:right">
+              ${pct.toFixed(1)}%
+            </span>
+          </div>
+        </td>
+        <td style="text-align:right;font-size:12px;color:${it.t11 != null ? 'var(--tx)' : 'var(--mut)'}">
+          ${it.t11 != null ? n0(it.t11) : '-'}
+        </td>
+        <td style="text-align:right;font-size:12px;color:${it.t12 != null ? 'var(--tx)' : 'var(--mut)'}">
+          ${it.t12 != null ? n0(it.t12) : '-'}
+        </td>
+        <td style="text-align:right;font-weight:800;color:#10b981;font-size:13px">
+          ${it.q4 > 0 ? n0(it.q4) : '-'}
+        </td>
+      </tr>
+    `;
+  });
+  bHtml += '</tbody>';
+
+  let fHtml = `
+    <tfoot>
+      <tr style="background:rgba(59, 130, 246, 0.08);border-top:2px solid #3b82f6;font-weight:800">
+        <td style="text-align:center;color:#3b82f6">★</td>
+        <td style="text-align:left;color:#3b82f6;font-size:13px">TỔNG CỘNG</td>
+        <td style="text-align:right;color:#38bdf8;font-size:14px;font-weight:900">${n0(parsed.grandT10)}</td>
+        <td style="text-align:left">
+          <span style="display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(59,130,246,0.18);color:#60a5fa;font-weight:800;font-size:12px">
+            100.0%
+          </span>
+        </td>
+        <td style="text-align:right;color:var(--mut);font-size:12px">${parsed.grandT11 > 0 ? n0(parsed.grandT11) : '-'}</td>
+        <td style="text-align:right;color:var(--mut);font-size:12px">${parsed.grandT12 > 0 ? n0(parsed.grandT12) : '-'}</td>
+        <td style="text-align:right;color:#10b981;font-size:14px;font-weight:900">${n0(parsed.grandQ4)}</td>
+      </tr>
+    </tfoot>
+  `;
+
+  tbl.innerHTML = hHtml + bHtml + fHtml;
+}
+
+/**
+ * Sắp xếp bảng Mục 3.2: Thống Kê SL Đơn Từ Sale
+ */
+function sortPhanCungSale(colKey) {
+  if (PHANCUNG_SALE_SORT.k === colKey) {
+    PHANCUNG_SALE_SORT.dir = -PHANCUNG_SALE_SORT.dir;
+  } else {
+    PHANCUNG_SALE_SORT.k = colKey;
+    PHANCUNG_SALE_SORT.dir = colKey === 'name' || colKey === 'stt' ? 1 : -1;
+  }
+
+  if (!PHANCUNG_SALE_STATE.data) return;
+  const parsed = normalizePhanCungSaleData(PHANCUNG_SALE_STATE.data);
+  if (parsed) renderPhanCungSaleTable(parsed);
+}
+
+/**
+ * Điều phối render Mục 3.2: Thống Kê SL Đơn Từ Sale
+ */
+function renderPhanCungSale() {
+  if (!PHANCUNG_SALE_STATE.data) return;
+  const parsed = normalizePhanCungSaleData(PHANCUNG_SALE_STATE.data);
+  if (!parsed) return;
+  renderPhanCungSaleTable(parsed);
+}
+
+/**
+ * Xuất file CSV Mục 3.2: Thống Kê SL Đơn Từ Sale (Quý 4: Y1:AB6)
+ */
+function exportPhanCungSaleCsv() {
+  if (!PHANCUNG_SALE_STATE.data) {
+    showToast('Chưa có dữ liệu Thống Kê Đơn Từ Sale để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizePhanCungSaleData(PHANCUNG_SALE_STATE.data);
+  if (!parsed) {
+    showToast('Lỗi cấu trúc dữ liệu Thống Kê Đơn Từ Sale!', false);
+    return;
+  }
+
+  const lines = [];
+  lines.push(['BÁO CÁO PHẦN CỨNG - THỐNG KÊ SL ĐƠN TỪ SALE (QUÝ 4)']);
+  lines.push(['Thời gian xuất:', new Date().toLocaleString('vi-VN')]);
+  lines.push(['Nguồn dữ liệu:', 'Sheet phancung (Y1:AB6)']);
+  lines.push([]);
+
+  lines.push(['STT', 'Nhân Sự Sale', 'Tháng 10 (SL)', 'Tỷ Trọng T10 (%)', 'Tháng 11 (SL)', 'Tháng 12 (SL)', 'Tổng Quý 4 (SL)']);
+
+  parsed.items.forEach((it, idx) => {
+    lines.push([
+      idx + 1,
+      it.name,
+      it.t10 != null ? it.t10 : '',
+      it.pct10.toFixed(1) + '%',
+      it.t11 != null ? it.t11 : '',
+      it.t12 != null ? it.t12 : '',
+      it.q4
+    ]);
+  });
+
+  lines.push([
+    '',
+    'TỔNG CỘNG',
+    parsed.grandT10,
+    '100.0%',
+    parsed.grandT11 > 0 ? parsed.grandT11 : '',
+    parsed.grandT12 > 0 ? parsed.grandT12 : '',
+    parsed.grandQ4
+  ]);
+
+  const csvContent = '﻿' + lines.map(row => {
+    return (row || []).map(val => {
+      const s = String(val == null ? '' : val);
+      return '"' + s.replace(/"/g, '""') + '"';
+    }).join(',');
+  }).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `thong_ke_don_tu_sale_phancung_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  showToast('Đã xuất thành công file CSV Thống Kê Đơn Từ Sale (Mục 3.2)!', true);
 }

@@ -6,7 +6,7 @@
   <title>Báo cáo tổng hợp SC</title>
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png">
   <link rel="shortcut icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261101_1335">
+  <link rel="stylesheet" href="css/style.css?v=20261102_1150">
 </head>
 <body>
 
@@ -458,10 +458,10 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
         <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#7c3aed;color:#ffffff;letter-spacing:0.5px">MỤC 3</span>
-        <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Bán Hàng Từ Nguồn (Quý 4: Tháng 10 – Tháng 12)</h2>
+        <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Bán Hàng Từ Nguồn &amp; Thống Kê Đơn Từ Sale (Quý 4)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>phancung</b> (T1:W9) · Cơ cấu sản lượng đơn/máy theo từng kênh tiếp cận
+        Nguồn: Sheet <b>phancung</b> (T1:W9 &amp; Y1:AB6) · Cơ cấu sản lượng đơn/máy theo Kênh tiếp cận &amp; Nhân sự Sale
       </div>
     </div>
 
@@ -469,20 +469,42 @@
     <div class="grid kpis" id="pcSourceSummaryCards" style="margin-bottom:14px"></div>
 
     <!-- BẢNG CHI TIẾT BÁN HÀNG TỪ NGUỒN -->
-    <div class="card" style="padding:14px 16px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>📊 Bảng Thống Kê Bán Hàng Từ Nguồn</span>
-            <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
-          </h3>
+    <!-- HAI BẢNG NẰM NGANG NHAU (GRID G2) -->
+    <div class="grid g2" style="margin-bottom:16px;align-items:start;gap:14px">
+      <!-- BẢNG 1: CHI TIẾT BÁN HÀNG TỪ NGUỒN (T1:W9) -->
+      <div class="card" style="padding:14px 16px;margin-bottom:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div>
+            <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+              <span>📊 Bảng Thống Kê Bán Hàng Từ Nguồn</span>
+              <span class="mut sm" style="font-weight:400">(T1:W9 · ⇅)</span>
+            </h3>
+          </div>
+          <div>
+            <button onclick="exportPhanCungSourceCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:12px;padding:5px 11px">⬇ Xuất CSV Nguồn</button>
+          </div>
         </div>
-        <div>
-          <button onclick="exportPhanCungSourceCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:12px;padding:5px 11px">⬇ Xuất CSV Mục 3</button>
+        <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+          <table id="pcSourceTable" class="kpi-table"></table>
         </div>
       </div>
-      <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-        <table id="pcSourceTable" class="kpi-table"></table>
+
+      <!-- BẢNG 2: THỐNG KÊ SL ĐƠN TỪ SALE (Y1:AB6) -->
+      <div class="card" style="padding:14px 16px;margin-bottom:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div>
+            <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+              <span>👨‍💼 Bảng Thống Kê SL Đơn Từ Sale</span>
+              <span class="mut sm" style="font-weight:400">(Y1:AB6 · ⇅)</span>
+            </h3>
+          </div>
+          <div>
+            <button onclick="exportPhanCungSaleCsv()" style="background:#2563eb;color:#fff;border-color:#3b82f6;font-size:12px;padding:5px 11px">⬇ Xuất CSV Sale</button>
+          </div>
+        </div>
+        <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+          <table id="pcSaleTable" class="kpi-table"></table>
+        </div>
       </div>
     </div>
   </div>
@@ -1454,18 +1476,18 @@
 <!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
-<script src="js/config.js?v=20261101_1335"></script>
-<script src="js/utils.js?v=20261101_1335"></script>
-<script src="js/tab_overview.js?v=20261101_1335"></script>
-<script src="js/tab_pivot.js?v=20261101_1335"></script>
-<script src="js/tab_muctieu.js?v=20261101_1335"></script>
-<script src="js/tab_kpi.js?v=20261101_1335"></script>
-<script src="js/tab_phancung.js?v=20261101_1335"></script>
-<script src="js/tab_baocaosc.js?v=20261101_1335"></script>
-<script src="js/tab_kpionline.js?v=20261101_1335"></script>
-<script src="js/tab_impactonline.js?v=20261101_1335"></script>
-<script src="js/tab_dataton.js?v=20261101_1335"></script>
-<script src="js/tab-bao-cao.js?v=20261101_1335"></script>
-<script src="js/app.js?v=20261101_1335"></script>
+<script src="js/config.js?v=20261102_1150"></script>
+<script src="js/utils.js?v=20261102_1150"></script>
+<script src="js/tab_overview.js?v=20261102_1150"></script>
+<script src="js/tab_pivot.js?v=20261102_1150"></script>
+<script src="js/tab_muctieu.js?v=20261102_1150"></script>
+<script src="js/tab_kpi.js?v=20261102_1150"></script>
+<script src="js/tab_phancung.js?v=20261102_1150"></script>
+<script src="js/tab_baocaosc.js?v=20261102_1150"></script>
+<script src="js/tab_kpionline.js?v=20261102_1150"></script>
+<script src="js/tab_impactonline.js?v=20261102_1150"></script>
+<script src="js/tab_dataton.js?v=20261102_1150"></script>
+<script src="js/tab-bao-cao.js?v=20261102_1150"></script>
+<script src="js/app.js?v=20261102_1150"></script>
 </body>
 </html>

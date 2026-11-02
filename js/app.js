@@ -121,7 +121,7 @@ function switchTab(tab) {
       renderImpactOnline();
     }
   } else if (tab === 'phancung') {
-    if (!PHANCUNG_STATE.data || !PHANCUNG_SOURCE_STATE.data) {
+    if (!PHANCUNG_STATE.data || !PHANCUNG_SOURCE_STATE.data || !PHANCUNG_SALE_STATE.data) {
       loadPhanCung(false);
     } else {
       renderPhanCung();
@@ -525,7 +525,7 @@ async function startBackgroundPrefetch(forceAll = false) {
     {
       name: 'DS Phần Cứng',
       label: 'Phần Cứng (4/6)',
-      check: () => !forceAll && typeof PHANCUNG_STATE !== 'undefined' && PHANCUNG_STATE && PHANCUNG_STATE.data,
+      check: () => !forceAll && typeof PHANCUNG_STATE !== 'undefined' && PHANCUNG_STATE && PHANCUNG_STATE.data && typeof PHANCUNG_SALE_STATE !== 'undefined' && PHANCUNG_SALE_STATE.data,
       run: () => typeof loadPhanCung === 'function' ? loadPhanCung(forceAll, true) : null
     },
     {
