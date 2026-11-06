@@ -763,7 +763,7 @@ function initProvinceQualityMonths() {
   const availMonths = [...new Set(ALL_RECS.map(r => r.date.slice(0, 7)))].filter(Boolean).sort().reverse();
   if (availMonths.length === 0) return;
 
-  const curM = typeof getCurrentMonthStr === 'function' ? getCurrentMonthStr() : '2026-10';
+  const curM = typeof getCurrentMonthStr === 'function' ? getCurrentMonthStr() : '2026-11';
   if (!PROVINCE_QUALITY_MONTH || (!availMonths.includes(PROVINCE_QUALITY_MONTH) && PROVINCE_QUALITY_MONTH !== 'all')) {
     PROVINCE_QUALITY_MONTH = availMonths.includes(curM) ? curM : availMonths[0];
   }

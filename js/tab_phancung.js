@@ -1976,22 +1976,22 @@ function normalizePhanCungSourceData(rawData) {
   const grandQ4 = (totalRow && totalRow.q4 > 0) ? totalRow.q4 : sumQ4Items;
 
   items.forEach(it => {
-    if (it.t10 != null && grandT10 > 0) {
-      it.pct10 = (it.t10 / grandT10) * 100;
-    } else {
-      it.pct10 = 0;
-    }
+    it.pct10 = (grandT10 > 0 && it.t10 != null) ? (it.t10 / grandT10) * 100 : 0;
+    it.pct11 = (grandT11 > 0 && it.t11 != null) ? (it.t11 / grandT11) * 100 : 0;
+    it.pct12 = (grandT12 > 0 && it.t12 != null) ? (it.t12 / grandT12) * 100 : 0;
+    it.pctQ4 = grandQ4 > 0 ? (it.q4 / grandQ4) * 100 : 0;
   });
 
   const saleItem = items.find(it => /sale/i.test(it.name));
   const dvkhItem = items.find(it => /dvkh/i.test(it.name) || /chăm sóc/i.test(it.name));
   const otherItems = items.filter(it => it !== saleItem && it !== dvkhItem);
   const otherT10 = otherItems.reduce((s, it) => s + (it.t10 || 0), 0);
+  const otherT11 = otherItems.reduce((s, it) => s + (it.t11 || 0), 0);
 
   return {
     headers: headerRow,
     items,
-    totalRow: totalRow || { name: 'Tổng', t10: grandT10, t11: grandT11, t12: grandT12, q4: grandQ4, pct10: 100 },
+    totalRow: totalRow || { name: 'Tổng', t10: grandT10, t11: grandT11, t12: grandT12, q4: grandQ4, pct10: 100, pct11: 100 },
     grandT10,
     grandT11,
     grandT12,
@@ -1999,12 +1999,13 @@ function normalizePhanCungSourceData(rawData) {
     saleItem,
     dvkhItem,
     otherItems,
-    otherT10
+    otherT10,
+    otherT11
   };
 }
 
 /**
- * Hiển thị các thẻ KPI tóm tắt Mục 3
+ * Hiển thị các thẻ KPI tóm tắt Mục 3 (Tự động nhận diện tháng hiện tại - Tháng 11)
  */
 function renderPhanCungSourceSummaryCards(parsed) {
   const box = $('pcSourceSummaryCards');
@@ -2020,19 +2021,25 @@ function renderPhanCungSourceSummaryCards(parsed) {
       <div class="s">${s}</div>
     </div>`;
 
-  const totalT10 = parsed.grandT10 || 0;
-  const saleCount = parsed.saleItem ? (parsed.saleItem.t10 || 0) : 0;
-  const salePct = parsed.saleItem ? parsed.saleItem.pct10 : 0;
-  const dvkhCount = parsed.dvkhItem ? (parsed.dvkhItem.t10 || 0) : 0;
-  const dvkhPct = parsed.dvkhItem ? parsed.dvkhItem.pct10 : 0;
-  const otherCount = parsed.otherT10 || 0;
-  const otherPct = totalT10 > 0 ? (otherCount / totalT10 * 100) : 0;
+  // Mặc định hiển thị tháng hiện tại (Tháng 11) nếu có số liệu, fallback Tháng 10
+  const curMonthNum = (new Date()).getMonth() + 1; // 11
+  const isT11 = curMonthNum === 11 || (parsed.grandT11 > 0);
+  const activeLabel = isT11 ? 'Tháng 11' : 'Tháng 10';
+  const tagLabel = isT11 ? 'T11' : 'T10';
+
+  const totalAct = isT11 ? (parsed.grandT11 || 0) : (parsed.grandT10 || 0);
+  const saleCount = parsed.saleItem ? ((isT11 ? parsed.saleItem.t11 : parsed.saleItem.t10) || 0) : 0;
+  const salePct = parsed.saleItem ? (isT11 ? parsed.saleItem.pct11 : parsed.saleItem.pct10) : 0;
+  const dvkhCount = parsed.dvkhItem ? ((isT11 ? parsed.dvkhItem.t11 : parsed.dvkhItem.t10) || 0) : 0;
+  const dvkhPct = parsed.dvkhItem ? (isT11 ? parsed.dvkhItem.pct11 : parsed.dvkhItem.pct10) : 0;
+  const otherCount = isT11 ? (parsed.otherT11 || 0) : (parsed.otherT10 || 0);
+  const otherPct = totalAct > 0 ? (otherCount / totalAct * 100) : 0;
 
   box.innerHTML =
-    K('Tổng Sản Lượng T10', `${n0(totalT10)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `Toàn bộ các kênh ghi nhận trong Tháng 10`, 'color:#38bdf8', 'Tháng 10') +
-    K('Kênh Sale Trực Tiếp', `${n0(saleCount)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `Chiếm ${salePct.toFixed(1)}% sản lượng Tháng 10`, 'color:#10b981', `${salePct.toFixed(1)}%`) +
-    K('DVKH CS (Chăm Sóc)', `${n0(dvkhCount)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `Chiếm ${dvkhPct.toFixed(1)}% sản lượng Tháng 10`, 'color:#f59e0b', `${dvkhPct.toFixed(1)}%`) +
-    K('Các Kênh Khác (MKY / Sàn)', `${n0(otherCount)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `MKY (7) · Shopee, Lazada, Tiktok, Fanpage (0)`, 'color:#c084fc', `${otherPct.toFixed(1)}%`);
+    K(`Tổng Sản Lượng ${tagLabel}`, `${n0(totalAct)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `Toàn bộ các kênh trong ${activeLabel} (Lũy kế Q4: ${n0(parsed.grandQ4)})`, 'color:#38bdf8', tagLabel) +
+    K('Kênh Sale Trực Tiếp', `${n0(saleCount)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `Chiếm ${salePct.toFixed(1)}% sản lượng ${activeLabel}`, 'color:#10b981', `${salePct.toFixed(1)}%`) +
+    K('DVKH CS (Chăm Sóc)', `${n0(dvkhCount)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `Chiếm ${dvkhPct.toFixed(1)}% sản lượng ${activeLabel}`, 'color:#f59e0b', `${dvkhPct.toFixed(1)}%`) +
+    K('Các Kênh Khác (MKY / Khách Cũ)', `${n0(otherCount)} <span style="font-size:14px;font-weight:400;color:var(--mut)">đơn/máy</span>`, `Chiếm ${otherPct.toFixed(1)}% sản lượng ${activeLabel}`, 'color:#c084fc', `${otherPct.toFixed(1)}%`);
 }
 
 /**
@@ -2289,17 +2296,16 @@ function normalizePhanCungSaleData(rawData) {
   const grandQ4 = (totalRow && totalRow.q4 > 0) ? totalRow.q4 : sumQ4Items;
 
   items.forEach(it => {
-    if (it.t10 != null && grandT10 > 0) {
-      it.pct10 = (it.t10 / grandT10) * 100;
-    } else {
-      it.pct10 = 0;
-    }
+    it.pct10 = (grandT10 > 0 && it.t10 != null) ? (it.t10 / grandT10) * 100 : 0;
+    it.pct11 = (grandT11 > 0 && it.t11 != null) ? (it.t11 / grandT11) * 100 : 0;
+    it.pct12 = (grandT12 > 0 && it.t12 != null) ? (it.t12 / grandT12) * 100 : 0;
+    it.pctQ4 = grandQ4 > 0 ? (it.q4 / grandQ4) * 100 : 0;
   });
 
   return {
     headers: headerRow,
     items,
-    totalRow: totalRow || { name: 'Tổng', t10: grandT10, t11: grandT11, t12: grandT12, q4: grandQ4, pct10: 100 },
+    totalRow: totalRow || { name: 'Tổng', t10: grandT10, t11: grandT11, t12: grandT12, q4: grandQ4, pct10: 100, pct11: 100 },
     grandT10,
     grandT11,
     grandT12,
@@ -2308,7 +2314,7 @@ function normalizePhanCungSaleData(rawData) {
 }
 
 /**
- * Hiển thị bảng chi tiết Mục 3.2: Thống Kê SL Đơn Từ Sale
+ * Hiển thị bảng chi tiết Mục 3.2: Thống Kê SL Đơn Từ Sale (Mặc định hiển thị Tháng 11)
  */
 function renderPhanCungSaleTable(parsed) {
   const tbl = $('pcSaleQuarterTable');
@@ -2334,9 +2340,9 @@ function renderPhanCungSaleTable(parsed) {
       <tr style="background:var(--subtle);border-bottom:2px solid var(--line)">
         <th onclick="sortPhanCungSale('stt')" style="cursor:pointer;text-align:center;width:50px" title="Sắp xếp theo STT">STT${sortArrow('stt')}</th>
         <th onclick="sortPhanCungSale('name')" style="cursor:pointer;text-align:left;min-width:180px" title="Sắp xếp theo Nhân sự Sale">Nhân Sự Sale${sortArrow('name')}</th>
-        <th onclick="sortPhanCungSale('t10')" style="cursor:pointer;text-align:right;width:115px" title="Sắp xếp theo Số lượng Tháng 10">Tháng 10 (SL)${sortArrow('t10')}</th>
-        <th onclick="sortPhanCungSale('pct10')" style="cursor:pointer;text-align:left;min-width:160px" title="Sắp xếp theo Tỷ trọng % Tháng 10">Tỷ Trọng T10 (%)${sortArrow('pct10')}</th>
-        <th onclick="sortPhanCungSale('t11')" style="cursor:pointer;text-align:right;width:105px" title="Sắp xếp theo Tháng 11">Tháng 11 (SL)${sortArrow('t11')}</th>
+        <th onclick="sortPhanCungSale('t10')" style="cursor:pointer;text-align:right;width:105px" title="Sắp xếp theo Số lượng Tháng 10">Tháng 10 (SL)${sortArrow('t10')}</th>
+        <th onclick="sortPhanCungSale('t11')" style="cursor:pointer;text-align:right;width:105px;color:#10b981;font-weight:800" title="Sắp xếp theo Tháng 11">Tháng 11 (SL)${sortArrow('t11')}</th>
+        <th onclick="sortPhanCungSale('pct11')" style="cursor:pointer;text-align:left;min-width:150px;color:#10b981;font-weight:800" title="Sắp xếp theo Tỷ trọng % Tháng 11">Tỷ Trọng T11 (%)${sortArrow('pct11')}</th>
         <th onclick="sortPhanCungSale('t12')" style="cursor:pointer;text-align:right;width:105px" title="Sắp xếp theo Tháng 12">Tháng 12 (SL)${sortArrow('t12')}</th>
         <th onclick="sortPhanCungSale('q4')" style="cursor:pointer;text-align:right;width:120px" title="Sắp xếp theo Tổng Quý 4">Tổng Quý 4 (SL)${sortArrow('q4')}</th>
       </tr>
@@ -2345,12 +2351,12 @@ function renderPhanCungSaleTable(parsed) {
 
   let bHtml = '<tbody>';
   items.forEach((it, idx) => {
-    const pct = it.pct10 || 0;
-    let barColor = '#3b82f6';
-    if (pct >= 40) barColor = '#10b981';
-    else if (pct >= 20) barColor = '#38bdf8';
-    else if (pct >= 10) barColor = '#f59e0b';
-    else if (pct > 0) barColor = '#a855f7';
+    const pct11 = it.pct11 || 0;
+    let barColor = '#10b981';
+    if (pct11 >= 35) barColor = '#10b981';
+    else if (pct11 >= 20) barColor = '#38bdf8';
+    else if (pct11 >= 10) barColor = '#f59e0b';
+    else if (pct11 > 0) barColor = '#a855f7';
     else barColor = 'rgba(148, 163, 184, 0.3)';
 
     bHtml += `
@@ -2359,26 +2365,26 @@ function renderPhanCungSaleTable(parsed) {
         <td style="text-align:left;font-weight:700;color:var(--tx-heading)">
           ${esc(it.name)}
         </td>
-        <td style="text-align:right;font-weight:800;color:#38bdf8;font-size:13px">
+        <td style="text-align:right;font-size:12px;color:var(--tx)">
           ${it.t10 != null ? n0(it.t10) : '<span style="color:var(--mut)">-</span>'}
+        </td>
+        <td style="text-align:right;font-weight:800;color:#10b981;font-size:13px">
+          ${it.t11 != null ? n0(it.t11) : '<span style="color:var(--mut)">-</span>'}
         </td>
         <td style="text-align:left">
           <div style="display:flex;align-items:center;gap:6px">
-            <div style="flex:1;max-width:80px;height:7px;background:rgba(148,163,184,0.18);border-radius:4px;overflow:hidden">
-              <div style="width:${Math.min(100, pct)}%;height:100%;background:${barColor};border-radius:4px"></div>
+            <div style="flex:1;max-width:70px;height:7px;background:rgba(148,163,184,0.18);border-radius:4px;overflow:hidden">
+              <div style="width:${Math.min(100, pct11)}%;height:100%;background:${barColor};border-radius:4px"></div>
             </div>
             <span style="font-weight:700;font-size:12px;color:${barColor};min-width:44px;text-align:right">
-              ${pct.toFixed(1)}%
+              ${pct11.toFixed(1)}%
             </span>
           </div>
-        </td>
-        <td style="text-align:right;font-size:12px;color:${it.t11 != null ? 'var(--tx)' : 'var(--mut)'}">
-          ${it.t11 != null ? n0(it.t11) : '-'}
         </td>
         <td style="text-align:right;font-size:12px;color:${it.t12 != null ? 'var(--tx)' : 'var(--mut)'}">
           ${it.t12 != null ? n0(it.t12) : '-'}
         </td>
-        <td style="text-align:right;font-weight:800;color:#10b981;font-size:13px">
+        <td style="text-align:right;font-weight:800;color:#38bdf8;font-size:13px">
           ${it.q4 > 0 ? n0(it.q4) : '-'}
         </td>
       </tr>
@@ -2388,18 +2394,18 @@ function renderPhanCungSaleTable(parsed) {
 
   let fHtml = `
     <tfoot>
-      <tr style="background:rgba(59, 130, 246, 0.08);border-top:2px solid #3b82f6;font-weight:800">
-        <td style="text-align:center;color:#3b82f6">★</td>
-        <td style="text-align:left;color:#3b82f6;font-size:13px">TỔNG CỘNG</td>
-        <td style="text-align:right;color:#38bdf8;font-size:14px;font-weight:900">${n0(parsed.grandT10)}</td>
+      <tr style="background:rgba(16, 185, 129, 0.08);border-top:2px solid #10b981;font-weight:800">
+        <td style="text-align:center;color:#10b981">★</td>
+        <td style="text-align:left;color:#10b981;font-size:13px">TỔNG CỘNG</td>
+        <td style="text-align:right;color:var(--tx);font-size:12px">${n0(parsed.grandT10)}</td>
+        <td style="text-align:right;color:#10b981;font-size:14px;font-weight:900">${n0(parsed.grandT11)}</td>
         <td style="text-align:left">
-          <span style="display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(59,130,246,0.18);color:#60a5fa;font-weight:800;font-size:12px">
+          <span style="display:inline-block;padding:2px 8px;border-radius:6px;background:rgba(16,185,129,0.18);color:#10b981;font-weight:800;font-size:12px">
             100.0%
           </span>
         </td>
-        <td style="text-align:right;color:var(--mut);font-size:12px">${parsed.grandT11 > 0 ? n0(parsed.grandT11) : '-'}</td>
         <td style="text-align:right;color:var(--mut);font-size:12px">${parsed.grandT12 > 0 ? n0(parsed.grandT12) : '-'}</td>
-        <td style="text-align:right;color:#10b981;font-size:14px;font-weight:900">${n0(parsed.grandQ4)}</td>
+        <td style="text-align:right;color:#38bdf8;font-size:14px;font-weight:900">${n0(parsed.grandQ4)}</td>
       </tr>
     </tfoot>
   `;
@@ -2453,15 +2459,16 @@ function exportPhanCungSaleCsv() {
   lines.push(['Nguồn dữ liệu:', 'Sheet phancung (Y1:AB6)']);
   lines.push([]);
 
-  lines.push(['STT', 'Nhân Sự Sale', 'Tháng 10 (SL)', 'Tỷ Trọng T10 (%)', 'Tháng 11 (SL)', 'Tháng 12 (SL)', 'Tổng Quý 4 (SL)']);
+  lines.push(['STT', 'Nhân Sự Sale', 'Tháng 10 (SL)', 'Tỷ Trọng T10 (%)', 'Tháng 11 (SL)', 'Tỷ Trọng T11 (%)', 'Tháng 12 (SL)', 'Tổng Quý 4 (SL)']);
 
   parsed.items.forEach((it, idx) => {
     lines.push([
       idx + 1,
       it.name,
       it.t10 != null ? it.t10 : '',
-      it.pct10.toFixed(1) + '%',
+      (it.pct10 || 0).toFixed(1) + '%',
       it.t11 != null ? it.t11 : '',
+      (it.pct11 || 0).toFixed(1) + '%',
       it.t12 != null ? it.t12 : '',
       it.q4
     ]);
@@ -2473,6 +2480,7 @@ function exportPhanCungSaleCsv() {
     parsed.grandT10,
     '100.0%',
     parsed.grandT11 > 0 ? parsed.grandT11 : '',
+    '100.0%',
     parsed.grandT12 > 0 ? parsed.grandT12 : '',
     parsed.grandQ4
   ]);
@@ -2569,6 +2577,16 @@ function renderPhanCungConversionSummaryCards(parsed) {
 
   container.innerHTML = `
     <div class="card kpi">
+      <div class="label" style="color:#059669">T11 · Chốt Nguồn Sale/MKY (Hiện tại)</div>
+      <div class="val" style="color:#059669">${fmtRate(tot.t11_sale_rate)}</div>
+      <div class="sub">${fmtNumVal(tot.t11_sale_succ)} / ${fmtNumVal(tot.t11_sale_opp)} Opp thành công</div>
+    </div>
+    <div class="card kpi">
+      <div class="label" style="color:#0d9488">T11 · Chốt Nguồn Tổng Đài (Hiện tại)</div>
+      <div class="val" style="color:#0d9488">${fmtRate(tot.t11_td_rate)}</div>
+      <div class="sub">${fmtNumVal(tot.t11_td_succ)} / ${fmtNumVal(tot.t11_td_opp)} Opp thành công</div>
+    </div>
+    <div class="card kpi">
       <div class="label" style="color:#0284c7">T10 · Chốt Nguồn Sale/MKY</div>
       <div class="val" style="color:#0284c7">${fmtRate(tot.t10_sale_rate)}</div>
       <div class="sub">${fmtNumVal(tot.t10_sale_succ)} / ${fmtNumVal(tot.t10_sale_opp)} Opp thành công</div>
@@ -2577,16 +2595,6 @@ function renderPhanCungConversionSummaryCards(parsed) {
       <div class="label" style="color:#0369a1">T10 · Chốt Nguồn Tổng Đài</div>
       <div class="val" style="color:#0369a1">${fmtRate(tot.t10_td_rate)}</div>
       <div class="sub">${fmtNumVal(tot.t10_td_succ)} / ${fmtNumVal(tot.t10_td_opp)} Opp thành công</div>
-    </div>
-    <div class="card kpi">
-      <div class="label" style="color:#059669">T11 · Chốt Nguồn Sale/MKY</div>
-      <div class="val" style="color:#059669">${fmtRate(tot.t11_sale_rate)}</div>
-      <div class="sub">${fmtNumVal(tot.t11_sale_succ)} / ${fmtNumVal(tot.t11_sale_opp)} Opp thành công</div>
-    </div>
-    <div class="card kpi">
-      <div class="label" style="color:#0d9488">T11 · Chốt Nguồn Tổng Đài</div>
-      <div class="val" style="color:#0d9488">${fmtRate(tot.t11_td_rate)}</div>
-      <div class="sub">${fmtNumVal(tot.t11_td_succ)} / ${fmtNumVal(tot.t11_td_opp)} Opp thành công</div>
     </div>
   `;
 }

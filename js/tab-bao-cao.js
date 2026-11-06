@@ -1661,15 +1661,15 @@ function wrRenderMuctieuTable(rawArray, isOnline = false) {
 
 // 7. Province Impact (Sheet baocaotuan K2:Q19)
 function wrRenderProvinceImpactTable(provinceImpact) {
-    const headers = ['Tỉnh / Thành phố', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Đánh giá MoM (T10 vs T9)'];
+    const headers = ['Tỉnh / Thành phố', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Đánh giá MoM (T11 vs T10)'];
     let rows = [];
 
     const list = provinceImpact?.provinces || provinceImpact?.items || [];
     if (Array.isArray(list) && list.length) {
         rows = list.map(it => {
-            const valT10 = it.t10 != null ? it.t10 : null;
-            const valT9 = it.t9 != null ? it.t9 : it.t8;
-            const diff = (valT10 != null && valT9 != null) ? (valT10 - valT9) : null;
+            const valT11 = it.t11 != null ? it.t11 : null;
+            const valT10 = it.t10 != null ? it.t10 : it.t9;
+            const diff = (valT11 != null && valT10 != null) ? (valT11 - valT10) : null;
             const diffStr = diff != null ? (diff > 0 ? `+${diff.toFixed(2)}%` : `${diff.toFixed(2)}%`) : '-';
             const diffTone = diff > 0 ? 'wr-kpi-good' : (diff < 0 ? 'wr-kpi-bad' : '');
             return [
@@ -1677,24 +1677,26 @@ function wrRenderProvinceImpactTable(provinceImpact) {
                 it.t7 != null ? `${Number(it.t7).toFixed(2)}%` : '-',
                 it.t8 != null ? `${Number(it.t8).toFixed(2)}%` : '-',
                 it.t9 != null ? `${Number(it.t9).toFixed(2)}%` : '-',
-                `<b>${it.t10 != null ? Number(it.t10).toFixed(2) + '%' : '-'}</b>`,
+                it.t10 != null ? `${Number(it.t10).toFixed(2)}%` : '-',
+                `<b>${it.t11 != null ? Number(it.t11).toFixed(2) + '%' : '-'}</b>`,
                 `<span class="${diffTone}">${diffStr}</span>`
             ];
         });
         const tot = provinceImpact.totalRow || provinceImpact.total;
         if (tot) {
-            const diffTot = (tot.t10 != null && tot.t9 != null) ? (tot.t10 - tot.t9) : null;
+            const diffTot = (tot.t11 != null && tot.t10 != null) ? (tot.t11 - tot.t10) : null;
             rows.push([
                 `<b>${wrEscapeHtml(tot.name || 'TOÀN QUỐC BÌNH QUÂN')}</b>`,
                 `<b>${tot.t7 != null ? Number(tot.t7).toFixed(2) + '%' : '-'}</b>`,
                 `<b>${tot.t8 != null ? Number(tot.t8).toFixed(2) + '%' : '-'}</b>`,
                 `<b>${tot.t9 != null ? Number(tot.t9).toFixed(2) + '%' : '-'}</b>`,
                 `<b>${tot.t10 != null ? Number(tot.t10).toFixed(2) + '%' : '-'}</b>`,
+                `<b>${tot.t11 != null ? Number(tot.t11).toFixed(2) + '%' : '-'}</b>`,
                 `<b>${diffTot != null ? (diffTot > 0 ? `+${diffTot.toFixed(2)}%` : `${diffTot.toFixed(2)}%`) : '-'}</b>`
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan K2:Q19)', '-', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan K2:Q19)', '-', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');

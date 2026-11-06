@@ -1712,33 +1712,46 @@ function normalizeProvinceImpactData(rawData) {
     }
   }
 
-  // Thống kê tóm tắt KPI
-  const validT10 = provinces.filter(p => p.t10 != null);
-  let topT10 = null;
-  if (validT10.length) {
-    topT10 = validT10.reduce((max, p) => (p.t10 > max.t10 ? p : max), validT10[0]);
+  // Xác định tháng hiện tại hiển thị mặc định (ưu tiên tháng hiện tại theo ngày hệ thống: Tháng 11)
+  const MONTH_KEYS = ['t7', 't8', 't9', 't10', 't11', 't12'];
+  const curMonthNum = (new Date()).getMonth() + 1; // 11
+  let activeMonthKey = 't' + curMonthNum; // 't11'
+  if (!MONTH_KEYS.includes(activeMonthKey) || !provinces.some(p => p[activeMonthKey] != null)) {
+    // Fallback tháng mới nhất có dữ liệu thực tế
+    const reversed = [...MONTH_KEYS].reverse();
+    activeMonthKey = reversed.find(k => provinces.some(p => p[k] != null)) || 't11';
+  }
+  const activeMonthLabel = activeMonthKey.toUpperCase(); // 'T11'
+
+  // Thống kê tóm tắt KPI theo tháng hiện tại
+  const validActive = provinces.filter(p => p[activeMonthKey] != null);
+  let topActive = null;
+  if (validActive.length) {
+    topActive = validActive.reduce((max, p) => (p[activeMonthKey] > max[activeMonthKey] ? p : max), validActive[0]);
   }
 
-  // So sánh T10 với tháng trước
-  const validDiffT10 = provinces.filter(p => p.months && p.months.t10 && p.months.t10.diff != null);
+  // So sánh tháng hiện tại với tháng trước
+  const validDiffActive = provinces.filter(p => p.months && p.months[activeMonthKey] && p.months[activeMonthKey].diff != null);
   let topIncrease = null;
   let topDecrease = null;
 
-  const positiveDiffs = validDiffT10.filter(p => p.months.t10.diff > 0);
+  const positiveDiffs = validDiffActive.filter(p => p.months[activeMonthKey].diff > 0);
   if (positiveDiffs.length) {
-    topIncrease = positiveDiffs.reduce((max, p) => (p.months.t10.diff > max.months.t10.diff ? p : max), positiveDiffs[0]);
+    topIncrease = positiveDiffs.reduce((max, p) => (p.months[activeMonthKey].diff > max.months[activeMonthKey].diff ? p : max), positiveDiffs[0]);
   }
 
-  const negativeDiffs = validDiffT10.filter(p => p.months.t10.diff < 0);
+  const negativeDiffs = validDiffActive.filter(p => p.months[activeMonthKey].diff < 0);
   if (negativeDiffs.length) {
-    topDecrease = negativeDiffs.reduce((min, p) => (p.months.t10.diff < min.months.t10.diff ? p : min), negativeDiffs[0]);
+    topDecrease = negativeDiffs.reduce((min, p) => (p.months[activeMonthKey].diff < min.months[activeMonthKey].diff ? p : min), negativeDiffs[0]);
   }
 
   return {
     headers: headerRow,
     provinces,
     totalRow,
-    topT10,
+    activeMonthKey,
+    activeMonthLabel,
+    topActive,
     topIncrease,
     topDecrease
   };
@@ -1758,37 +1771,40 @@ function renderBaoCaoScProvinceSummaryCards(parsed) {
       <div class="s">${sub}</div>
     </div>`;
 
+  const mKey = parsed.activeMonthKey || 't11';
+  const mLabel = parsed.activeMonthLabel || 'T11';
+
   const tot = parsed.totalRow;
-  const totVal = tot && tot.t10 != null ? tot.t10.toFixed(2) + '%' : '–';
-  const totT10 = tot && tot.months && tot.months.t10;
+  const totVal = tot && tot[mKey] != null ? tot[mKey].toFixed(2) + '%' : '–';
+  const totM = tot && tot.months && tot.months[mKey];
   let totSub = 'Trung bình toàn quốc';
-  if (totT10 && totT10.diff != null) {
-    if (totT10.diff > 0.0001) {
-      totSub = `<b style="color:#10b981">▲ +${totT10.diff.toFixed(2)}%</b> so với ${totT10.prevLabel}`;
-    } else if (totT10.diff < -0.0001) {
-      totSub = `<b style="color:#ef4444">▼ ${totT10.diff.toFixed(2)}%</b> so với ${totT10.prevLabel}`;
+  if (totM && totM.diff != null) {
+    if (totM.diff > 0.0001) {
+      totSub = `<b style="color:#10b981">▲ +${totM.diff.toFixed(2)}%</b> so với ${totM.prevLabel} (${totM.prevVal.toFixed(2)}%)`;
+    } else if (totM.diff < -0.0001) {
+      totSub = `<b style="color:#ef4444">▼ ${totM.diff.toFixed(2)}%</b> so với ${totM.prevLabel} (${totM.prevVal.toFixed(2)}%)`;
     } else {
-      totSub = `<b style="color:var(--mut)">— 0.00%</b> so với ${totT10.prevLabel}`;
+      totSub = `<b style="color:var(--mut)">— 0.00%</b> so với ${totM.prevLabel} (${totM.prevVal.toFixed(2)}%)`;
     }
   }
 
-  const top10 = parsed.topT10;
-  const top10Val = top10 && top10.t10 != null ? top10.t10.toFixed(2) + '%' : '–';
-  const top10Sub = top10 ? `Tỉnh: <b style="color:var(--tx)">${esc(top10.name)}</b>` : '–';
+  const topActive = parsed.topActive;
+  const topActiveVal = topActive && topActive[mKey] != null ? topActive[mKey].toFixed(2) + '%' : '–';
+  const topActiveSub = topActive ? `Tỉnh: <b style="color:var(--tx)">${esc(topActive.name)}</b>` : '–';
 
   const topUp = parsed.topIncrease;
-  const topUpM = topUp && topUp.months && topUp.months.t10;
+  const topUpM = topUp && topUp.months && topUp.months[mKey];
   const topUpVal = topUpM && topUpM.diff != null ? `+${topUpM.diff.toFixed(2)}%` : '–';
-  const topUpSub = topUp && topUpM ? `Tỉnh: <b style="color:var(--tx)">${esc(topUp.name)}</b> (T10: ${topUp.t10 != null ? topUp.t10.toFixed(2) + '%' : '–'} · ${topUpM.prevLabel}: ${topUpM.prevVal.toFixed(2)}%)` : '–';
+  const topUpSub = topUp && topUpM ? `Tỉnh: <b style="color:var(--tx)">${esc(topUp.name)}</b> (${mLabel}: ${topUp[mKey] != null ? topUp[mKey].toFixed(2) + '%' : '–'} · ${topUpM.prevLabel}: ${topUpM.prevVal.toFixed(2)}%)` : '–';
 
   const topDown = parsed.topDecrease;
-  const topDownM = topDown && topDown.months && topDown.months.t10;
+  const topDownM = topDown && topDown.months && topDown.months[mKey];
   const topDownVal = topDownM && topDownM.diff != null ? `${topDownM.diff.toFixed(2)}%` : '–';
-  const topDownSub = topDown && topDownM ? `Tỉnh: <b style="color:var(--tx)">${esc(topDown.name)}</b> (T10: ${topDown.t10 != null ? topDown.t10.toFixed(2) + '%' : '–'} · ${topDownM.prevLabel}: ${topDownM.prevVal.toFixed(2)}%)` : '–';
+  const topDownSub = topDown && topDownM ? `Tỉnh: <b style="color:var(--tx)">${esc(topDown.name)}</b> (${mLabel}: ${topDown[mKey] != null ? topDown[mKey].toFixed(2) + '%' : '–'} · ${topDownM.prevLabel}: ${topDownM.prevVal.toFixed(2)}%)` : '–';
 
   box.innerHTML =
-    K('Toàn Quốc (T10)', totVal, totSub, 'color:#38bdf8') +
-    K('Top 1 Impact T10', top10Val, top10Sub, 'color:#10b981') +
+    K(`Toàn Quốc (${mLabel})`, totVal, totSub, 'color:#38bdf8') +
+    K(`Top 1 Impact ${mLabel}`, topActiveVal, topActiveSub, 'color:#10b981') +
     K('Tăng Trưởng Tốt Nhất', topUpVal, topUpSub, 'color:#34d399') +
     K('Giảm Sâu Nhất', topDownVal, topDownSub, 'color:#ef4444');
 }

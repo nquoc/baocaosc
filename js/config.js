@@ -100,7 +100,7 @@ let coachTeamSort = { k: 'atcPerDay', dir: -1 };
 
 // Trạng thái Bảng Chất Lượng SC Theo Tỉnh Thành (Tab 1)
 let ALL_RECS = [];
-let PROVINCE_QUALITY_MONTH = '2026-10'; // Mặc định tháng 10
+let PROVINCE_QUALITY_MONTH = ''; // Mặc định tự động nhận tháng hiện tại getCurrentMonthStr() (Tháng 11)
 let PROVINCE_QUALITY_SEARCH = '';
 let PROVINCE_QUALITY_SORT = { k: 'atc', dir: -1 }; // Mặc định sắp xếp theo Tổng atc giảm dần
 let EXPANDED_PROVINCES = new Set(); // Lưu vết các dòng tỉnh đang mở chi tiết SC
@@ -148,11 +148,11 @@ let PHANCUNG_OCT_MONTH_FILTER = 'all'; // 'all', '10', '11', '12'
 
 // Trạng thái Mục 3: Bán Hàng Từ Nguồn (Quý 4: T10 - T12)
 let PHANCUNG_SOURCE_STATE = { data: null, savedAt: 0, timeStr: '' };
-let PHANCUNG_SOURCE_SORT = { k: 't10', dir: -1 };
+let PHANCUNG_SOURCE_SORT = { k: 't11', dir: -1 }; // Mặc định sắp xếp giảm dần theo tháng hiện tại (Tháng 11)
 
 // Trạng thái Mục 3.2: Thống Kê SL Đơn Từ Sale (Quý 4: Y1:AB6)
 let PHANCUNG_SALE_STATE = { data: null, savedAt: 0, timeStr: '' };
-let PHANCUNG_SALE_SORT = { k: 't10', dir: -1 };
+let PHANCUNG_SALE_SORT = { k: 't11', dir: -1 }; // Mặc định sắp xếp giảm dần theo tháng hiện tại (Tháng 11)
 
 // Trạng thái Mục 4: Báo Cáo Tỷ Lệ Chốt Theo Nguồn (Quý 4: AE1:AQ9)
 let PHANCUNG_CONVERSION_STATE = { data: null, savedAt: 0, timeStr: '' };
@@ -167,7 +167,7 @@ let BAOCAOSC_MONTHLY_INACTIVE_SORT = { k: 'mNum', dir: -1 };
 let BAOCAOSC_CARE_SORT = { k: 'kyMoi', dir: -1 };
 let BAOCAOSC_FNB_ISSUE_SORT = { k: 'count', dir: -1 };
 let BAOCAOSC_PROVINCE_SEARCH = '';
-let BAOCAOSC_PROVINCE_SORT = { k: 't10', dir: -1 };
+let BAOCAOSC_PROVINCE_SORT = { k: 't11', dir: -1 }; // Mặc định sắp xếp giảm dần theo tháng hiện tại (Tháng 11)
 let BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH = '';
 let BAOCAOSC_HEADCOUNT_PROVINCE_SORT = { k: 'count', dir: -1 };
 
