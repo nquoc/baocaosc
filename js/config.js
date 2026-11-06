@@ -8,7 +8,7 @@ const API = API_BASE + '?sheet=baocaotong';
 const API_MUCTIEU_OFFLINE = API_BASE + '?sheet=muctieu&range=A2:I13';
 const API_MUCTIEU_ONLINE = API_BASE + '?sheet=muctieu&range=A16:I28';
 const API_KPI = API_BASE + '?sheet=kpi&range=A1:P29';
-const API_PHANCUNG = API_BASE + '?sheet=phancung';
+const API_PHANCUNG = API_BASE + '?sheet=phancung&range=A1:P28';
 const API_PHANCUNG_OCT = API_BASE + '?sheet=opp'; // Endpoint cho Mục 2: Chi Tiết Phần Cứng Tháng 10
 const API_PHANCUNG_SOURCE = API_BASE + '?sheet=phancung&range=T1:W9'; // Endpoint cho Mục 3.1: Bán Hàng Từ Nguồn
 const API_PHANCUNG_SALE = API_BASE + '?sheet=phancung&range=Y1:AB6'; // Endpoint cho Mục 3.2: Thống Kê SL Đơn Từ Sale

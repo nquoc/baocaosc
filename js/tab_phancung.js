@@ -142,18 +142,25 @@ function normalizePhanCungData(rawData) {
   const row2 = rawData[1] || [];
   for (let c = 0; c < row2.length; c++) {
     const s = String(row2[c] || '').trim();
-    if (/^Tháng\s+\d+$/i.test(s)) {
-      monthCols.push(c);
-      monthLabels.push(s);
+    const match = s.match(/^Tháng\s+(\d+)$/i);
+    if (match) {
+      const mNum = parseInt(match[1], 10);
+      if (mNum >= 1 && mNum <= 12 && monthCols.length === (mNum - 1)) {
+        monthCols.push(c);
+        monthLabels.push(`Tháng ${mNum}`);
+        if (monthCols.length === 12) break; // Dừng ngay khi đủ 12 tháng tuần tự!
+      }
     }
   }
 
   // Fallback nếu không khớp regex
-  if (monthCols.length === 0) {
+  if (monthCols.length < 12) {
+    monthCols.length = 0;
+    monthLabels.length = 0;
     const startCol = rawData[1][2] === 'Tháng' ? 3 : 2;
     for (let c = startCol; c < startCol + 12; c++) {
       monthCols.push(c);
-      monthLabels.push(String(rawData[1][c] || `Tháng ${c - startCol + 1}`).trim());
+      monthLabels.push(`Tháng ${c - startCol + 1}`);
     }
   }
 
@@ -210,15 +217,19 @@ function normalizePhanCungData(rawData) {
   // 4. Table 2: Nhận diện cột Level và Tổng Doanh Số từ Row 10 (Header)
   const headerRow = rawData[9] || [];
   let levelCol = -1;
-  let totalCol = headerRow.length - 1;
+  let totalCol = -1;
 
   for (let c = 0; c < headerRow.length; c++) {
     const h = String(headerRow[c] || '').trim().toLowerCase();
     if (h === 'level' || h.includes('định mức')) {
       levelCol = c;
-    } else if (h.includes('tổng doanh số') || h === 'tổng') {
+    } else if (h.includes('tổng doanh số') || (h === 'tổng' && c > 12)) {
       totalCol = c;
+      break; // Dừng ngay tại cột Tổng Doanh Số của Bảng 1
     }
+  }
+  if (totalCol === -1) {
+    totalCol = (monthCols.length ? monthCols[monthCols.length - 1] + 1 : 15);
   }
 
   const items = [];
