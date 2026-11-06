@@ -6,7 +6,7 @@
   <title>Báo cáo tổng hợp SC</title>
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png">
   <link rel="shortcut icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261104_1615">
+  <link rel="stylesheet" href="css/style.css?v=20261106_1150">
 </head>
 <body>
 
@@ -501,6 +501,44 @@
       </div>
       <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
         <table id="pcDvkhTable" class="kpi-table"></table>
+      </div>
+    </div>
+
+    
+    <!-- ==================== MỤC 4: BÁO CÁO TỶ LỆ CHỐT THEO NGUỒN ==================== -->
+    <div id="pcSecConversion" style="margin-top:28px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#f59e0b;color:#ffffff;letter-spacing:0.5px">MỤC 4</span>
+          <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Báo Cáo Tỷ Lệ Chốt Cơ Hội Phần Cứng Theo Nguồn (Tháng 10 &amp; Tháng 11)</h2>
+        </div>
+        <div class="mut sm" style="font-weight:600">
+          Nguồn: Sheet <b>phancung</b> (AE1:AQ9) · Tỷ lệ chuyển đổi theo Nguồn tổng đài &amp; Nguồn Sale/MKY/Khách cũ
+        </div>
+      </div>
+
+      <!-- CÁC THẺ KPI TÓM TẮT MỤC 4 -->
+      <div class="grid kpis" id="pcConversionSummaryCards" style="margin-bottom:14px"></div>
+
+      <!-- BẢNG CHI TIẾT TỶ LỆ CHỐT -->
+      <div class="card" style="padding:14px 16px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div>
+            <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+              <span>🎯 Bảng Thống Kê Tỷ Lệ Chốt Cơ Hội Phần Cứng Theo Nguồn</span>
+              <span class="mut sm" style="font-weight:400">(AE1:AQ9 · ⇅)</span>
+            </h3>
+            <div class="mut sm" style="margin-top:3px">
+              Chi tiết số lượng Opp, số đơn chốt thành công và tỷ lệ chốt (%) theo từng nhân sự Sale chuyên trách Phần cứng
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button onclick="exportPhanCungConversionCsv()" style="background:#f59e0b;color:#fff;border-color:#d97706;font-size:12px;padding:5px 11px">⬇ Xuất CSV Tỷ Lệ Chốt</button>
+          </div>
+        </div>
+        <div class="wrap" style="overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+          <table id="pcConversionTable" class="kpi-table"></table>
+        </div>
       </div>
     </div>
 
@@ -1475,18 +1513,18 @@
 <!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
-<script src="js/config.js?v=20261104_1615"></script>
-<script src="js/utils.js?v=20261104_1615"></script>
-<script src="js/tab_overview.js?v=20261104_1615"></script>
-<script src="js/tab_pivot.js?v=20261104_1615"></script>
-<script src="js/tab_muctieu.js?v=20261104_1615"></script>
-<script src="js/tab_kpi.js?v=20261104_1615"></script>
-<script src="js/tab_phancung.js?v=20261104_1615"></script>
-<script src="js/tab_baocaosc.js?v=20261104_1615"></script>
-<script src="js/tab_kpionline.js?v=20261104_1615"></script>
-<script src="js/tab_impactonline.js?v=20261104_1615"></script>
-<script src="js/tab_dataton.js?v=20261104_1615"></script>
-<script src="js/tab-bao-cao.js?v=20261104_1615"></script>
-<script src="js/app.js?v=20261104_1615"></script>
+<script src="js/config.js?v=20261106_1150"></script>
+<script src="js/utils.js?v=20261106_1150"></script>
+<script src="js/tab_overview.js?v=20261106_1150"></script>
+<script src="js/tab_pivot.js?v=20261106_1150"></script>
+<script src="js/tab_muctieu.js?v=20261106_1150"></script>
+<script src="js/tab_kpi.js?v=20261106_1150"></script>
+<script src="js/tab_phancung.js?v=20261106_1150"></script>
+<script src="js/tab_baocaosc.js?v=20261106_1150"></script>
+<script src="js/tab_kpionline.js?v=20261106_1150"></script>
+<script src="js/tab_impactonline.js?v=20261106_1150"></script>
+<script src="js/tab_dataton.js?v=20261106_1150"></script>
+<script src="js/tab-bao-cao.js?v=20261106_1150"></script>
+<script src="js/app.js?v=20261106_1150"></script>
 </body>
 </html>

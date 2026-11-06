@@ -654,6 +654,7 @@ function renderPhanCung() {
   renderPhanCungOct();
   renderPhanCungSource();
   renderPhanCungSale();
+  renderPhanCungConversion();
 }
 
 /**
@@ -676,7 +677,7 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
   if (!forceReload) {
     try {
       const db = await openDB();
-      const [cachedYear, cachedOct, cachedSource, cachedSale] = await Promise.all([
+      const [cachedYear, cachedOct, cachedSource, cachedSale, cachedConversion] = await Promise.all([
         new Promise(resolve => {
           const tx = db.transaction(STORE_NAME, 'readonly');
           const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG);
@@ -700,6 +701,12 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
           const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG_SALE);
           req.onsuccess = () => resolve(req.result || null);
           req.onerror = () => resolve(null);
+        }),
+        new Promise(resolve => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const req = tx.objectStore(STORE_NAME).get(CACHE_KEY_PHANCUNG_CONVERSION);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
         })
       ]);
 
@@ -713,6 +720,7 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
         if (cachedOct && cachedOct.data) PHANCUNG_OCT_STATE = cachedOct;
         PHANCUNG_SOURCE_STATE = cachedSource;
         if (cachedSale && cachedSale.data) PHANCUNG_SALE_STATE = cachedSale;
+        if (cachedConversion && cachedConversion.data) PHANCUNG_CONVERSION_STATE = cachedConversion;
 
         renderPhanCung();
         if (badge) {
@@ -731,12 +739,14 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
   const urlOct = API_PHANCUNG_OCT + (API_PHANCUNG_OCT.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlSource = API_PHANCUNG_SOURCE + (API_PHANCUNG_SOURCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlSale = API_PHANCUNG_SALE + (API_PHANCUNG_SALE.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  const urlConversion = API_PHANCUNG_CONVERSION + (API_PHANCUNG_CONVERSION.includes('?') ? '&' : '?') + '_t=' + Date.now();
   try {
-    const [resYear, resOct, resSource, resSale] = await Promise.all([
+    const [resYear, resOct, resSource, resSale, resConversion] = await Promise.all([
       safeFetchJson(urlYear, 2),
       safeFetchJson(urlOct, 2),
       safeFetchJson(urlSource, 2),
-      safeFetchJson(urlSale, 2)
+      safeFetchJson(urlSale, 2),
+      safeFetchJson(urlConversion, 2)
     ]);
 
     if (resYear.status !== 'success' || !Array.isArray(resYear.data) || resYear.data.length < 12) {
@@ -776,6 +786,14 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
       };
     }
 
+    if (resConversion && resConversion.status === 'success' && Array.isArray(resConversion.data) && resConversion.data.length >= 5) {
+      PHANCUNG_CONVERSION_STATE = {
+        data: resConversion.data,
+        savedAt: Date.now(),
+        timeStr: timeStr
+      };
+    }
+
     // Lưu IndexedDB
     try {
       const db = await openDB();
@@ -786,9 +804,12 @@ async function loadPhanCung(forceReload = false, isSilent = false) {
       }
       if (PHANCUNG_SOURCE_STATE.data) {
         tx.objectStore(STORE_NAME).put(PHANCUNG_SOURCE_STATE, CACHE_KEY_PHANCUNG_SOURCE);
+      }
       if (PHANCUNG_SALE_STATE.data) {
         tx.objectStore(STORE_NAME).put(PHANCUNG_SALE_STATE, CACHE_KEY_PHANCUNG_SALE);
       }
+      if (PHANCUNG_CONVERSION_STATE.data) {
+        tx.objectStore(STORE_NAME).put(PHANCUNG_CONVERSION_STATE, CACHE_KEY_PHANCUNG_CONVERSION);
       }
     } catch (e) {}
 
@@ -2379,4 +2400,315 @@ function exportPhanCungSaleCsv() {
   a.download = `thong_ke_don_tu_sale_phancung_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   showToast('Đã xuất thành công file CSV Thống Kê Đơn Từ Sale (Mục 3.2)!', true);
+}
+
+// =====================================================================
+// MỤC 4: BÁO CÁO TỶ LỆ CHỐT CƠ HỘI PHẦN CỨNG THEO NGUỒN (AE1:AQ9)
+// =====================================================================
+
+/**
+ * Chuẩn hóa dữ liệu Mục 4 (AE1:AQ9)
+ * Rows 5-8: Nhân sự Sale
+ * Row 9: Tổng
+ */
+function normalizePhanCungConversionData(rawData) {
+  if (!Array.isArray(rawData) || rawData.length < 5) return null;
+
+  const parseNum = val => {
+    if (val == null || val === '' || val === '-') return 0;
+    const n = Number(String(val).replace(/[^0-9.-]/g, ''));
+    return isNaN(n) ? 0 : n;
+  };
+
+  const parseRate = val => {
+    if (val == null || val === '' || val === '-') return 0;
+    const n = Number(val);
+    return isNaN(n) ? 0 : n;
+  };
+
+  const staff = [];
+  let totalRow = null;
+
+  for (let r = 4; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row || !row.length) continue;
+    const rawName = String(row[0] || '').trim();
+    if (!rawName) continue;
+
+    const isTotal = rawName.toLowerCase() === 'tổng' || rawName.toLowerCase().includes('tổng cộng');
+
+    const item = {
+      name: isTotal ? 'TỔNG CỘNG' : rawName,
+      t10_td_opp: parseNum(row[1]),
+      t10_td_succ: parseNum(row[2]),
+      t10_td_rate: parseRate(row[3]),
+      t10_sale_opp: parseNum(row[4]),
+      t10_sale_succ: parseNum(row[5]),
+      t10_sale_rate: parseRate(row[6]),
+      t11_td_opp: parseNum(row[7]),
+      t11_td_succ: parseNum(row[8]),
+      t11_td_rate: parseRate(row[9]),
+      t11_sale_opp: parseNum(row[10]),
+      t11_sale_succ: parseNum(row[11]),
+      t11_sale_rate: parseRate(row[12])
+    };
+
+    if (isTotal) {
+      totalRow = item;
+    } else {
+      item.id = staff.length + 1;
+      staff.push(item);
+    }
+  }
+
+  return {
+    staff,
+    totalRow
+  };
+}
+
+/**
+ * Hiển thị các thẻ KPI Mục 4
+ */
+function renderPhanCungConversionSummaryCards(parsed) {
+  const container = $('pcConversionSummaryCards');
+  if (!container || !parsed || !parsed.totalRow) return;
+
+  const tot = parsed.totalRow;
+  const fmtRate = r => (r * 100).toFixed(2) + '%';
+
+  container.innerHTML = `
+    <div class="card kpi">
+      <div class="label" style="color:#0284c7">T10 · Chốt Nguồn Sale/MKY</div>
+      <div class="val" style="color:#0284c7">${fmtRate(tot.t10_sale_rate)}</div>
+      <div class="sub">${fmtNum(tot.t10_sale_succ)} / ${fmtNum(tot.t10_sale_opp)} Opp thành công</div>
+    </div>
+    <div class="card kpi">
+      <div class="label" style="color:#0369a1">T10 · Chốt Nguồn Tổng Đài</div>
+      <div class="val" style="color:#0369a1">${fmtRate(tot.t10_td_rate)}</div>
+      <div class="sub">${fmtNum(tot.t10_td_succ)} / ${fmtNum(tot.t10_td_opp)} Opp thành công</div>
+    </div>
+    <div class="card kpi">
+      <div class="label" style="color:#059669">T11 · Chốt Nguồn Sale/MKY</div>
+      <div class="val" style="color:#059669">${fmtRate(tot.t11_sale_rate)}</div>
+      <div class="sub">${fmtNum(tot.t11_sale_succ)} / ${fmtNum(tot.t11_sale_opp)} Opp thành công</div>
+    </div>
+    <div class="card kpi">
+      <div class="label" style="color:#0d9488">T11 · Chốt Nguồn Tổng Đài</div>
+      <div class="val" style="color:#0d9488">${fmtRate(tot.t11_td_rate)}</div>
+      <div class="sub">${fmtNum(tot.t11_td_succ)} / ${fmtNum(tot.t11_td_opp)} Opp thành công</div>
+    </div>
+  `;
+}
+
+/**
+ * Hiển thị bảng chi tiết Mục 4 (AE1:AQ9)
+ */
+function renderPhanCungConversionTable(parsed) {
+  const tbl = $('pcConversionTable');
+  if (!tbl || !parsed) return;
+
+  let list = [...parsed.staff];
+
+  // Sắp xếp
+  const { k, dir } = PHANCUNG_CONVERSION_SORT;
+  if (k !== 'default') {
+    list.sort((a, b) => {
+      if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
+      return dir * ((a[k] || 0) - (b[k] || 0));
+    });
+  }
+
+  const sortArrow = colKey => (PHANCUNG_CONVERSION_SORT.k === colKey ? (PHANCUNG_CONVERSION_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
+
+  const rateBadge = rate => {
+    const pct = rate * 100;
+    let bg = '#fee2e2', color = '#b91c1c';
+    if (pct >= 70) { bg = '#dcfce7'; color = '#15803d'; }
+    else if (pct >= 30) { bg = '#e0f2fe'; color = '#0369a1'; }
+    else if (pct >= 10) { bg = '#fef3c7'; color = '#b45309'; }
+    return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-weight:700;font-size:11.5px;background:${bg};color:${color}">${pct.toFixed(2)}%</span>`;
+  };
+
+  // THEAD 3 TẦNG
+  let thead = '<thead>';
+  // Hàng 1
+  thead += '<tr>';
+  thead += `<th rowspan="3" onclick="sortPhanCungConversion('name')" style="min-width:240px;text-align:left;vertical-align:middle;cursor:pointer;background:var(--card-sub, #f8fafc)">Nhân Sự Sale${sortArrow('name')}</th>`;
+  thead += '<th colspan="6" style="text-align:center;background:#0284c7;color:#fff;font-weight:800;letter-spacing:0.5px">THÁNG 10</th>';
+  thead += '<th colspan="6" style="text-align:center;background:#059669;color:#fff;font-weight:800;letter-spacing:0.5px">THÁNG 11</th>';
+  thead += '</tr>';
+
+  // Hàng 2
+  thead += '<tr>';
+  thead += '<th colspan="3" style="text-align:center;background:#e0f2fe;color:#0369a1;font-weight:700">Nguồn Tổng Đài</th>';
+  thead += '<th colspan="3" style="text-align:center;background:#fef3c7;color:#b45309;font-weight:700">Nguồn Sale / MKY / Khách Cũ</th>';
+  thead += '<th colspan="3" style="text-align:center;background:#dcfce7;color:#15803d;font-weight:700">Nguồn Tổng Đài</th>';
+  thead += '<th colspan="3" style="text-align:center;background:#fef3c7;color:#b45309;font-weight:700">Nguồn Sale / MKY / Khách Cũ</th>';
+  thead += '</tr>';
+
+  // Hàng 3 (chỉ số chi tiết)
+  thead += '<tr>';
+  thead += `<th onclick="sortPhanCungConversion('t10_td_opp')" style="text-align:center;cursor:pointer;font-size:11.5px">SL Opp${sortArrow('t10_td_opp')}</th>`;
+  thead += `<th onclick="sortPhanCungConversion('t10_td_succ')" style="text-align:center;cursor:pointer;font-size:11.5px">Thành Công${sortArrow('t10_td_succ')}</th>`;
+  thead += `<th onclick="sortPhanCungConversion('t10_td_rate')" style="text-align:center;cursor:pointer;font-size:11.5px">Tỷ Lệ Chốt${sortArrow('t10_td_rate')}</th>`;
+
+  thead += `<th onclick="sortPhanCungConversion('t10_sale_opp')" style="text-align:center;cursor:pointer;font-size:11.5px">SL Opp${sortArrow('t10_sale_opp')}</th>`;
+  thead += `<th onclick="sortPhanCungConversion('t10_sale_succ')" style="text-align:center;cursor:pointer;font-size:11.5px">Thành Công${sortArrow('t10_sale_succ')}</th>`;
+  thead += `<th onclick="sortPhanCungConversion('t10_sale_rate')" style="text-align:center;cursor:pointer;font-size:11.5px">Tỷ Lệ Chốt${sortArrow('t10_sale_rate')}</th>`;
+
+  thead += `<th onclick="sortPhanCungConversion('t11_td_opp')" style="text-align:center;cursor:pointer;font-size:11.5px">SL Opp${sortArrow('t11_td_opp')}</th>`;
+  thead += `<th onclick="sortPhanCungConversion('t11_td_succ')" style="text-align:center;cursor:pointer;font-size:11.5px">Thành Công${sortArrow('t11_td_succ')}</th>`;
+  thead += `<th onclick="sortPhanCungConversion('t11_td_rate')" style="text-align:center;cursor:pointer;font-size:11.5px">Tỷ Lệ Chốt${sortArrow('t11_td_rate')}</th>`;
+
+  thead += `<th onclick="sortPhanCungConversion('t11_sale_opp')" style="text-align:center;cursor:pointer;font-size:11.5px">SL Opp${sortArrow('t11_sale_opp')}</th>`;
+  thead += `<th onclick="sortPhanCungConversion('t11_sale_succ')" style="text-align:center;cursor:pointer;font-size:11.5px">Thành Công${sortArrow('t11_sale_succ')}</th>`;
+  thead += `<th onclick="sortPhanCungConversion('t11_sale_rate')" style="text-align:center;cursor:pointer;font-size:11.5px">Tỷ Lệ Chốt${sortArrow('t11_sale_rate')}</th>`;
+  thead += '</tr>';
+  thead += '</thead>';
+
+  // TBODY
+  let tbody = '<tbody>';
+  list.forEach(r => {
+    tbody += '<tr>';
+    tbody += `<td style="font-weight:700;color:var(--tx-heading)">${esc(r.name)}</td>`;
+
+    tbody += `<td style="text-align:center">${fmtNum(r.t10_td_opp)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700">${fmtNum(r.t10_td_succ)}</td>`;
+    tbody += `<td style="text-align:center">${rateBadge(r.t10_td_rate)}</td>`;
+
+    tbody += `<td style="text-align:center">${fmtNum(r.t10_sale_opp)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700">${fmtNum(r.t10_sale_succ)}</td>`;
+    tbody += `<td style="text-align:center">${rateBadge(r.t10_sale_rate)}</td>`;
+
+    tbody += `<td style="text-align:center">${fmtNum(r.t11_td_opp)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700">${fmtNum(r.t11_td_succ)}</td>`;
+    tbody += `<td style="text-align:center">${rateBadge(r.t11_td_rate)}</td>`;
+
+    tbody += `<td style="text-align:center">${fmtNum(r.t11_sale_opp)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700">${fmtNum(r.t11_sale_succ)}</td>`;
+    tbody += `<td style="text-align:center">${rateBadge(r.t11_sale_rate)}</td>`;
+
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  // TFOOT (Tổng cộng)
+  let tfoot = '';
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    tfoot += '<tfoot><tr style="background:var(--card-sub, #f8fafc);font-weight:800">';
+    tfoot += `<td style="color:var(--acc);font-weight:900">${esc(tot.name)}</td>`;
+
+    tfoot += `<td style="text-align:center">${fmtNum(tot.t10_td_opp)}</td>`;
+    tfoot += `<td style="text-align:center;color:#0284c7">${fmtNum(tot.t10_td_succ)}</td>`;
+    tfoot += `<td style="text-align:center">${rateBadge(tot.t10_td_rate)}</td>`;
+
+    tfoot += `<td style="text-align:center">${fmtNum(tot.t10_sale_opp)}</td>`;
+    tfoot += `<td style="text-align:center;color:#0284c7">${fmtNum(tot.t10_sale_succ)}</td>`;
+    tfoot += `<td style="text-align:center">${rateBadge(tot.t10_sale_rate)}</td>`;
+
+    tfoot += `<td style="text-align:center">${fmtNum(tot.t11_td_opp)}</td>`;
+    tfoot += `<td style="text-align:center;color:#059669">${fmtNum(tot.t11_td_succ)}</td>`;
+    tfoot += `<td style="text-align:center">${rateBadge(tot.t11_td_rate)}</td>`;
+
+    tfoot += `<td style="text-align:center">${fmtNum(tot.t11_sale_opp)}</td>`;
+    tfoot += `<td style="text-align:center;color:#059669">${fmtNum(tot.t11_sale_succ)}</td>`;
+    tfoot += `<td style="text-align:center">${rateBadge(tot.t11_sale_rate)}</td>`;
+
+    tfoot += '</tr></tfoot>';
+  }
+
+  tbl.innerHTML = thead + tbody + tfoot;
+}
+
+/**
+ * Sắp xếp bảng Mục 4
+ */
+function sortPhanCungConversion(colKey) {
+  if (PHANCUNG_CONVERSION_SORT.k === colKey) {
+    PHANCUNG_CONVERSION_SORT.dir = -PHANCUNG_CONVERSION_SORT.dir;
+  } else {
+    PHANCUNG_CONVERSION_SORT.k = colKey;
+    PHANCUNG_CONVERSION_SORT.dir = colKey === 'name' ? 1 : -1;
+  }
+  if (PHANCUNG_CONVERSION_STATE && PHANCUNG_CONVERSION_STATE.data) {
+    const parsed = normalizePhanCungConversionData(PHANCUNG_CONVERSION_STATE.data);
+    if (parsed) renderPhanCungConversionTable(parsed);
+  }
+}
+
+/**
+ * Điều phối hiển thị Mục 4
+ */
+function renderPhanCungConversion() {
+  if (!PHANCUNG_CONVERSION_STATE || !PHANCUNG_CONVERSION_STATE.data) return;
+  const parsed = normalizePhanCungConversionData(PHANCUNG_CONVERSION_STATE.data);
+  if (!parsed) return;
+  renderPhanCungConversionSummaryCards(parsed);
+  renderPhanCungConversionTable(parsed);
+}
+
+/**
+ * Xuất file CSV UTF-8 với BOM - Mục 4 Tỷ Lệ Chốt
+ */
+function exportPhanCungConversionCsv() {
+  if (!PHANCUNG_CONVERSION_STATE || !PHANCUNG_CONVERSION_STATE.data) {
+    showToast('Chưa có dữ liệu Mục 4 để xuất CSV!', false);
+    return;
+  }
+  const parsed = normalizePhanCungConversionData(PHANCUNG_CONVERSION_STATE.data);
+  if (!parsed) return;
+
+  const lines = [];
+  lines.push(['BÁO CÁO PHẦN CỨNG - MỤC 4: BÁO CÁO TỶ LỆ CHỐT THEO NGUỒN']);
+  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push([]);
+
+  lines.push([
+    'Nhân Sự Sale',
+    'T10 - Nguồn Tổng Đài (SL Opp)', 'T10 - Nguồn Tổng Đài (Thành Công)', 'T10 - Nguồn Tổng Đài (Tỷ Lệ Chốt %)',
+    'T10 - Nguồn Sale (SL Opp)', 'T10 - Nguồn Sale (Thành Công)', 'T10 - Nguồn Sale (Tỷ Lệ Chốt %)',
+    'T11 - Nguồn Tổng Đài (SL Opp)', 'T11 - Nguồn Tổng Đài (Thành Công)', 'T11 - Nguồn Tổng Đài (Tỷ Lệ Chốt %)',
+    'T11 - Nguồn Sale (SL Opp)', 'T11 - Nguồn Sale (Thành Công)', 'T11 - Nguồn Sale (Tỷ Lệ Chốt %)'
+  ]);
+
+  const fmtPct = r => (r * 100).toFixed(2) + '%';
+
+  parsed.staff.forEach(r => {
+    lines.push([
+      r.name,
+      r.t10_td_opp, r.t10_td_succ, fmtPct(r.t10_td_rate),
+      r.t10_sale_opp, r.t10_sale_succ, fmtPct(r.t10_sale_rate),
+      r.t11_td_opp, r.t11_td_succ, fmtPct(r.t11_td_rate),
+      r.t11_sale_opp, r.t11_sale_succ, fmtPct(r.t11_sale_rate)
+    ]);
+  });
+
+  if (parsed.totalRow) {
+    const tot = parsed.totalRow;
+    lines.push([
+      tot.name,
+      tot.t10_td_opp, tot.t10_td_succ, fmtPct(tot.t10_td_rate),
+      tot.t10_sale_opp, tot.t10_sale_succ, fmtPct(tot.t10_sale_rate),
+      tot.t11_td_opp, tot.t11_td_succ, fmtPct(tot.t11_td_rate),
+      tot.t11_sale_opp, tot.t11_sale_succ, fmtPct(tot.t11_sale_rate)
+    ]);
+  }
+
+  const csvContent = '\uFEFF' + lines.map(row => row.map(cell => {
+    const s = String(cell ?? '').replace(/"/g, '""');
+    return (s.includes(',') || s.includes('"') || s.includes('\n')) ? ('"' + s + '"') : s;
+  }).join(',')).join('\r\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bao_cao_phancung_muc4_ty_le_chot_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất file CSV Mục 4 thành công!');
 }

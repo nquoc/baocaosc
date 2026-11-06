@@ -1581,47 +1581,38 @@ function wrRenderHeadcountRegionTable(reg) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 5. Headcount Province (2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành)
+// 5. Headcount Province (2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành từ Sheet baocaotuan U7:V24)
 function wrRenderHeadcountProvinceTable(prov) {
-    const headers = ['Tỉnh / Thành phố', 'Số lượng nhân sự', 'Định biên quy định', 'Tình trạng tuyển dụng'];
+    const headers = ['STT', 'Tỉnh / Thành phố (Khu Vực)', 'Số Lượng Nhân Sự', 'Tỷ Trọng Quân Số (%)'];
+    let rows = [];
 
-    // 16 tỉnh thành trọng điểm theo định biên quy định chuẩn của khối SC
-    const defaultList = [
-        { name: 'Hà Nội', actual: 12, target: 12, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'TP. Hồ Chí Minh', actual: 14, target: 15, status: 'bad', statusText: 'Thiếu 01 nhân sự' },
-        { name: 'Đà Nẵng', actual: 3, target: 3, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Bình Dương', actual: 3, target: 3, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Hải Phòng', actual: 2, target: 2, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Cần Thơ', actual: 2, target: 2, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Đồng Nai', actual: 2, target: 2, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Khánh Hòa (Nha Trang)', actual: 1, target: 2, status: 'medium', statusText: 'Đã tuyển bù thử việc' },
-        { name: 'Bà Rịa - Vũng Tàu', actual: 1, target: 2, status: 'medium', statusText: 'Đã tuyển bù thử việc' },
-        { name: 'Nghệ An', actual: 1, target: 1, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Đắk Lắk', actual: 1, target: 1, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Quảng Ninh', actual: 1, target: 1, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Thanh Hóa', actual: 1, target: 1, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Kiên Giang', actual: 1, target: 1, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Lâm Đồng', actual: 1, target: 1, status: 'good', statusText: 'Đủ định biên' },
-        { name: 'Thừa Thiên Huế', actual: 1, target: 1, status: 'good', statusText: 'Đủ định biên' }
-    ];
+    let parsed = prov;
+    if (Array.isArray(prov) && typeof normalizeHeadcountProvinceData === 'function') {
+        parsed = normalizeHeadcountProvinceData(prov);
+    }
 
-    const rows = defaultList.map(it => {
-        let badgeHtml = '';
-        if (it.status === 'bad') {
-            badgeHtml = `<span class="wr-kpi-bad" style="display:inline-block;padding:2px 10px;border-radius:10px;background:#fee2e2;color:#b91c1c;font-weight:700;font-size:12px">${it.statusText}</span>`;
-        } else if (it.status === 'medium') {
-            badgeHtml = `<span class="wr-kpi-medium" style="display:inline-block;padding:2px 10px;border-radius:10px;background:#fef3c7;color:#b45309;font-weight:700;font-size:12px">${it.statusText}</span>`;
-        } else {
-            badgeHtml = `<span class="wr-kpi-good" style="display:inline-block;padding:2px 10px;border-radius:10px;background:#dcfce7;color:#15803d;font-weight:700;font-size:12px">${it.statusText}</span>`;
-        }
+    const list = parsed?.provinces || [];
+    if (Array.isArray(list) && list.length) {
+        rows = list.map((it, idx) => {
+            const pctStr = it.pct != null ? `${it.pct.toFixed(2)}%` : '-';
+            return [
+                `<div style="text-align:center;color:var(--wr-muted, #64748b)">${it.id || (idx + 1)}</div>`,
+                `<b>${wrEscapeHtml(it.name)}</b>`,
+                `<div style="text-align:center;font-weight:700">${wrFmtVal(it.count)}</div>`,
+                `<div style="text-align:center;font-weight:600;color:var(--wr-primary, #0ea5e9)">${pctStr}</div>`
+            ];
+        });
 
-        return [
-            wrEscapeHtml(it.name),
-            `<div style="text-align:center;font-weight:600">${it.actual}</div>`,
-            `<div style="text-align:center;font-weight:600">${it.target}</div>`,
-            `<div style="text-align:center">${badgeHtml}</div>`
-        ];
-    });
+        const tot = parsed.totalCount != null ? parsed.totalCount : list.reduce((s, it) => s + (it.count || 0), 0);
+        rows.push([
+            '<div style="text-align:center;font-weight:800">★</div>',
+            '<b>TỔNG CỘNG (16 TỈNH THÀNH)</b>',
+            `<div style="text-align:center;font-weight:800;color:var(--wr-primary, #0ea5e9)">${wrFmtVal(tot)}</div>`,
+            '<div style="text-align:center;font-weight:800;color:var(--wr-primary, #0ea5e9)">100.00%</div>'
+        ]);
+    } else {
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan U7:V24) - Vui lòng bấm Tải Dữ Liệu', '-', '-']];
+    }
 
     return wrTable(headers, rows, 'wr-report-table');
 }
@@ -2009,8 +2000,8 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
             ])}
             ${wrRenderHeadcountRegionTable(bsc.headcountRegion)}
 
-            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành</h3>
-            <p>Bảng phân bổ chi tiết quân số tại các tỉnh thành trọng điểm:</p>
+            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành (Sheet baocaotuan U7:V24)</h3>
+            <p>Bảng phân bổ chi tiết quân số và tỷ trọng tại 16 tỉnh thành trọng điểm theo dữ liệu thực tế từ Google Sheets:</p>
             ${wrRenderHeadcountProvinceTable(bsc.headcountProvince)}
         </section>
 
