@@ -1819,7 +1819,7 @@ async function loadPhanCungOct(forceReload = false) {
  */
 function exportPhanCungOctCsv() {
   if (!PHANCUNG_OCT_STATE.data) {
-    showToast('Chưa có dữ liệu API Tháng 10 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu API Quý 4 để xuất CSV!', false);
     return;
   }
   const currentRawData = filterOppDataByMonth(PHANCUNG_OCT_STATE.data, PHANCUNG_OCT_MONTH_FILTER);
@@ -1865,7 +1865,7 @@ function exportPhanCungOctCsv() {
 
   lines.push([]);
   lines.push(['------------------------------------------------------------']);
-  lines.push(['DANH SÁCH CHI TIẾT CƠ HỘI PHẦN CỨNG THÁNG 10']);
+  lines.push(['DANH SÁCH CHI TIẾT CƠ HỘI PHẦN CỨNG QUÝ 4']);
   lines.push([]);
 
   // Thêm toàn bộ danh sách 164 dòng từ API
@@ -1885,9 +1885,9 @@ function exportPhanCungOctCsv() {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `ma_tran_phan_cung_thang_10_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `ma_tran_phan_cung_quy_4_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
-  showToast('Đã xuất thành công file CSV Ma Trận Phần Cứng Tháng 10!', true);
+  showToast('Đã xuất thành công file CSV Ma Trận Phần Cứng Quý 4!', true);
 }
 
 // =========================================================================
