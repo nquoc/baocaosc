@@ -267,7 +267,7 @@ Giao diện được chia thành 2 Tab chính:
      * **Mục 2**: `sheet=baocaotuan&range=A2:D14` (Active Rate năm 2026: Retail, F&B, Booking qua các tháng).
      * **Mục 3**: `sheet=baocaotuan&range=F2:I6` (Tỷ lệ chăm khách New T10: Ký mới, Inactive, SC chăm).
      * **Mục 4**: `sheet=baocaotuan&range=K2:Q19` (Tỷ lệ Impact theo 16 Tỉnh/Thành phố từ T7 đến T12, so sánh MoM từng tháng).
-     * **Mục 5**: `sheet=baocaotuan&range=AD2:AG9` (Impact Theo Nguồn Data) & `range=AD13:AG17` (Impact Theo Ngành Hàng).
+     * **Mục 5**: `sheet=baocaotuan&range=AD1:AG11` (Impact Theo Nguồn Data) & `range=AD14:AG20` (Impact Theo Ngành Hàng).
      * **Mục 6**:
        * 6.1: `sheet=baocaotuan&range=AJ2:AP5` (KPI Team Online Tháng 9).
        * 6.2: `sheet=baocaotuan&range=AJ13:AP17` (KPI Team Offline Tháng 10).

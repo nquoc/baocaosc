@@ -18,8 +18,8 @@ const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14'; //
 const API_BAOCAOSC_CARE_RATE = API_BASE + '?sheet=baocaotuan&range=F2:I6'; // Mục 4: Tỷ Lệ Chăm Khách New T10
 const API_BAOCAOSC_FNB_ISSUE = API_BASE + '?sheet=baocaotuan&range=AR2:AS9'; // Mục 5: Triển Khai Tệp FNB Lớn
 const API_BAOCAOSC_PROVINCE_IMPACT = API_BASE + '?sheet=baocaotuan&range=K2:Q19'; // Mục 6: Impact Theo Tỉnh Thành Phố
-const API_BAOCAOSC_IMPACT_DATA_SOURCE = API_BASE + '?sheet=baocaotuan&range=AD2:AG9'; // Mục 7.1: Impact theo Nguồn Data
-const API_BAOCAOSC_IMPACT_INDUSTRY = API_BASE + '?sheet=baocaotuan&range=AD13:AG17'; // Mục 7.2: Impact theo Ngành Hàng
+const API_BAOCAOSC_IMPACT_DATA_SOURCE = API_BASE + '?sheet=baocaotuan&range=AD1:AG11'; // Mục 7.1: Impact theo Nguồn Data
+const API_BAOCAOSC_IMPACT_INDUSTRY = API_BASE + '?sheet=baocaotuan&range=AD14:AG20'; // Mục 7.2: Impact theo Ngành Hàng
 const API_BAOCAOSC_HEADCOUNT_REGION = API_BASE + '?sheet=baocaotuan&range=U2:AA5'; // Mục 8.1: Quân số theo Miền & Vị trí
 const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:V24'; // Mục 8.2: Quân số theo Tỉnh thành
 const API_BAOCAOSC_KPI_ONLINE_T9 = API_BASE + '?sheet=baocaotuan&range=AJ2:AP5'; // Mục 9.1: KPI Team Online Tháng 9

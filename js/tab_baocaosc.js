@@ -2513,7 +2513,7 @@ function exportHeadcountProvinceCsv() {
 }
 
 /* ==========================================================================
-   MỤC 7: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (AD2:AG9 & AD13:AG17)
+   MỤC 7: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (AD1:AG11 & AD14:AG20)
    ========================================================================== */
 
 /**
@@ -2552,7 +2552,7 @@ function parseBscPct(val) {
 }
 
 /**
- * Chuẩn hóa dữ liệu thô bảng Impact (dùng chung cho Nguồn Data AD2:AG9 & Ngành Hàng AD13:AG17)
+ * Chuẩn hóa dữ liệu thô bảng Impact (dùng chung cho Nguồn Data AD1:AG11 & Ngành Hàng AD14:AG20)
  */
 function normalizeImpactTableData(rawData) {
   if (!Array.isArray(rawData) || rawData.length < 2) return null;
@@ -2560,17 +2560,28 @@ function normalizeImpactTableData(rawData) {
   const items = [];
   let totalRow = null;
 
-  for (let r = 1; r < rawData.length; r++) {
+  for (let r = 0; r < rawData.length; r++) {
     const row = rawData[r];
     if (!row || !row.length) continue;
     const name = String(row[0] || '').trim();
     if (!name) continue;
+
+    const lowerName = name.toLowerCase();
+    // Bỏ qua các hàng tiêu đề nếu range kéo từ đầu bảng (AD1:AG11 hoặc AD14:AG20)
+    if (lowerName.includes('impact theo') || lowerName === 'tệp' || lowerName.startsWith('tháng ') || lowerName === 'ngành hàng') {
+      continue;
+    }
 
     const act = parseBscNumber(row[1]);
     const impact = parseBscNumber(row[2]);
     let rate = parseBscPct(row[3]);
     if (rate === 0 && act > 0 && impact > 0) {
       rate = (impact / act) * 100;
+    }
+
+    // Nếu cả act và impact đều là 0 và chứa từ khóa header, bỏ qua
+    if (act === 0 && impact === 0 && rate === 0 && (lowerName.includes('số lượng') || lowerName.includes('tỷ lệ'))) {
+      continue;
     }
 
     const item = {
@@ -2580,7 +2591,7 @@ function normalizeImpactTableData(rawData) {
       rate
     };
 
-    if (name.toLowerCase() === 'tổng' || name.toLowerCase() === 'total') {
+    if (lowerName === 'tổng' || lowerName === 'total' || lowerName.includes('tổng cộng')) {
       totalRow = item;
     } else {
       items.push(item);
@@ -2687,7 +2698,7 @@ function renderBaoCaoScImpactSummaryCards(parsedSource, parsedIndustry) {
 }
 
 /**
- * Hiển thị Bảng 1: Impact Theo Nguồn Data (AD2:AG9)
+ * Hiển thị Bảng 1: Impact Theo Nguồn Data (AD1:AG11)
  */
 function renderImpactSourceTable(parsed) {
   const tbl = $('bscImpactSourceTable');
@@ -2757,7 +2768,7 @@ function renderImpactSourceTable(parsed) {
 }
 
 /**
- * Hiển thị Bảng 2: Impact Theo Ngành Hàng (AD13:AG17)
+ * Hiển thị Bảng 2: Impact Theo Ngành Hàng (AD14:AG20)
  */
 function renderImpactIndustryTable(parsed) {
   const tbl = $('bscImpactIndustryTable');
@@ -2934,7 +2945,7 @@ function exportImpactSection7Csv() {
   if (BAOCAOSC_STATE.impactDataSource) {
     const parsedSource = normalizeImpactTableData(BAOCAOSC_STATE.impactDataSource);
     if (parsedSource) {
-      lines.push(['--- BẢNG 1: IMPACT THEO NGUỒN DATA (AD2:AG9) ---']);
+      lines.push(['--- BẢNG 1: IMPACT THEO NGUỒN DATA (AD1:AG11) ---']);
       lines.push(['STT', 'Tệp / Nguồn Data', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
       parsedSource.items.forEach((it, idx) => {
         lines.push([idx + 1, it.name, it.act, it.impact, it.rate.toFixed(2) + '%']);
@@ -2951,7 +2962,7 @@ function exportImpactSection7Csv() {
   if (BAOCAOSC_STATE.impactIndustry) {
     const parsedIndustry = normalizeImpactTableData(BAOCAOSC_STATE.impactIndustry);
     if (parsedIndustry) {
-      lines.push(['--- BẢNG 2: IMPACT THEO NGÀNH HÀNG (AD13:AG17) ---']);
+      lines.push(['--- BẢNG 2: IMPACT THEO NGÀNH HÀNG (AD14:AG20) ---']);
       lines.push(['STT', 'Ngành Hàng', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
       parsedIndustry.items.forEach((it, idx) => {
         lines.push([idx + 1, it.name, it.act, it.impact, it.rate.toFixed(2) + '%']);
