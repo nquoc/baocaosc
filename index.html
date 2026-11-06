@@ -6,7 +6,7 @@
   <title>Báo cáo tổng hợp SC</title>
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png">
   <link rel="shortcut icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261106_1150">
+  <link rel="stylesheet" href="css/style.css?v=20261106_1450">
 </head>
 <body>
 
@@ -392,14 +392,33 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
         <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#10b981;color:#ffffff;letter-spacing:0.5px">MỤC 2 &amp; 3</span>
-        <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Chi Tiết Cơ Hội &amp; Cơ Cấu Bán Hàng Phần Cứng (Tháng 10 · Quý 4)</h2>
+        <h2 style="margin:0;font-size:16px;color:var(--tx-heading)">Chi Tiết Cơ Hội Phần Cứng Quý 4 &amp; Cơ Cấu Bán Hàng</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>opp</b> &amp; Sheet <b>phancung</b> (T1:W9 &amp; Y1:AB6)
+        Nguồn: Sheet <b>opp</b> &amp; Sheet <b>phancung</b> (T1:W9 &amp; Y1:AB6) · Dữ liệu cơ hội toàn Quý 4
       </div>
     </div>
 
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 2 (THÁNG 10) -->
+    
+      <!-- BỘ LỌC NGÀY TẠO THEO THÁNG (MỤC 2 QUÝ 4) -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-weight:700;font-size:13px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📅 Lọc Ngày Tạo (Quý 4):</span>
+          </span>
+          <div id="pcMonthFilterPills" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <button type="button" class="btn-m-filter" onclick="setPhanCungMonthFilter('all')" id="btnFilterMonth_all" style="font-size:12px;padding:4px 12px;border-radius:20px;cursor:pointer;font-weight:700;border:1px solid #10b981;background:#10b981;color:#fff">Toàn bộ Quý 4</button>
+            <button type="button" class="btn-m-filter" onclick="setPhanCungMonthFilter('10')" id="btnFilterMonth_10" style="font-size:12px;padding:4px 12px;border-radius:20px;cursor:pointer;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--tx)">Tháng 10</button>
+            <button type="button" class="btn-m-filter" onclick="setPhanCungMonthFilter('11')" id="btnFilterMonth_11" style="font-size:12px;padding:4px 12px;border-radius:20px;cursor:pointer;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--tx)">Tháng 11</button>
+            <button type="button" class="btn-m-filter" onclick="setPhanCungMonthFilter('12')" id="btnFilterMonth_12" style="font-size:12px;padding:4px 12px;border-radius:20px;cursor:pointer;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--tx)">Tháng 12</button>
+          </div>
+        </div>
+        <div id="pcMonthFilterStatusText" class="mut sm" style="font-weight:600">
+          Đang xem: <b style="color:var(--acc)">Toàn bộ Quý 4</b> (Tháng 10, 11 &amp; 12)
+        </div>
+      </div>
+
+      <!-- CÁC THẺ KPI TÓM TẮT MỤC 2 (QUÝ 4) -->
     <div class="grid kpis" id="pcOctSummaryCards" style="margin-bottom:14px"></div>
 
     <!-- HÀNG 1: HAI BẢNG NẰM NGANG NHAU (GRID G2): MA TRẬN NHÓM X TÌNH TRẠNG & BÁN HÀNG TỪ NGUỒN -->
@@ -480,7 +499,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div>
           <h3 style="margin:0;font-size:14px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>📋 Chi Tiết Cơ Hội Nhóm DVKH Manager (<span id="pcDvkhCount" style="color:var(--ok)">0</span> Opp)</span>
+            <span>📋 Chi Tiết Cơ Hội Nhóm DVKH Manager Quý 4 (<span id="pcDvkhCount" style="color:var(--ok)">0</span> Opp)</span>
           </h3>
           <div class="mut sm" style="margin-top:3px">
             Danh sách chi tiết các cơ hội phần cứng thuộc nhóm DVKH Manager · Bấm tiêu đề cột để sắp xếp
@@ -1513,18 +1532,18 @@
 <!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
-<script src="js/config.js?v=20261106_1150"></script>
-<script src="js/utils.js?v=20261106_1150"></script>
-<script src="js/tab_overview.js?v=20261106_1150"></script>
-<script src="js/tab_pivot.js?v=20261106_1150"></script>
-<script src="js/tab_muctieu.js?v=20261106_1150"></script>
-<script src="js/tab_kpi.js?v=20261106_1150"></script>
-<script src="js/tab_phancung.js?v=20261106_1150"></script>
-<script src="js/tab_baocaosc.js?v=20261106_1150"></script>
-<script src="js/tab_kpionline.js?v=20261106_1150"></script>
-<script src="js/tab_impactonline.js?v=20261106_1150"></script>
-<script src="js/tab_dataton.js?v=20261106_1150"></script>
-<script src="js/tab-bao-cao.js?v=20261106_1150"></script>
-<script src="js/app.js?v=20261106_1150"></script>
+<script src="js/config.js?v=20261106_1450"></script>
+<script src="js/utils.js?v=20261106_1450"></script>
+<script src="js/tab_overview.js?v=20261106_1450"></script>
+<script src="js/tab_pivot.js?v=20261106_1450"></script>
+<script src="js/tab_muctieu.js?v=20261106_1450"></script>
+<script src="js/tab_kpi.js?v=20261106_1450"></script>
+<script src="js/tab_phancung.js?v=20261106_1450"></script>
+<script src="js/tab_baocaosc.js?v=20261106_1450"></script>
+<script src="js/tab_kpionline.js?v=20261106_1450"></script>
+<script src="js/tab_impactonline.js?v=20261106_1450"></script>
+<script src="js/tab_dataton.js?v=20261106_1450"></script>
+<script src="js/tab-bao-cao.js?v=20261106_1450"></script>
+<script src="js/app.js?v=20261106_1450"></script>
 </body>
 </html>

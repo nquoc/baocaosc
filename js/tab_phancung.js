@@ -2,6 +2,79 @@
  * tab_phancung.js - Logic xử lý dữ liệu và giao diện Tab 5: DS Phần Cứng
  */
 
+
+function fmtNumVal(n) {
+  if (n == null || isNaN(Number(n))) return '0';
+  return Number(n).toLocaleString('vi-VN');
+}
+
+function parseDateMonth(dateStr) {
+  if (!dateStr) return null;
+  const s = String(dateStr).trim();
+  let m = s.match(/^(\d{4})[-/](\d{1,2})/);
+  if (m) return parseInt(m[2], 10);
+  m = s.match(/^\d{1,2}[-/](\d{1,2})[-/](\d{4})/);
+  if (m) return parseInt(m[1], 10);
+  return null;
+}
+
+function filterOppDataByMonth(rawData, monthFilter) {
+  if (!Array.isArray(rawData) || rawData.length < 2) return rawData;
+  if (!monthFilter || monthFilter === 'all') return rawData;
+
+  const headers = rawData[0];
+  let colNgayTao = headers.findIndex(h => {
+    const s = String(h || '').trim().toLowerCase();
+    return s === 'thời gian tạo' || s === 'ngày tạo';
+  });
+  if (colNgayTao === -1) colNgayTao = 5;
+
+  const targetM = parseInt(monthFilter, 10);
+  const filtered = [headers];
+  for (let r = 1; r < rawData.length; r++) {
+    const row = rawData[r];
+    if (!row) continue;
+    const dateVal = row[colNgayTao];
+    const m = parseDateMonth(dateVal);
+    if (m === targetM) {
+      filtered.push(row);
+    }
+  }
+  return filtered;
+}
+
+function setPhanCungMonthFilter(monthVal) {
+  PHANCUNG_OCT_MONTH_FILTER = monthVal;
+
+  const btns = ['all', '10', '11', '12'];
+  btns.forEach(m => {
+    const el = $('btnFilterMonth_' + m);
+    if (!el) return;
+    if (m === monthVal) {
+      el.style.border = '1px solid #10b981';
+      el.style.background = '#10b981';
+      el.style.color = '#fff';
+      el.style.fontWeight = '700';
+    } else {
+      el.style.border = '1px solid var(--line)';
+      el.style.background = 'var(--card)';
+      el.style.color = 'var(--tx)';
+      el.style.fontWeight = '600';
+    }
+  });
+
+  const txt = $('pcMonthFilterStatusText');
+  if (txt) {
+    if (monthVal === 'all') {
+      txt.innerHTML = 'Đang xem: <b style="color:var(--acc)">Toàn bộ Quý 4</b> (Tháng 10, 11 &amp; 12)';
+    } else {
+      txt.innerHTML = `Đang xem: <b style="color:var(--acc)">Tháng ${monthVal}</b> (Lọc theo Ngày tạo)`;
+    }
+  }
+
+  renderPhanCungOct();
+}
+
 function parsePcNumber(val) {
   if (val == null || val === '' || val === '-') return 0;
   const str = String(val).trim();
@@ -1079,11 +1152,12 @@ function renderPhanCungOctSummaryCards(parsedOct) {
   if (!box || !parsedOct) return;
 
   const now = new Date();
-  const curMonthNum = now.getMonth() + 1;
   const curYear = now.getFullYear();
-  const curMonthStr = `Tháng ${curMonthNum}/${curYear}`;
+  const selectedLabel = (typeof PHANCUNG_OCT_MONTH_FILTER !== 'undefined' && PHANCUNG_OCT_MONTH_FILTER !== 'all')
+    ? `Tháng ${PHANCUNG_OCT_MONTH_FILTER}/${curYear}`
+    : `Quý 4/${curYear}`;
 
-  const K = (l, v, s, c = '', timeTag = curMonthStr) => `
+  const K = (l, v, s, c = '', timeTag = selectedLabel) => `
     <div class="card kpi">
       <div class="l" style="display:flex;justify-content:space-between;align-items:center;gap:4px">
         <span>${l}</span>
@@ -1103,11 +1177,11 @@ function renderPhanCungOctSummaryCards(parsedOct) {
   const cxdPct = gt.val > 0 ? (cxd.val / gt.val * 100).toFixed(1) : '0';
 
   box.innerHTML =
-    K(`Tổng Cơ Hội ${curMonthStr}`, `${gt.count} đơn`, `Tổng giá trị: ${formatVND(gt.val)} · Mốc hiện tại`, 'color:#38bdf8', 'Hiện tại') +
-    K('Thành Công (Đã Chốt)', `${tc.count} đơn`, `${formatVND(tc.val)} (${tcPct}% tổng)`, 'color:#10b981', curMonthStr) +
-    K('KH Đã Thanh Toán', `${tt.count} đơn`, `${formatVND(tt.val)}`, 'color:#0ea5e9', curMonthStr) +
-    K('Chờ Xét Duyệt', `${cxd.count} đơn`, `${formatVND(cxd.val)} (${cxdPct}% tổng)`, 'color:#f59e0b', curMonthStr) +
-    K('Đang Bán Hàng / Tư Vấn', `${bh.count} đơn`, `${formatVND(bh.val)}`, 'color:#a855f7', curMonthStr);
+    K(`Tổng Cơ Hội ${selectedLabel}`, `${gt.count} đơn`, `Tổng giá trị: ${formatVND(gt.val)}`, 'color:#38bdf8', selectedLabel) +
+    K('Thành Công (Đã Chốt)', `${tc.count} đơn`, `${formatVND(tc.val)} (${tcPct}% tổng)`, 'color:#10b981', selectedLabel) +
+    K('KH Đã Thanh Toán', `${tt.count} đơn`, `${formatVND(tt.val)}`, 'color:#0ea5e9', selectedLabel) +
+    K('Chờ Xét Duyệt', `${cxd.count} đơn`, `${formatVND(cxd.val)} (${cxdPct}% tổng)`, 'color:#f59e0b', selectedLabel) +
+    K('Đang Bán Hàng / Tư Vấn', `${bh.count} đơn`, `${formatVND(bh.val)}`, 'color:#a855f7', selectedLabel);
 }
 
 /**
@@ -1328,20 +1402,21 @@ function expandAllDvkhRegions(shouldExpand) {
 /**
  * Render Bảng Chi Tiết Cơ Hội Nhóm DVKH Manager (Nhóm theo Khu Vực)
  */
-function renderPhanCungDvkhManager(parsedOct) {
+function renderPhanCungDvkhManager(parsedOct, currentRawData) {
   const tbl = $('pcDvkhTable');
   const countBadge = $('pcDvkhCount');
   const pillsBox = $('pcDvkhRegionPills');
   if (!tbl) return;
 
-  if (!PHANCUNG_OCT_STATE.data || !Array.isArray(PHANCUNG_OCT_STATE.data) || PHANCUNG_OCT_STATE.data.length < 2) {
+  const sourceData = currentRawData || filterOppDataByMonth(PHANCUNG_OCT_STATE.data, PHANCUNG_OCT_MONTH_FILTER);
+  if (!sourceData || !Array.isArray(sourceData) || sourceData.length < 2) {
     tbl.innerHTML = '<tbody><tr><td colspan="8" style="padding:20px;text-align:center;color:var(--mut)">Chưa có dữ liệu cơ hội phần cứng.</td></tr></tbody>';
     if (countBadge) countBadge.textContent = '0';
     if (pillsBox) pillsBox.innerHTML = '';
     return;
   }
 
-  const rawData = PHANCUNG_OCT_STATE.data;
+  const rawData = sourceData;
   const headers = rawData[0].map(h => String(h || '').trim());
   let colStatus = headers.findIndex(h => h.toLowerCase() === 'tình trạng');
   let colNhom = headers.findIndex(h => h.toLowerCase() === 'nhóm');
@@ -1586,12 +1661,13 @@ function renderPhanCungDvkhManager(parsedOct) {
  * Xuất file CSV danh sách cơ hội DVKH Manager (hỗ trợ lọc theo khu vực và tìm kiếm)
  */
 function exportPhanCungDvkhCsv() {
-  if (!PHANCUNG_OCT_STATE.data || !Array.isArray(PHANCUNG_OCT_STATE.data) || PHANCUNG_OCT_STATE.data.length < 2) {
+  const currentRawData = filterOppDataByMonth(PHANCUNG_OCT_STATE.data, PHANCUNG_OCT_MONTH_FILTER);
+  if (!currentRawData || !Array.isArray(currentRawData) || currentRawData.length < 2) {
     showToast('Chưa có dữ liệu cơ hội DVKH Manager để xuất CSV!', false);
     return;
   }
 
-  const rawData = PHANCUNG_OCT_STATE.data;
+  const rawData = currentRawData;
   const headers = rawData[0].map(h => String(h || '').trim());
   let colStatus = headers.findIndex(h => h.toLowerCase() === 'tình trạng');
   let colNhom = headers.findIndex(h => h.toLowerCase() === 'nhóm');
@@ -1711,12 +1787,13 @@ function renderPhanCungOct() {
   }
 
   if (cardsBox) cardsBox.style.display = 'grid';
-  const parsedOct = normalizePhanCungOctData(PHANCUNG_OCT_STATE.data);
+  const currentRawData = filterOppDataByMonth(PHANCUNG_OCT_STATE.data, PHANCUNG_OCT_MONTH_FILTER);
+  const parsedOct = normalizePhanCungOctData(currentRawData);
   if (!parsedOct) return;
 
   renderPhanCungOctSummaryCards(parsedOct);
   renderPhanCungOctPivotTable(parsedOct);
-  renderPhanCungDvkhManager(parsedOct);
+  renderPhanCungDvkhManager(parsedOct, currentRawData);
 }
 
 /**
@@ -1734,16 +1811,18 @@ function exportPhanCungOctCsv() {
     showToast('Chưa có dữ liệu API Tháng 10 để xuất CSV!', false);
     return;
   }
-  const parsed = normalizePhanCungOctData(PHANCUNG_OCT_STATE.data);
+  const currentRawData = filterOppDataByMonth(PHANCUNG_OCT_STATE.data, PHANCUNG_OCT_MONTH_FILTER);
+  const parsed = normalizePhanCungOctData(currentRawData);
   if (!parsed) {
-    showToast('Lỗi cấu trúc dữ liệu Tháng 10!', false);
+    showToast('Lỗi cấu trúc dữ liệu Quý 4!', false);
     return;
   }
 
+  const monthLabel = PHANCUNG_OCT_MONTH_FILTER === 'all' ? 'QUÝ 4' : ('THÁNG ' + PHANCUNG_OCT_MONTH_FILTER);
   const lines = [];
 
   // Phần 1: BẢNG MA TRẬN PIVOT NHÓM × TÌNH TRẠNG
-  lines.push(['BÁO CÁO PHẦN CỨNG THÁNG 10 - MA TRẬN NHÓM x TÌNH TRẠNG']);
+  lines.push([`BÁO CÁO PHẦN CỨNG ${monthLabel} - MA TRẬN NHÓM x TÌNH TRẠNG`]);
   lines.push(['Thời gian xuất:', new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -2481,22 +2560,22 @@ function renderPhanCungConversionSummaryCards(parsed) {
     <div class="card kpi">
       <div class="label" style="color:#0284c7">T10 · Chốt Nguồn Sale/MKY</div>
       <div class="val" style="color:#0284c7">${fmtRate(tot.t10_sale_rate)}</div>
-      <div class="sub">${fmtNum(tot.t10_sale_succ)} / ${fmtNum(tot.t10_sale_opp)} Opp thành công</div>
+      <div class="sub">${fmtNumVal(tot.t10_sale_succ)} / ${fmtNumVal(tot.t10_sale_opp)} Opp thành công</div>
     </div>
     <div class="card kpi">
       <div class="label" style="color:#0369a1">T10 · Chốt Nguồn Tổng Đài</div>
       <div class="val" style="color:#0369a1">${fmtRate(tot.t10_td_rate)}</div>
-      <div class="sub">${fmtNum(tot.t10_td_succ)} / ${fmtNum(tot.t10_td_opp)} Opp thành công</div>
+      <div class="sub">${fmtNumVal(tot.t10_td_succ)} / ${fmtNumVal(tot.t10_td_opp)} Opp thành công</div>
     </div>
     <div class="card kpi">
       <div class="label" style="color:#059669">T11 · Chốt Nguồn Sale/MKY</div>
       <div class="val" style="color:#059669">${fmtRate(tot.t11_sale_rate)}</div>
-      <div class="sub">${fmtNum(tot.t11_sale_succ)} / ${fmtNum(tot.t11_sale_opp)} Opp thành công</div>
+      <div class="sub">${fmtNumVal(tot.t11_sale_succ)} / ${fmtNumVal(tot.t11_sale_opp)} Opp thành công</div>
     </div>
     <div class="card kpi">
       <div class="label" style="color:#0d9488">T11 · Chốt Nguồn Tổng Đài</div>
       <div class="val" style="color:#0d9488">${fmtRate(tot.t11_td_rate)}</div>
-      <div class="sub">${fmtNum(tot.t11_td_succ)} / ${fmtNum(tot.t11_td_opp)} Opp thành công</div>
+      <div class="sub">${fmtNumVal(tot.t11_td_succ)} / ${fmtNumVal(tot.t11_td_opp)} Opp thành công</div>
     </div>
   `;
 }
@@ -2573,20 +2652,20 @@ function renderPhanCungConversionTable(parsed) {
     tbody += '<tr>';
     tbody += `<td style="font-weight:700;color:var(--tx-heading)">${esc(r.name)}</td>`;
 
-    tbody += `<td style="text-align:center">${fmtNum(r.t10_td_opp)}</td>`;
-    tbody += `<td style="text-align:center;font-weight:700">${fmtNum(r.t10_td_succ)}</td>`;
+    tbody += `<td style="text-align:center">${fmtNumVal(r.t10_td_opp)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700">${fmtNumVal(r.t10_td_succ)}</td>`;
     tbody += `<td style="text-align:center">${rateBadge(r.t10_td_rate)}</td>`;
 
-    tbody += `<td style="text-align:center">${fmtNum(r.t10_sale_opp)}</td>`;
-    tbody += `<td style="text-align:center;font-weight:700">${fmtNum(r.t10_sale_succ)}</td>`;
+    tbody += `<td style="text-align:center">${fmtNumVal(r.t10_sale_opp)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700">${fmtNumVal(r.t10_sale_succ)}</td>`;
     tbody += `<td style="text-align:center">${rateBadge(r.t10_sale_rate)}</td>`;
 
-    tbody += `<td style="text-align:center">${fmtNum(r.t11_td_opp)}</td>`;
-    tbody += `<td style="text-align:center;font-weight:700">${fmtNum(r.t11_td_succ)}</td>`;
+    tbody += `<td style="text-align:center">${fmtNumVal(r.t11_td_opp)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700">${fmtNumVal(r.t11_td_succ)}</td>`;
     tbody += `<td style="text-align:center">${rateBadge(r.t11_td_rate)}</td>`;
 
-    tbody += `<td style="text-align:center">${fmtNum(r.t11_sale_opp)}</td>`;
-    tbody += `<td style="text-align:center;font-weight:700">${fmtNum(r.t11_sale_succ)}</td>`;
+    tbody += `<td style="text-align:center">${fmtNumVal(r.t11_sale_opp)}</td>`;
+    tbody += `<td style="text-align:center;font-weight:700">${fmtNumVal(r.t11_sale_succ)}</td>`;
     tbody += `<td style="text-align:center">${rateBadge(r.t11_sale_rate)}</td>`;
 
     tbody += '</tr>';
@@ -2600,20 +2679,20 @@ function renderPhanCungConversionTable(parsed) {
     tfoot += '<tfoot><tr style="background:var(--card-sub, #f8fafc);font-weight:800">';
     tfoot += `<td style="color:var(--acc);font-weight:900">${esc(tot.name)}</td>`;
 
-    tfoot += `<td style="text-align:center">${fmtNum(tot.t10_td_opp)}</td>`;
-    tfoot += `<td style="text-align:center;color:#0284c7">${fmtNum(tot.t10_td_succ)}</td>`;
+    tfoot += `<td style="text-align:center">${fmtNumVal(tot.t10_td_opp)}</td>`;
+    tfoot += `<td style="text-align:center;color:#0284c7">${fmtNumVal(tot.t10_td_succ)}</td>`;
     tfoot += `<td style="text-align:center">${rateBadge(tot.t10_td_rate)}</td>`;
 
-    tfoot += `<td style="text-align:center">${fmtNum(tot.t10_sale_opp)}</td>`;
-    tfoot += `<td style="text-align:center;color:#0284c7">${fmtNum(tot.t10_sale_succ)}</td>`;
+    tfoot += `<td style="text-align:center">${fmtNumVal(tot.t10_sale_opp)}</td>`;
+    tfoot += `<td style="text-align:center;color:#0284c7">${fmtNumVal(tot.t10_sale_succ)}</td>`;
     tfoot += `<td style="text-align:center">${rateBadge(tot.t10_sale_rate)}</td>`;
 
-    tfoot += `<td style="text-align:center">${fmtNum(tot.t11_td_opp)}</td>`;
-    tfoot += `<td style="text-align:center;color:#059669">${fmtNum(tot.t11_td_succ)}</td>`;
+    tfoot += `<td style="text-align:center">${fmtNumVal(tot.t11_td_opp)}</td>`;
+    tfoot += `<td style="text-align:center;color:#059669">${fmtNumVal(tot.t11_td_succ)}</td>`;
     tfoot += `<td style="text-align:center">${rateBadge(tot.t11_td_rate)}</td>`;
 
-    tfoot += `<td style="text-align:center">${fmtNum(tot.t11_sale_opp)}</td>`;
-    tfoot += `<td style="text-align:center;color:#059669">${fmtNum(tot.t11_sale_succ)}</td>`;
+    tfoot += `<td style="text-align:center">${fmtNumVal(tot.t11_sale_opp)}</td>`;
+    tfoot += `<td style="text-align:center;color:#059669">${fmtNumVal(tot.t11_sale_succ)}</td>`;
     tfoot += `<td style="text-align:center">${rateBadge(tot.t11_sale_rate)}</td>`;
 
     tfoot += '</tr></tfoot>';

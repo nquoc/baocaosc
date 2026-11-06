@@ -144,6 +144,7 @@ let PHANCUNG_SORT = { k: 'total', dir: -1 };
 let PHANCUNG_OCT_STATE = { data: null, savedAt: 0, timeStr: '' };
 let PHANCUNG_OCT_SEARCH = '';
 let PHANCUNG_OCT_SORT = { k: 'total', dir: -1 };
+let PHANCUNG_OCT_MONTH_FILTER = 'all'; // 'all', '10', '11', '12'
 
 // Trạng thái Mục 3: Bán Hàng Từ Nguồn (Quý 4: T10 - T12)
 let PHANCUNG_SOURCE_STATE = { data: null, savedAt: 0, timeStr: '' };
