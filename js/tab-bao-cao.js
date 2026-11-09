@@ -1546,7 +1546,7 @@ function wrRenderMonthlyInactiveTable(inactive) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 4. Headcount Region (Sheet baocaotuan U2:AA5)
+// 4. Headcount Region (Sheet baocaotuan V2:AB5)
 function wrRenderHeadcountRegionTable(reg) {
     const headers = ['Vùng Miền', 'SC Online', 'SC Offline', 'Sale Phần Cứng', 'Quản Lý', 'Thử Việc', 'Tổng Quân Số'];
     let rows = [];
@@ -1575,13 +1575,13 @@ function wrRenderHeadcountRegionTable(reg) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan U2:AA5)', '-', '-', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan V2:AB5)', '-', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 5. Headcount Province (2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành từ Sheet baocaotuan U7:V24)
+// 5. Headcount Province (2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành từ Sheet baocaotuan U7:W26)
 function wrRenderHeadcountProvinceTable(prov) {
     const headers = ['STT', 'Tỉnh / Thành phố (Khu Vực)', 'Số Lượng Nhân Sự', 'Tỷ Trọng Quân Số (%)'];
     let rows = [];
@@ -1611,7 +1611,7 @@ function wrRenderHeadcountProvinceTable(prov) {
             '<div style="text-align:center;font-weight:800;color:var(--wr-primary, #0ea5e9)">100.00%</div>'
         ]);
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan U7:V24) - Vui lòng bấm Tải Dữ Liệu', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan U7:W26) - Vui lòng bấm Tải Dữ Liệu', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -1994,7 +1994,7 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
         <section>
             <h2>III. TÌNH HÌNH HOẠT ĐỘNG &amp; QUÂN SỐ ĐỘI NGŨ SC</h2>
             
-            <h3>1. Cơ cấu quân số theo Vùng miền &amp; Vị trí (Sheet baocaotuan U2:AA5)</h3>
+            <h3>1. Cơ cấu quân số theo Vùng miền &amp; Vị trí (Sheet baocaotuan V2:AB5)</h3>
             ${wrBullets([
                 `Tính đến kỳ báo cáo, tổng quân số Customer Success toàn quốc là <b>${regTot?.total || 50} nhân sự</b> (Miền Bắc: <b>${mb?.total || 0}</b>; Miền Nam: <b>${mn?.total || 0}</b>; Khối Online: <b>${regTot?.online || 0}</b>).`,
                 `Tổng số nhân sự thử việc ghi nhận: <b>${regTot?.probation || 0} nhân sự</b>.`,
@@ -2002,7 +2002,7 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
             ])}
             ${wrRenderHeadcountRegionTable(bsc.headcountRegion)}
 
-            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành (Sheet baocaotuan U7:V24)</h3>
+            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành (Sheet baocaotuan U7:W26)</h3>
             <p>Bảng phân bổ chi tiết quân số và tỷ trọng tại 16 tỉnh thành trọng điểm theo dữ liệu thực tế từ Google Sheets:</p>
             ${wrRenderHeadcountProvinceTable(bsc.headcountProvince)}
         </section>

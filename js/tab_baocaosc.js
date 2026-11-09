@@ -1896,7 +1896,10 @@ function renderProvinceImpactTable(parsed) {
     list.forEach((p, idx) => {
       tbody += '<tr>';
       tbody += `<td style="color:var(--mut);text-align:center">${idx + 1}</td>`;
-      tbody += `<td class="sc-name" style="text-align:center;font-weight:700">${esc(p.name)}</td>`;
+      const hubBadge = (p.hub && p.hub !== p.name && !p.name.includes(p.hub))
+        ? `<span style="font-size:11px;font-weight:500;color:var(--mut);display:block;margin-top:2px">Cụm: ${esc(p.hub)}</span>`
+        : '';
+      tbody += `<td class="sc-name" style="text-align:center;font-weight:700">${esc(p.name)}${hubBadge}</td>`;
       tbody += `<td style="text-align:center">${renderProvinceMonthCell(p.months.t7)}</td>`;
       tbody += `<td style="text-align:center">${renderProvinceMonthCell(p.months.t8)}</td>`;
       tbody += `<td style="text-align:center">${renderProvinceMonthCell(p.months.t9)}</td>`;
@@ -2030,11 +2033,11 @@ function exportProvinceImpactCsv() {
 }
 
 /* ==========================================================================
-   MỤC 8: QUÂN SỐ ĐỘI NGŨ SC (SHEET 'baocaotuan', U2:AA5 & U7:V24)
+   MỤC 8: QUÂN SỐ ĐỘI NGŨ SC (SHEET 'baocaotuan', V2:AB5 & U7:W26)
    ========================================================================== */
 
 /**
- * Chuẩn hóa dữ liệu thô Bảng 1: Quân số theo Miền & Vị trí (range U2:AA5)
+ * Chuẩn hóa dữ liệu thô Bảng 1: Quân số theo Miền & Vị trí (range V2:AB5)
  * Header: ['Miền', 'ONLINE', 'OFFLINE', 'SalePhần cứng', 'Quản lý', 'Tổng Miền', 'Thử việc']
  */
 function normalizeHeadcountRegionData(rawData) {
@@ -2098,19 +2101,18 @@ function normalizeHeadcountRegionData(rawData) {
 }
 
 /**
- * Chuẩn hóa dữ liệu thô Bảng 2: Quân số theo Tỉnh thành / Khu vực (range U7:V24)
+ * Chuẩn hóa dữ liệu thô Bảng 2: Quân số theo Tỉnh thành / Khu vực (range U7:W26)
  * Header: ['Khu vực', 'Số lượng']
  */
 function normalizeHeadcountProvinceData(rawData) {
   if (!Array.isArray(rawData) || rawData.length < 2) return null;
 
   const headerRow = rawData[0] || [];
-  let colName = 0, colCount = 1;
+  let colCount = 2; // Mặc định cột 2 (W) trong U7:W26
 
   headerRow.forEach((h, idx) => {
     const s = String(h || '').trim().toLowerCase();
-    if (s.includes('khu vực') || s.includes('tỉnh')) colName = idx;
-    else if (s.includes('số lượng') || s.includes('quân số') || s.includes('sl')) colCount = idx;
+    if (s.includes('số lượng') || s.includes('quân số') || s.includes('sl')) colCount = idx;
   });
 
   const parseNum = val => {
@@ -2121,19 +2123,43 @@ function normalizeHeadcountProvinceData(rawData) {
 
   const provinces = [];
   let totalRow = null;
+  let currentHub = '';
 
   for (let r = 1; r < rawData.length; r++) {
     const row = rawData[r];
     if (!row || !row.length) continue;
 
-    const name = String(row[colName] || '').trim();
-    if (!name) continue;
+    const col0 = String(row[0] || '').trim();
+    const col1 = String(row[1] || '').trim();
+    const countVal = parseNum(row[colCount] !== undefined ? row[colCount] : row[row.length - 1]);
 
-    const isTotal = name.toLowerCase() === 'tổng' || name.toLowerCase().includes('tổng cộng') || name.toLowerCase() === 'total';
+    if (col0) {
+      currentHub = col0;
+    }
+
+    let displayName = '';
+    const hubName = currentHub;
+
+    if (col0 && col1) {
+      if (col1.toLowerCase().includes(col0.toLowerCase()) || col0.toLowerCase().includes(col1.toLowerCase())) {
+        displayName = col1;
+      } else {
+        displayName = `${col0} - ${col1}`;
+      }
+    } else if (col0 && !col1) {
+      displayName = col0;
+    } else if (!col0 && col1) {
+      displayName = col1;
+    }
+
+    if (!displayName) continue;
+
+    const isTotal = displayName.toLowerCase() === 'tổng' || displayName.toLowerCase().includes('tổng cộng') || displayName.toLowerCase() === 'total';
 
     const item = {
-      name: isTotal ? 'Tổng Cộng' : name,
-      count: parseNum(row[colCount])
+      name: isTotal ? 'Tổng Cộng' : displayName,
+      hub: hubName,
+      count: countVal
     };
 
     if (isTotal) {
@@ -2222,7 +2248,7 @@ function renderBaoCaoScHeadcountSummaryCards(parsedRegion, parsedProvince) {
 }
 
 /**
- * Hiển thị Bảng 1: Quân số theo Miền & Vị trí (U2:AA5)
+ * Hiển thị Bảng 1: Quân số theo Miền & Vị trí (V2:AB5)
  */
 function renderHeadcountRegionTable(parsedRegion) {
   const tbl = $('bscHeadcountRegionTable');
@@ -2278,7 +2304,7 @@ function renderHeadcountRegionTable(parsedRegion) {
 }
 
 /**
- * Hiển thị Bảng 2: Quân số theo Tỉnh Thành / Khu Vực (U7:V24)
+ * Hiển thị Bảng 2: Quân số theo Tỉnh Thành / Khu Vực (U7:W26)
  */
 function renderHeadcountProvinceTable(parsedProvince) {
   const tbl = $('bscHeadcountProvinceTable');
@@ -2287,10 +2313,10 @@ function renderHeadcountProvinceTable(parsedProvince) {
   const countBox = $('bscHeadcountProvinceCount');
   let list = [...parsedProvince.provinces];
 
-  // Tìm kiếm theo tên khu vực
+  // Tìm kiếm theo tên khu vực hoặc cụm
   if (BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH) {
     const q = BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH.toLowerCase();
-    list = list.filter(p => p.name.toLowerCase().includes(q));
+    list = list.filter(p => p.name.toLowerCase().includes(q) || (p.hub && p.hub.toLowerCase().includes(q)));
   }
 
   if (countBox) {
@@ -2325,7 +2351,10 @@ function renderHeadcountProvinceTable(parsedProvince) {
 
       tbody += '<tr>';
       tbody += `<td style="color:var(--mut);text-align:center">${idx + 1}</td>`;
-      tbody += `<td class="sc-name" style="text-align:center;font-weight:700">${esc(p.name)}</td>`;
+      const hubBadge = (p.hub && p.hub !== p.name && !p.name.includes(p.hub))
+        ? `<span style="font-size:11px;font-weight:500;color:var(--mut);display:block;margin-top:2px">Cụm: ${esc(p.hub)}</span>`
+        : '';
+      tbody += `<td class="sc-name" style="text-align:center;font-weight:700">${esc(p.name)}${hubBadge}</td>`;
       tbody += `<td style="text-align:center">
         <span style="font-weight:800;font-size:13px;color:${p.count > 0 ? 'var(--tx)' : 'var(--mut)'}">${p.count}</span>
         <span style="font-weight:600;font-size:12px;color:var(--mut);margin-left:4px">(${pctVal.toFixed(2)}%)</span>
