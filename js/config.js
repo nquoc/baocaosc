@@ -15,8 +15,8 @@ const API_PHANCUNG_SALE = API_BASE + '?sheet=phancung&range=Y1:AB6'; // Endpoint
 const API_PHANCUNG_CONVERSION = API_BASE + '?sheet=phancung&range=AE1:AQ9'; // Endpoint cho Mục 4: Báo Cáo Tỷ Lệ Chốt Theo Nguồn (T10 & T11)
 const API_BAOCAOSC_MONTHLY_INACTIVE = API_BASE + '?sheet=baocaotuan&range=AV2:BB15'; // Mục 2: Tỷ Lệ Inactive Theo Tháng Năm 2026
 // KPI Mục tiêu Active Rate (Mục 3)
-const ACTIVE_RATE_KPI = {
-  retail: 74.8,
+var ACTIVE_RATE_KPI = {
+  retail: 67.8,
   fnb: 75.3,
   booking: 66.0
 };

@@ -649,7 +649,7 @@ function renderBaoCaoScSummaryCards(parsed) {
   if (!box || !parsed) return;
 
   const kpis = (typeof ACTIVE_RATE_KPI !== 'undefined') ? ACTIVE_RATE_KPI : {
-    retail: 74.8,
+    retail: 67.8,
     fnb: 75.3,
     booking: 66.0
   };
@@ -777,7 +777,7 @@ function renderActiveRateTimelineTable(parsed) {
 
   thead += `<th onclick="sortActiveRate('mNum')" style="width:60px;cursor:pointer;text-align:center">STT${sortArrow('mNum')}</th>`;
   thead += `<th onclick="sortActiveRate('mNum')" style="min-width:140px;cursor:pointer;text-align:center">Thời Gian (Tháng)${sortArrow('mNum')}</th>`;
-  thead += `<th onclick="sortActiveRate('retail')" style="min-width:160px;cursor:pointer;text-align:center">Retail (Active Rate)<div style="font-size:11px;font-weight:500;color:var(--mut);margin-top:2px">KPI: 74.8%</div>${sortArrow('retail')}</th>`;
+  thead += `<th onclick="sortActiveRate('retail')" style="min-width:160px;cursor:pointer;text-align:center">Retail (Active Rate)<div style="font-size:11px;font-weight:500;color:var(--mut);margin-top:2px">KPI: 67.8%</div>${sortArrow('retail')}</th>`;
   thead += `<th onclick="sortActiveRate('fnb')" style="min-width:160px;cursor:pointer;text-align:center">F&B (Active Rate)<div style="font-size:11px;font-weight:500;color:var(--mut);margin-top:2px">KPI: 75.3%</div>${sortArrow('fnb')}</th>`;
   thead += `<th onclick="sortActiveRate('booking')" style="min-width:160px;cursor:pointer;text-align:center">Booking (Active Rate)<div style="font-size:11px;font-weight:500;color:var(--mut);margin-top:2px">KPI: 66.0%</div>${sortArrow('booking')}</th>`;
   thead += `<th style="text-align:center;min-width:160px">Đánh Giá Xu Hướng</th>`;
