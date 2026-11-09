@@ -6,7 +6,7 @@
   <title>Báo cáo tổng hợp SC</title>
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png">
   <link rel="shortcut icon" href="favicon.ico">
-  <link rel="stylesheet" href="css/style.css?v=20261109_1555">
+  <link rel="stylesheet" href="css/style.css?v=20261109_1635">
 </head>
 <body>
 
@@ -915,6 +915,7 @@
         <div style="display:flex;align-items:center;gap:10px">
           <input type="text" id="bscHeadcountProvinceSearch" placeholder="🔍 Tìm khu vực..." oninput="onHeadcountProvinceSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
           <div class="mut sm" id="bscHeadcountProvinceCount">...</div>
+          <button onclick="toggleAllHeadcountClusters()" id="btnToggleHeadcountClusters" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600" title="Thu gọn hoặc mở rộng tất cả các cụm">⮀ Thu/Mở Cụm</button>
           <button onclick="exportHeadcountProvinceCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
         </div>
       </div>
@@ -1532,18 +1533,18 @@
 <!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
-<script src="js/config.js?v=20261109_1555"></script>
-<script src="js/utils.js?v=20261109_1555"></script>
-<script src="js/tab_overview.js?v=20261109_1555"></script>
-<script src="js/tab_pivot.js?v=20261109_1555"></script>
-<script src="js/tab_muctieu.js?v=20261109_1555"></script>
-<script src="js/tab_kpi.js?v=20261109_1555"></script>
-<script src="js/tab_phancung.js?v=20261109_1555"></script>
-<script src="js/tab_baocaosc.js?v=20261109_1555"></script>
-<script src="js/tab_kpionline.js?v=20261109_1555"></script>
-<script src="js/tab_impactonline.js?v=20261109_1555"></script>
-<script src="js/tab_dataton.js?v=20261109_1555"></script>
-<script src="js/tab-bao-cao.js?v=20261109_1555"></script>
-<script src="js/app.js?v=20261109_1555"></script>
+<script src="js/config.js?v=20261109_1635"></script>
+<script src="js/utils.js?v=20261109_1635"></script>
+<script src="js/tab_overview.js?v=20261109_1635"></script>
+<script src="js/tab_pivot.js?v=20261109_1635"></script>
+<script src="js/tab_muctieu.js?v=20261109_1635"></script>
+<script src="js/tab_kpi.js?v=20261109_1635"></script>
+<script src="js/tab_phancung.js?v=20261109_1635"></script>
+<script src="js/tab_baocaosc.js?v=20261109_1635"></script>
+<script src="js/tab_kpionline.js?v=20261109_1635"></script>
+<script src="js/tab_impactonline.js?v=20261109_1635"></script>
+<script src="js/tab_dataton.js?v=20261109_1635"></script>
+<script src="js/tab-bao-cao.js?v=20261109_1635"></script>
+<script src="js/app.js?v=20261109_1635"></script>
 </body>
 </html>

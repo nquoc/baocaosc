@@ -263,7 +263,7 @@ Giao diện được chia thành 2 Tab chính:
 ### TAB 6: BÁO CÁO SC (`sheet=baocaotuan`)
 1. **Mục tiêu & Nguồn dữ liệu**:
    * API endpoints:
-     * **Mục 1**: `sheet=baocaotuan&range=V2:AB5` & `range=U7:W26` (Quân số theo Miền, Vị trí & Tỉnh thành).
+     * **Mục 1**: `sheet=baocaotuan&range=V2:AB5` & `range=U7:W30` (Quân số theo Miền, Vị trí & Tỉnh thành).
      * **Mục 2**: `sheet=baocaotuan&range=A2:D14` (Active Rate năm 2026: Retail, F&B, Booking qua các tháng).
      * **Mục 3**: `sheet=baocaotuan&range=F2:I6` (Tỷ lệ chăm khách New T10: Ký mới, Inactive, SC chăm).
      * **Mục 4**: `sheet=baocaotuan&range=K2:Q19` (Tỷ lệ Impact theo 16 Tỉnh/Thành phố từ T7 đến T12, so sánh MoM từng tháng).
@@ -276,7 +276,7 @@ Giao diện được chia thành 2 Tab chính:
    * **Bố cục chuẩn**: Khối hiển thị căn giữa 70% màn hình trang nhã (`.bsc-centered-block`).
    * **Kiểu dáng bảng**: Header màu đen, chữ in đậm sắc nét, tất cả ô số liệu căn giữa đồng bộ.
    * **Mục 1 (Quân Số Đội Ngũ SC)**:
-     * API: `sheet=baocaotuan&range=V2:AB5` (Bảng 1: Quân số theo Miền & Vị trí) và `sheet=baocaotuan&range=U7:W26` (Bảng 2: Quân số theo Tỉnh thành).
+     * API: `sheet=baocaotuan&range=V2:AB5` (Bảng 1: Quân số theo Miền & Vị trí) và `sheet=baocaotuan&range=U7:W30` (Bảng 2: Quân số theo Tỉnh thành).
      * 4 thẻ KPI tóm tắt: Tổng Quân Số Toàn Quốc (50 nhân sự), Lực Lượng Offline (30), Lực Lượng Online (13), Hỗ Trợ & Thử Việc (4 Thử việc · 4 QL · 3 Sale PC).
      * Bảng 1: Phân bổ 2 Miền (Bắc, Nam) và Toàn quốc theo từng vị trí (Online, Offline, Sale PC, QL, Tổng, Thử việc).
      * Bảng 2: Phân bổ 16 Tỉnh thành / Khu vực kèm thanh tiến độ mini và tỷ trọng % trực quan, hỗ trợ tìm kiếm và sắp xếp.

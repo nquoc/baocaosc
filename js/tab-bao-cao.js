@@ -1581,7 +1581,7 @@ function wrRenderHeadcountRegionTable(reg) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 5. Headcount Province (2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành từ Sheet baocaotuan U7:W26)
+// 5. Headcount Province (2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành từ Sheet baocaotuan U7:W30)
 function wrRenderHeadcountProvinceTable(prov) {
     const headers = ['STT', 'Tỉnh / Thành phố (Khu Vực)', 'Số Lượng Nhân Sự', 'Tỷ Trọng Quân Số (%)'];
     let rows = [];
@@ -1611,7 +1611,7 @@ function wrRenderHeadcountProvinceTable(prov) {
             '<div style="text-align:center;font-weight:800;color:var(--wr-primary, #0ea5e9)">100.00%</div>'
         ]);
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan U7:W26) - Vui lòng bấm Tải Dữ Liệu', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan U7:W30) - Vui lòng bấm Tải Dữ Liệu', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -2002,7 +2002,7 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
             ])}
             ${wrRenderHeadcountRegionTable(bsc.headcountRegion)}
 
-            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành (Sheet baocaotuan U7:W26)</h3>
+            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành (Sheet baocaotuan U7:W30)</h3>
             <p>Bảng phân bổ chi tiết quân số và tỷ trọng tại 16 tỉnh thành trọng điểm theo dữ liệu thực tế từ Google Sheets:</p>
             ${wrRenderHeadcountProvinceTable(bsc.headcountProvince)}
         </section>

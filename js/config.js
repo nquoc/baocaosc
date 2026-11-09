@@ -21,7 +21,7 @@ const API_BAOCAOSC_PROVINCE_IMPACT = API_BASE + '?sheet=baocaotuan&range=K2:Q19'
 const API_BAOCAOSC_IMPACT_DATA_SOURCE = API_BASE + '?sheet=baocaotuan&range=AD1:AG11'; // Mục 7.1: Impact theo Nguồn Data
 const API_BAOCAOSC_IMPACT_INDUSTRY = API_BASE + '?sheet=baocaotuan&range=AD14:AG20'; // Mục 7.2: Impact theo Ngành Hàng
 const API_BAOCAOSC_HEADCOUNT_REGION = API_BASE + '?sheet=baocaotuan&range=V2:AB5'; // Mục 8.1: Quân số theo Miền & Vị trí
-const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:W26'; // Mục 8.2: Quân số theo Tỉnh thành
+const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:W30'; // Mục 8.2: Quân số theo Tỉnh thành
 const API_BAOCAOSC_KPI_ONLINE_T9 = API_BASE + '?sheet=baocaotuan&range=AJ2:AP5'; // Mục 9.1: KPI Team Online Tháng 10
 const API_BAOCAOSC_KPI_OFFLINE_T10 = API_BASE + '?sheet=baocaotuan&range=AJ13:AP17'; // Mục 9.2: KPI Team Offline Tháng 11
 const API_BAOCAOSC_ADDON_T10 = API_BASE + '?sheet=baocaotuan&range=AJ22:AO30'; // Mục 9.3: Tư Vấn Chuyển Addon Tháng 11
@@ -170,6 +170,7 @@ let BAOCAOSC_PROVINCE_SEARCH = '';
 let BAOCAOSC_PROVINCE_SORT = { k: 't11', dir: -1 }; // Mặc định sắp xếp giảm dần theo tháng hiện tại (Tháng 11)
 let BAOCAOSC_HEADCOUNT_PROVINCE_SEARCH = '';
 let BAOCAOSC_HEADCOUNT_PROVINCE_SORT = { k: 'count', dir: -1 };
+let BAOCAOSC_COLLAPSED_CLUSTERS = new Set();
 
 // Trạng thái Tab 7: KPI Team Online
 let KPI_ONLINE_STATE = { data: null, savedAt: 0, timeStr: '' };
