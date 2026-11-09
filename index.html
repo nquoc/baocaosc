@@ -745,37 +745,148 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 5: TRIỂN KHAI TỆP FNB LỚN ==================== -->
-  <div id="bscSecFnbIssue" class="bsc-centered-block" style="margin-top:24px">
+  <!-- ==================== MỤC 5: BÁO CÁO CÁC TỆP TRIỂN KHAI ==================== -->
+  <div id="bscSecTiepTrienKhai" class="bsc-centered-block" style="margin-top:24px">
     <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 5 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
         <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#ea580c;color:#ffffff;letter-spacing:0.5px">MỤC 5</span>
-        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Triển Khai Tệp F&amp;B Lớn (Chi Tiết Nhóm Vấn Đề / Lỗi Phát Sinh)</h2>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Báo Cáo Các Tệp Triển Khai (F&amp;B Lớn · Booking 3 Sao · Retail Lớn HĐĐT)</h2>
       </div>
-      <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>baocaotuan</b> (AR2:AS9)
+      <div class="mut sm" style="font-weight:600;display:flex;align-items:center;gap:8px">
+        <span>Nguồn: Sheet <b>Các tiệp triển khai</b></span>
+        <span id="bscTiepStatusBadge" class="badge" style="font-size:11px;background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3)">Google Sheets API</span>
       </div>
     </div>
 
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 5 -->
-    <div class="grid kpis" id="bscFnbIssueSummaryCards" style="margin-bottom:16px"></div>
+    <!-- THANH ĐIỀU KHIỂN & BỘ LỌC DROPDOWN "CÁC TỆP TRIỂN KHAI" -->
+    <div class="card" style="padding:12px 16px;margin-bottom:16px;background:var(--card);border:1px solid var(--line)">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <label for="bscSelectTiepTrienKhai" style="font-weight:700;font-size:13.5px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📁 Các tệp triển khai:</span>
+          </label>
+          <select id="bscSelectTiepTrienKhai" onchange="onBscTiepTrienKhaiChange(this.value)" style="font-size:13px;font-weight:700;color:#38bdf8;background:var(--card-sub);border:1px solid var(--line);border-radius:6px;padding:6px 14px;cursor:pointer">
+            <option value="all">📂 Tất cả các tệp triển khai (F&B · Booking · Retail HĐĐT)</option>
+            <option value="fnb">🍔 5.1: Nhóm FNB lớn / lỗi (Tháng 11)</option>
+            <option value="booking">🏨 5.2: Nhóm Booking 3 Hotel sao (Tháng 10)</option>
+            <option value="retail">🛒 5.3: Nhóm retail lớn HDDT (Tháng 11)</option>
+          </select>
 
-    <!-- BẢNG CHI TIẾT MỤC 5 -->
-    <div class="card" style="padding:14px 16px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>📋 Bảng Chi Tiết Nhóm Vấn Đề / Lỗi Phát Sinh (Tệp F&amp;B Lớn)</span>
-            <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
-          </h3>
+          <!-- Quick Pill Tabs -->
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" class="pill on" id="pillTiepAll" onclick="selectBscTiepTab('all')">Tất cả tệp</button>
+            <button type="button" class="pill" id="pillTiepFnb" onclick="selectBscTiepTab('fnb')">🍔 FNB lớn / lỗi</button>
+            <button type="button" class="pill" id="pillTiepBooking" onclick="selectBscTiepTab('booking')">🏨 Booking 3 Hotel sao</button>
+            <button type="button" class="pill" id="pillTiepRetail" onclick="selectBscTiepTab('retail')">🛒 Retail lớn HDDT</button>
+          </div>
         </div>
-        <div>
-          <button onclick="exportFnbIssueCsv()" style="background:#ea580c;color:#fff;border-color:#f97316;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
+
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="btnReloadTiepTrienKhai" onclick="reloadTiepTrienKhai(true)" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);font-size:11.5px;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:600" title="Đồng bộ trực tiếp dữ liệu mới nhất từ Google Sheets">🔄 Tải lại tệp</button>
+          <button id="btnExportTiepCsv" onclick="exportCurrentTiepCsv()" style="background:#ea580c;color:#fff;border-color:#f97316;font-size:11.5px;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
         </div>
       </div>
-      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-        <table id="bscFnbIssueTable" class="kpi-table"></table>
+    </div>
+
+    <!-- CONTAINER HIỂN THỊ CÁC TỆP -->
+    <div id="bscTiepContainer">
+      <!-- 5.1: NHÓM FNB LỚN / LỖI (CỘT A:B) -->
+      <div id="bscSecTiepFnb" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:14px;font-weight:800;color:#f97316">🍔 5.1: Nhóm FNB Lớn / Lỗi (Tháng 11)</span>
+        </div>
+        <div class="grid kpis" id="bscTiepFnbCards" style="margin-bottom:14px"></div>
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div>
+              <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+                <span>📋 Bảng Chi Tiết Nhóm Lỗi / Vấn Đề Phát Sinh (Tệp F&amp;B Lớn)</span>
+                <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột để sắp xếp ⇅)</span>
+              </h3>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="text" id="bscTiepFnbSearch" placeholder="🔍 Lọc nhóm lỗi..." oninput="onFnbSearch(this.value)" style="width:170px;font-size:12px;padding:4px 9px">
+              <button onclick="exportTiepFnbCsv()" style="background:#ea580c;color:#fff;border-color:#f97316;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 5.1</button>
+            </div>
+          </div>
+          <div class="wrap" id="bscTiepFnbTableWrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        </div>
+      </div>
+
+      <!-- 5.2: NHÓM BOOKING 3 HOTEL SAO (CỘT D:H) -->
+      <div id="bscSecTiepBooking" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:14px;font-weight:800;color:#0284c7">🏨 5.2: Nhóm Booking 3 Hotel Sao (Tháng 10)</span>
+        </div>
+        <div class="grid kpis" id="bscTiepBookingCards" style="margin-bottom:14px"></div>
+
+        <!-- BẢNG 1: TÌNH TRẠNG TRAO ĐỔI & IMPACT -->
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:14.5px;color:var(--tx-heading)">📊 Bảng 1: Tình Trạng Trao Đổi &amp; Tỷ Lệ Impact (Booking 3 Sao)</h3>
+            <button onclick="exportTiepBookingCsv()" style="background:#0284c7;color:#fff;border-color:#0ea5e9;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 5.2</button>
+          </div>
+          <div class="wrap" id="bscTiepBookingTbl1" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        </div>
+
+        <!-- BẢNG 2: CHI TIẾT NHÓM VẤN ĐỀ & NỘI DUNG LỖI -->
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:14.5px;color:var(--tx-heading)">⚙️ Bảng 2: Chi Tiết Nhóm Vấn Đề &amp; Nội Dung Lỗi / Hạn Chế</h3>
+          </div>
+          <div class="wrap" id="bscTiepBookingTbl2" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        </div>
+
+        <!-- BẢNG 3: CÁC NHÓM VẤN ĐỀ CHÍNH -->
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:14.5px;color:var(--tx-heading)">📝 Bảng 3: Tổng Kết Các Nhóm Vấn Đề Vận Hành Chính</h3>
+          </div>
+          <div class="wrap" id="bscTiepBookingTbl3" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        </div>
+      </div>
+
+      <!-- 5.3: NHÓM RETAIL LỚN HDDT (CỘT J:N) -->
+      <div id="bscSecTiepRetail" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:14px;font-weight:800;color:#8b5cf6">🛒 5.3: Nhóm Retail Lớn HĐĐT (Tháng 11)</span>
+        </div>
+        <div class="grid kpis" id="bscTiepRetailCards" style="margin-bottom:14px"></div>
+
+        <!-- 2 BẢNG 1 VÀ 2 NẰM NGANG NHAU -->
+        <div class="bsc-two-tables-grid" style="margin-bottom:16px">
+          <div class="card" style="padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+              <h3 style="margin:0;font-size:14px;color:var(--tx-heading)">🏪 Bảng 1: Thực Trạng Cửa Hàng &amp; Impact</h3>
+              <button onclick="exportTiepRetailCsv()" style="background:#8b5cf6;color:#fff;border-color:#a78bfa;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 5.3</button>
+            </div>
+            <div class="wrap" id="bscTiepRetailTbl1" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+          </div>
+
+          <div class="card" style="padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+              <h3 style="margin:0;font-size:14px;color:var(--tx-heading)">📞 Bảng 2: Tình Trạng Trao Đổi</h3>
+            </div>
+            <div class="wrap" id="bscTiepRetailTbl2" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+          </div>
+        </div>
+
+        <!-- BẢNG 3: NGUYÊN NHÂN KHÁCH SỬ DỤNG SONG SONG -->
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:14.5px;color:var(--tx-heading)">🔄 Bảng 3: Nguyên Nhân Khách Sử Dụng Song Song Hoặc Chuyển NCC Khác</h3>
+          </div>
+          <div class="wrap" id="bscTiepRetailTbl3" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        </div>
+
+        <!-- BẢNG 4: CÁC VẤN ĐỀ PHÁT SINH VÀ ĐỀ XUẤT LIÊN QUAN HDDT -->
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:14.5px;color:var(--tx-heading)">💡 Bảng 4: Các Vấn Đề Phát Sinh &amp; Đề Xuất Liên Quan Đến HĐĐT</h3>
+          </div>
+          <div class="wrap" id="bscTiepRetailTbl4" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1533,18 +1644,20 @@
 <!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
-<script src="js/config.js?v=20261109_1701"></script>
-<script src="js/utils.js?v=20261109_1701"></script>
+<script src="js/snapshot_tiep_trien_khai.js?v=20261109_1910"></script>
+<script src="js/config.js?v=20261109_1910"></script>
+<script src="js/utils.js?v=20261109_1910"></script>
+<script src="js/google_sheets_service.js?v=20261109_1910"></script>
 <script src="js/tab_overview.js?v=20261109_1701"></script>
 <script src="js/tab_pivot.js?v=20261109_1701"></script>
 <script src="js/tab_muctieu.js?v=20261109_1701"></script>
 <script src="js/tab_kpi.js?v=20261109_1701"></script>
 <script src="js/tab_phancung.js?v=20261109_1701"></script>
-<script src="js/tab_baocaosc.js?v=20261109_1701"></script>
+<script src="js/tab_baocaosc.js?v=20261109_1910"></script>
 <script src="js/tab_kpionline.js?v=20261109_1701"></script>
 <script src="js/tab_impactonline.js?v=20261109_1701"></script>
 <script src="js/tab_dataton.js?v=20261109_1701"></script>
 <script src="js/tab-bao-cao.js?v=20261109_1701"></script>
-<script src="js/app.js?v=20261109_1701"></script>
+<script src="js/app.js?v=20261109_1910"></script>
 </body>
 </html>

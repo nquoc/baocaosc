@@ -35,7 +35,9 @@ TeamCoacherDashboard/
 │   ├── tab_muctieu.js      # Logic Tab 3: Mục Tiêu & Tiến Độ Tháng (Bảng Offline/Online kiểu Excel, Export)
 │   ├── tab_kpi.js          # Logic Tab 4: KPI Team Offline (Công thức 70/30, xếp hạng, lọc Coacher, Export)
 │   ├── tab_phancung.js     # Logic Tab 5: DS Phần Cứng (KPI & Quý, Doanh số Sale/Kênh, Charts, Export)
-│   ├── tab_baocaosc.js     # Logic Tab 6: BÁO CÁO SC (Mục 1: Active Rate 2026, MoM Delta xanh/đỏ, Charts, Export)
+│   ├── tab_baocaosc.js     # Logic Tab 6: BÁO CÁO SC (Mục 1 đến Mục 9, Active Rate 2026, MoM Delta, Charts, Export)
+│   ├── google_sheets_service.js # Tự động tạo JWT ký RS256 WebCrypto native, kết nối Service Account đọc Google Sheets
+│   ├── snapshot_tiep_trien_khai.js # Dự phòng dữ liệu tĩnh cho Mục 5: Các Tệp Triển Khai
 │   └── app.js              # Điều hướng tab, sự kiện bộ lọc, khởi tạo luồng dữ liệu & Smart Cache
 ├── index.html              # Bộ khung HTML tinh gọn (~225 dòng) liên kết CSS và các module JS
 ├── snapshot.js             # Bộ nhớ đệm dữ liệu tĩnh (~10.289 records, dùng offline/khởi động nhanh)

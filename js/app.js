@@ -132,6 +132,9 @@ function switchTab(tab) {
     } else {
       renderBaoCaoSc();
     }
+    if (typeof loadTiepTrienKhaiData === 'function') {
+      loadTiepTrienKhaiData(false, true);
+    }
   } else if (tab === 'dataton') {
     if (!DATATON_STATE.online || !DATATON_STATE.offline) {
       loadDataTon(false);
@@ -520,7 +523,10 @@ async function startBackgroundPrefetch(forceAll = false) {
       name: 'Báo Cáo SC',
       label: 'Báo Cáo SC (3/6)',
       check: () => !forceAll && typeof BAOCAOSC_STATE !== 'undefined' && BAOCAOSC_STATE && BAOCAOSC_STATE.activeRate,
-      run: () => typeof loadBaoCaoSc === 'function' ? loadBaoCaoSc(forceAll, true) : null
+      run: async () => {
+        if (typeof loadBaoCaoSc === 'function') await loadBaoCaoSc(forceAll, true);
+        if (typeof loadTiepTrienKhaiData === 'function') await loadTiepTrienKhaiData(forceAll, true);
+      }
     },
     {
       name: 'DS Phần Cứng',
@@ -607,6 +613,9 @@ async function reloadAllDashboardData() {
     // 2. Tải lại trực tiếp tab đang xem
     if (activeTab === 'baocaosc') {
       await loadBaoCaoSc(true, false);
+      if (typeof loadTiepTrienKhaiData === 'function') {
+        await loadTiepTrienKhaiData(true, false);
+      }
     } else if (activeTab === 'kpionline') {
       await loadKpiOnline(true, false);
     } else if (activeTab === 'impactonline') {

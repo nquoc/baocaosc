@@ -1078,7 +1078,10 @@ function renderBaoCaoSc() {
     }
   }
 
-  if (BAOCAOSC_STATE.fnbIssue) {
+  // Mục 5: Báo Cáo Các Tệp Triển Khai (F&B Lớn, Booking 3 Hotel Sao, Retail Lớn HĐĐT)
+  if (typeof renderTiepTrienKhai === 'function') {
+    renderTiepTrienKhai();
+  } else if (BAOCAOSC_STATE.fnbIssue) {
     const parsedFnb = normalizeFnbIssueData(BAOCAOSC_STATE.fnbIssue);
     if (parsedFnb) {
       renderBaoCaoScFnbIssueSummaryCards(parsedFnb);
@@ -1165,6 +1168,9 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
           };
         }
         renderBaoCaoSc();
+    if (typeof loadTiepTrienKhaiData === 'function') {
+      loadTiepTrienKhaiData(forceReload, true);
+    }
         if (badge) {
           badge.className = 'badge b-load';
           badge.textContent = `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`;
@@ -1271,6 +1277,9 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
     } catch (e) {}
 
     renderBaoCaoSc();
+    if (typeof loadTiepTrienKhaiData === 'function') {
+      loadTiepTrienKhaiData(forceReload, true);
+    }
     if (badge) {
       badge.className = 'badge b-live';
       badge.textContent = `API trực tiếp ${timeStr}`;

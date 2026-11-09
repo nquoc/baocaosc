@@ -1940,3 +1940,23 @@ html.dark-theme, body[data-theme="dark"] .wr-edit-hint {
 
 
 
+
+
+/* ==========================================================================
+   TAB BÁO CÁO SC - MỤC 5: CÁC TỆP TRIỂN KHAI
+   ========================================================================== */
+#bscTiepFnbTableWrap table th, #bscTiepBookingTbl1 table th, #bscTiepBookingTbl2 table th, #bscTiepBookingTbl3 table th,
+#bscTiepRetailTbl1 table th, #bscTiepRetailTbl2 table th, #bscTiepRetailTbl3 table th, #bscTiepRetailTbl4 table th {
+  background: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border-bottom: 2px solid var(--line) !important;
+  user-select: none;
+  font-size: 13px;
+  text-align: center;
+}
+#bscTiepFnbTableWrap table th:hover, #bscTiepBookingTbl1 table th:hover, #bscTiepBookingTbl2 table th:hover, #bscTiepBookingTbl3 table th:hover,
+#bscTiepRetailTbl1 table th:hover, #bscTiepRetailTbl2 table th:hover, #bscTiepRetailTbl3 table th:hover, #bscTiepRetailTbl4 table th:hover {
+  background: #18181b !important;
+  color: #38bdf8 !important;
+}
