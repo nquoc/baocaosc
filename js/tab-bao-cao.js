@@ -650,7 +650,8 @@ function wrSyncCustomSectionsToActiveDoc(showNotice = false) {
 
     const cards = Array.from(document.querySelectorAll('#wrCustomSectionsContainer .wr-custom-sec-card'));
     const currentIds = new Set();
-    let secIdx = 7; // Mục I đến VI là mục mặc định của báo cáo
+    const baseSecs = doc.querySelectorAll('article > section:not(.wr-custom-section)');
+    let secIdx = (baseSecs && baseSecs.length) ? (baseSecs.length + 1) : (window.weeklyReportVersion === 'v2' ? 9 : 7);
 
     cards.forEach(card => {
         const id = card.getAttribute('data-sec-id') || '';
@@ -1046,9 +1047,9 @@ function addWeeklyReportCustomSection(data = null) {
         });
     }
 
+    wrSaveManual();
+    wrSyncCustomSectionsToActiveDoc();
     if (!data) {
-        wrSaveManual();
-        wrSyncCustomSectionsToActiveDoc();
         card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }
@@ -2016,10 +2017,673 @@ function wrRenderKpiOnlineT9Table(kpiOn) {
 }
 
 // =========================================================================
-// HÀM TẠO NỘI DUNG BÁO CÁO TOÀN DIỆN TỪ GOOGLE SHEETS
+// HÀM TIỆN ÍCH & RENDER DỮ LIỆU BÁO CÁO ĐIỀU HÀNH VER 2
+// =========================================================================
+
+function wrParseSafeNum(val) {
+    if (typeof _parseValNumber === 'function') return _parseValNumber(val);
+    if (val == null || val === '') return 0;
+    const s = String(val).replace(/[^0-9.,-]/g, '').replace(',', '.');
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+}
+
+// 12. Impact theo Nguồn Data (Sheet baocaotuan AD1:AG11)
+function wrRenderImpactDataSourceTable(dataSource) {
+    let parsed = dataSource;
+    if (Array.isArray(dataSource) && typeof normalizeImpactTableData === 'function') {
+        parsed = normalizeImpactTableData(dataSource);
+    }
+    const headers = ['Nguồn Data Khách Hàng', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)'];
+    let rows = [];
+
+    if (parsed && Array.isArray(parsed.items) && parsed.items.length) {
+        rows = parsed.items.map(it => {
+            const tone = it.rate >= 35 ? 'wr-kpi-good' : (it.rate >= 25 ? 'wr-kpi-medium' : 'wr-kpi-bad');
+            return [
+                `<b>${wrEscapeHtml(it.name)}</b>`,
+                wrInt(it.act),
+                wrInt(it.impact),
+                `<b class="${tone}">${it.rate != null ? it.rate.toFixed(2) + '%' : '-'}</b>`
+            ];
+        });
+        if (parsed.totalRow) {
+            const tot = parsed.totalRow;
+            rows.push([
+                `<b>${wrEscapeHtml(tot.name || 'TỔNG CỘNG NGUỒN DATA')}</b>`,
+                `<b>${wrInt(tot.act)}</b>`,
+                `<b>${wrInt(tot.impact)}</b>`,
+                `<b class="${wrKpiTone(tot.rate)}">${tot.rate != null ? tot.rate.toFixed(2) + '%' : '-'}</b>`
+            ]);
+        }
+    } else {
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan AD1:AG11)', '-', '-']];
+    }
+
+    return wrTable(headers, rows, 'wr-report-table');
+}
+
+// 13. Impact theo Sản Phẩm / Ngành Hàng (Sheet baocaotuan AD14:AG20)
+function wrRenderImpactIndustryTable(industry) {
+    let parsed = industry;
+    if (Array.isArray(industry) && typeof normalizeImpactTableData === 'function') {
+        parsed = normalizeImpactTableData(industry);
+    }
+    const headers = ['Ngành Hàng / Sản Phẩm', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)'];
+    let rows = [];
+
+    if (parsed && Array.isArray(parsed.items) && parsed.items.length) {
+        rows = parsed.items.map(it => {
+            const tone = it.rate >= 35 ? 'wr-kpi-good' : (it.rate >= 25 ? 'wr-kpi-medium' : 'wr-kpi-bad');
+            return [
+                `<b>${wrEscapeHtml(it.name)}</b>`,
+                wrInt(it.act),
+                wrInt(it.impact),
+                `<b class="${tone}">${it.rate != null ? it.rate.toFixed(2) + '%' : '-'}</b>`
+            ];
+        });
+        if (parsed.totalRow) {
+            const tot = parsed.totalRow;
+            rows.push([
+                `<b>${wrEscapeHtml(tot.name || 'TỔNG CỘNG NGÀNH HÀNG')}</b>`,
+                `<b>${wrInt(tot.act)}</b>`,
+                `<b>${wrInt(tot.impact)}</b>`,
+                `<b class="${wrKpiTone(tot.rate)}">${tot.rate != null ? tot.rate.toFixed(2) + '%' : '-'}</b>`
+            ]);
+        }
+    } else {
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan AD14:AG20)', '-', '-']];
+    }
+
+    return wrTable(headers, rows, 'wr-report-table');
+}
+
+// 14. Impact Online (Sheet impactonline A1:H6 & A9:H23)
+function wrRenderImpactOnlineTable(rawMatrix, title = '') {
+    if (!Array.isArray(rawMatrix) || rawMatrix.length < 2) {
+        return `<div class="wr-report-table-empty">Chưa có dữ liệu từ sheet impactonline</div>`;
+    }
+    const rawHeaders = rawMatrix[0] || [];
+    const headers = rawHeaders.map(h => wrEscapeHtml(String(h || '').trim()));
+    const rows = [];
+
+    for (let r = 1; r < rawMatrix.length; r++) {
+        const rowData = rawMatrix[r];
+        if (!rowData || !rowData.length) continue;
+        const rowName = String(rowData[0] || '').trim();
+        if (!rowName) continue;
+        const isTotal = /tổng cộng|total|trung bình|grand total/i.test(rowName);
+
+        const cells = rowData.map((val, colIdx) => {
+            let str = String(val != null ? val : '').trim();
+            if (str.toUpperCase().includes('#DIV/0')) str = '0';
+            if (colIdx === 0) {
+                return isTotal ? `<b>${wrEscapeHtml(str)}</b>` : wrEscapeHtml(str);
+            }
+            if (str.endsWith('%')) {
+                return isTotal ? `<b>${wrEscapeHtml(str)}</b>` : wrEscapeHtml(str);
+            }
+            const num = Number(str.replace(',', '.'));
+            if (!isNaN(num) && str !== '') {
+                if (Math.abs(num) <= 1 && num !== 0 && (str.includes('.') || str.includes(','))) {
+                    const pctVal = (num * 100).toFixed(2) + '%';
+                    return isTotal ? `<b>${pctVal}</b>` : pctVal;
+                }
+                const numVal = Math.round(num).toLocaleString('vi-VN');
+                return isTotal ? `<b>${numVal}</b>` : numVal;
+            }
+            return isTotal ? `<b>${wrEscapeHtml(str || '-')}</b>` : wrEscapeHtml(str || '-');
+        });
+        rows.push(cells);
+    }
+    return wrTable(headers, rows, 'wr-report-table');
+}
+
+// 15. Tệp Triển Khai: F&B lớn / lỗi (Sheet 'Các tiệp triển khai' Cột A:B)
+function wrRenderTiepFnbTable(fnbData) {
+    let p = fnbData || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.fnb : null);
+    if (!p) {
+        return `<div class="wr-report-table-empty">Chưa có dữ liệu Nhóm F&B lớn / lỗi từ Google Sheets</div>`;
+    }
+    const headers = ['STT', 'Nhóm Lỗi / Vấn Đề Phát Sinh', 'Số Lượng Case', 'Tỷ Trọng Đóng Góp (%)'];
+    let rows = [];
+
+    if (Array.isArray(p.items) && p.items.length) {
+        rows = p.items.map(it => {
+            const isError = it.name.toLowerCase().includes('lỗi') || it.name.toLowerCase().includes('chậm') || it.name.toLowerCase().includes('treo');
+            const tone = isError ? 'wr-kpi-bad' : 'wr-kpi-good';
+            return [
+                wrInt(it.id),
+                `<b>${wrEscapeHtml(it.name)}</b>`,
+                wrInt(it.count),
+                `<b class="${tone}">${it.pct != null ? it.pct.toFixed(2) + '%' : '-'}</b>`
+            ];
+        });
+        if (p.totalRow) {
+            rows.push([
+                '∑',
+                `<b>${wrEscapeHtml(p.totalRow.name || 'TỔNG CỘNG')}</b>`,
+                `<b>${wrInt(p.grandTotal || p.totalRow.count)}</b>`,
+                '<b>100.00%</b>'
+            ]);
+        }
+        if (p.errorRateRow) {
+            rows.push([
+                '⚠️',
+                `<b style="color:#ef4444">${wrEscapeHtml(p.errorRateRow.name || 'Tỷ Lệ Lỗi Vận Hành')}</b>`,
+                `<b style="color:#ef4444">${wrEscapeHtml(p.errorRateRow.value || '')}</b>`,
+                '-'
+            ]);
+        }
+    } else {
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-']];
+    }
+
+    return wrTable(headers, rows, 'wr-report-table');
+}
+
+// 16. Tệp Triển Khai: Nhóm Booking 3 Hotel sao (Sheet 'Các tiệp triển khai' Cột D:H)
+function wrRenderTiepBookingTable(bookingData) {
+    let p = bookingData || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.booking : null);
+    if (!p) {
+        return `<div class="wr-report-table-empty">Chưa có dữ liệu Nhóm Booking 3 Hotel sao từ Google Sheets</div>`;
+    }
+
+    let html = '';
+    // Bảng 1: Tình trạng trao đổi & Tỷ lệ Impact
+    if (p.tbl1 && Array.isArray(p.tbl1.rows) && p.tbl1.rows.length) {
+        html += `<h4>2.1 Tình trạng tiếp cận &amp; Tỷ lệ Impact Booking 3 Sao</h4>`;
+        const headers = ['STT', 'Tình Trạng Trao Đổi', 'Số Lượng', 'Tỷ Lệ Tiếp Cận Trực Tiếp', 'Số Khách Impact', 'Tỷ Lệ Impact'];
+        const rows = p.tbl1.rows.map((r, i) => [
+            wrInt(i + 1),
+            `<b>${wrEscapeHtml(r[0] || '')}</b>`,
+            wrInt(wrParseSafeNum(r[1])),
+            wrEscapeHtml(r[2] || '-'),
+            wrInt(wrParseSafeNum(r[3])),
+            `<b class="wr-kpi-good">${wrEscapeHtml(r[4] || '-')}</b>`
+        ]);
+        if (p.tbl1.total) {
+            rows.push([
+                '∑',
+                `<b>${wrEscapeHtml(p.tbl1.total[0] || 'TỔNG CỘNG')}</b>`,
+                `<b>${wrInt(wrParseSafeNum(p.tbl1.total[1]))}</b>`,
+                `<b>${wrEscapeHtml(p.tbl1.total[2] || '-')}</b>`,
+                `<b>${wrInt(wrParseSafeNum(p.tbl1.total[3]))}</b>`,
+                `<b class="wr-kpi-good">${wrEscapeHtml(p.tbl1.total[4] || '-')}</b>`
+            ]);
+        }
+        html += wrTable(headers, rows, 'wr-report-table');
+    }
+
+    // Bảng 2: Chi tiết nhóm vấn đề & nội dung lỗi
+    if (p.tbl2 && Array.isArray(p.tbl2.rows) && p.tbl2.rows.length) {
+        html += `<h4 style="margin-top:14px;">2.2 Chi tiết nhóm vấn đề &amp; nội dung lỗi ghi nhận</h4>`;
+        const headers = ['STT', 'Nhóm Vấn Đề', 'Nội Dung Lỗi / Hạn Chế', 'Số Lượng'];
+        const rows = p.tbl2.rows.map((r, i) => [
+            wrInt(i + 1),
+            `<b>${wrEscapeHtml(r.group || '')}</b>`,
+            wrEscapeHtml(r.content || ''),
+            `<b class="wr-kpi-bad">${wrEscapeHtml(r.count || '')}</b>`
+        ]);
+        if (p.tbl2.total) {
+            rows.push([
+                '∑',
+                `<b>${wrEscapeHtml(p.tbl2.total.name || 'TỔNG LƯỢT GHI NHẬN')}</b>`,
+                '',
+                `<b>${wrEscapeHtml(p.tbl2.total.count || '')}</b>`
+            ]);
+        }
+        html += wrTable(headers, rows, 'wr-report-table');
+    }
+
+    // Bảng 3: Các nhóm vấn đề chính
+    if (p.tbl3 && Array.isArray(p.tbl3.rows) && p.tbl3.rows.length) {
+        html += `<h4 style="margin-top:14px;">2.3 Các nhóm vấn đề chính cần lưu ý</h4>`;
+        const headers = ['STT', 'Nhóm Vấn Đề', 'Nội Dung Ghi Nhận'];
+        const rows = p.tbl3.rows.map((r, i) => [
+            wrInt(i + 1),
+            `<b>${wrEscapeHtml(r.group || '')}</b>`,
+            wrEscapeHtml(r.content || '')
+        ]);
+        html += wrTable(headers, rows, 'wr-report-table');
+    }
+
+    return html || `<div class="wr-report-table-empty">Không có dữ liệu chi tiết</div>`;
+}
+
+// 17. Tệp Triển Khai: Nhóm Retail lớn HDDT (Sheet 'Các tiệp triển khai' Cột J:N)
+function wrRenderTiepRetailTable(retailData) {
+    let p = retailData || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.retail : null);
+    if (!p) {
+        return `<div class="wr-report-table-empty">Chưa có dữ liệu Nhóm Retail lớn HDDT từ Google Sheets</div>`;
+    }
+
+    let html = '';
+    // Bảng 1: Thực trạng cửa hàng & Impact
+    if (p.tbl1 && Array.isArray(p.tbl1.rows) && p.tbl1.rows.length) {
+        html += `<h4>3.1 Thực trạng cửa hàng / công ty &amp; Tỷ lệ Impact</h4>`;
+        const headers = ['STT', 'Thực Trạng Cửa Hàng / Công Ty', 'Số Lượng', 'Tỷ Lệ Tiếp Cận Trực Tiếp', 'Số Khách Impact', 'Tỷ Lệ Impact'];
+        const rows = p.tbl1.rows.map((r, i) => [
+            wrInt(i + 1),
+            `<b>${wrEscapeHtml(r[0] || '')}</b>`,
+            wrInt(wrParseSafeNum(r[1])),
+            wrEscapeHtml(r[2] || '-'),
+            wrInt(wrParseSafeNum(r[3])),
+            `<b class="wr-kpi-good">${wrEscapeHtml(r[4] || '-')}</b>`
+        ]);
+        if (p.tbl1.total) {
+            rows.push([
+                '∑',
+                `<b>${wrEscapeHtml(p.tbl1.total[0] || 'TỔNG CỘNG')}</b>`,
+                `<b>${wrInt(wrParseSafeNum(p.tbl1.total[1]))}</b>`,
+                `<b>${wrEscapeHtml(p.tbl1.total[2] || '-')}</b>`,
+                `<b>${wrInt(wrParseSafeNum(p.tbl1.total[3]))}</b>`,
+                `<b class="wr-kpi-good">${wrEscapeHtml(p.tbl1.total[4] || '-')}</b>`
+            ]);
+        }
+        html += wrTable(headers, rows, 'wr-report-table');
+    }
+
+    // Bảng 2: Hình thức trao đổi
+    if (p.tbl2 && Array.isArray(p.tbl2.rows) && p.tbl2.rows.length) {
+        html += `<h4 style="margin-top:14px;">3.2 Tình trạng tiếp cận &amp; Hình thức trao đổi</h4>`;
+        const headers = ['STT', 'Hình Thức Trao Đổi', 'Số Lượng Gian Hàng', 'Tỷ Lệ Tiếp Cận (%)'];
+        const rows = p.tbl2.rows.map((r, i) => [
+            wrInt(i + 1),
+            `<b>${wrEscapeHtml(r[0] || '')}</b>`,
+            wrInt(wrParseSafeNum(r[1])),
+            `<b>${wrEscapeHtml(r[2] || '-')}</b>`
+        ]);
+        if (p.tbl2.total) {
+            rows.push([
+                '∑',
+                `<b>${wrEscapeHtml(p.tbl2.total[0] || 'TỔNG CỘNG')}</b>`,
+                `<b>${wrInt(wrParseSafeNum(p.tbl2.total[1]))}</b>`,
+                `<b>${wrEscapeHtml(p.tbl2.total[2] || '-')}</b>`
+            ]);
+        }
+        html += wrTable(headers, rows, 'wr-report-table');
+    }
+
+    // Bảng 3: Nguyên nhân khách sử dụng song song HDDT
+    if (p.tbl3 && Array.isArray(p.tbl3.rows) && p.tbl3.rows.length) {
+        html += `<h4 style="margin-top:14px;">3.3 Phân tích nguyên nhân khách hàng sử dụng song song HDDT</h4>`;
+        const headers = ['STT', 'Nhóm Nguyên Nhân', 'Phân Tích Thực Tế', 'Số Gian Hàng'];
+        const rows = p.tbl3.rows.map((r, i) => [
+            wrInt(i + 1),
+            `<b>${wrEscapeHtml(r[0] || '')}</b>`,
+            wrEscapeHtml(r[1] || ''),
+            `<b class="wr-kpi-bad">${wrEscapeHtml(r[2] || '')}</b>`
+        ]);
+        html += wrTable(headers, rows, 'wr-report-table');
+    }
+
+    // Bảng 4: Vấn đề phát sinh & đề xuất HDDT
+    if (p.tbl4 && Array.isArray(p.tbl4.rows) && p.tbl4.rows.length) {
+        html += `<h4 style="margin-top:14px;">3.4 Vấn đề phát sinh &amp; Đề xuất cải tiến HDDT</h4>`;
+        const headers = ['STT', 'Nhóm Vấn Đề', 'Thực Tế Ghi Nhận', 'Số Gian Hàng'];
+        const rows = p.tbl4.rows.map((r, i) => [
+            wrInt(i + 1),
+            `<b>${wrEscapeHtml(r[0] || '')}</b>`,
+            wrEscapeHtml(r[1] || ''),
+            `<b class="wr-kpi-medium">${wrEscapeHtml(r[2] || '')}</b>`
+        ]);
+        html += wrTable(headers, rows, 'wr-report-table');
+    }
+
+    return html || `<div class="wr-report-table-empty">Không có dữ liệu chi tiết</div>`;
+}
+
+// =========================================================================
+// QUẢN LÝ PHIÊN BẢN BÁO CÁO (VER 1 vs VER 2)
+// =========================================================================
+
+window.weeklyReportVersion = localStorage.getItem('crm_weekly_report_version') || 'v2';
+
+function wrSwitchReportVersion(ver) {
+    if (ver !== 'v1' && ver !== 'v2') ver = 'v2';
+    window.weeklyReportVersion = ver;
+    localStorage.setItem('crm_weekly_report_version', ver);
+    wrUpdateVersionUI();
+
+    // Tự động chuyển đổi hiển thị ngay nếu đã có báo cáo trong preview
+    if (window.weeklyReportState && window.weeklyReportState.metrics) {
+        const m = window.weeklyReportState.metrics;
+        const fromVal = document.getElementById('wrFromDate')?.value;
+        const toVal = document.getElementById('wrToDate')?.value;
+        const fromDate = fromVal ? new Date(fromVal + 'T00:00:00') : new Date();
+        const toDate = toVal ? new Date(toVal + 'T00:00:00') : new Date();
+        const manual = wrLoadManual();
+
+        const html = wrBuildReportHtml(m, fromDate, toDate, window.weeklyReportState.previousSnapshot, manual);
+        const preview = document.getElementById('weeklyReportPreview');
+        if (preview) {
+            preview.innerHTML = html;
+            window.weeklyReportOriginalHtml = html;
+            window.weeklyReportState.html = html;
+            window._wrDocIsDirty = false;
+            wrInitDirectEditing();
+        }
+        const status = document.getElementById('wrStatus');
+        if (status) {
+            status.innerHTML = `⚡ Đã chuyển sang <b>${ver === 'v2' ? 'Báo cáo Điều Hành Ver 2 (7 Mục Chuẩn)' : 'Báo Cáo Tổng Hợp Ver 1 (CRM & BSC)'}</b>.`;
+        }
+    }
+}
+
+function wrUpdateVersionUI() {
+    const v2Btn = document.getElementById('wrVerBtnV2');
+    const v1Btn = document.getElementById('wrVerBtnV1');
+    const desc = document.getElementById('wrVerDesc');
+    const isV2 = window.weeklyReportVersion === 'v2';
+
+    if (v2Btn) {
+        v2Btn.style.background = isV2 ? '#2563eb' : 'transparent';
+        v2Btn.style.color = isV2 ? '#ffffff' : '#475569';
+        v2Btn.style.fontWeight = isV2 ? '700' : '600';
+    }
+    if (v1Btn) {
+        v1Btn.style.background = !isV2 ? '#2563eb' : 'transparent';
+        v1Btn.style.color = !isV2 ? '#ffffff' : '#475569';
+        v1Btn.style.fontWeight = !isV2 ? '700' : '600';
+    }
+    if (desc) {
+        if (isV2) {
+            desc.innerHTML = `<b>Ver 2 (Chuẩn):</b> 1. Quân số · 2. Active Rate · 3. Mục tiêu · 4. Impact (Off/On) · 5. KPI · 6. Ký mới + SC chăm · 7. Các tệp triển khai`;
+        } else {
+            desc.innerHTML = `<b>Ver 1 (Tổng hợp):</b> I. Tổng quan CRM · II. Quân số · III. Active Rate &amp; Inactive · IV. Vận hành &amp; KPI · V. F&amp;B · VI. Đề xuất`;
+        }
+    }
+}
+
+// =========================================================================
+// BÁO CÁO ĐIỀU HÀNH VER 2 (CHUẨN 7 MỤC)
+// =========================================================================
+
+function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual) {
+    const bsc = metrics.bsc || {};
+    const docTitle = document.getElementById('wrDocTitle')?.value?.trim() || 'BÁO CÁO ĐIỀU HÀNH CUSTOMER SUCCESS (SC)';
+    const recipient = document.getElementById('wrRecipient')?.value?.trim() || 'anh Nguyễn Dũng Hải - SDM DVKH (Dịch Vụ Khách Hàng)';
+
+    // Điểm tin tổng hợp
+    const summaryBullets = [];
+    if (bsc.headcountRegion?.totalRow) {
+        const tot = bsc.headcountRegion.totalRow;
+        summaryBullets.push(`<b>Quân số toàn quốc:</b> Hiện có <b>${tot.total} nhân sự</b> (Khối Online: <b>${tot.online}</b>, Khối Offline: <b>${tot.offline}</b>, Sale Phần cứng: <b>${tot.salePC || tot.salePc || 0}</b>, Quản lý: <b>${tot.manager || 0}</b>, Thử việc: <b>${tot.probation || 0}</b> nhân sự).`);
+    }
+    if (bsc.activeRate?.latestMonth) {
+        const lm = bsc.activeRate.latestMonth;
+        summaryBullets.push(`<b>Chỉ số Active Rate (${lm.cleanLabel || lm.label}):</b> Ngành Retail đạt <b>${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b>; Ngành F&B đạt <b>${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b>; Ngành Booking đạt <b>${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b>; Bình quân 3 ngành đạt <b>${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>.`);
+    }
+    if (bsc.muctieuOffline && Array.isArray(bsc.muctieuOffline) && bsc.muctieuOffline.length > 1) {
+        const rowKh = bsc.muctieuOffline.find(r => r && String(r[0]).includes('đi được'));
+        if (rowKh) {
+            const actVal = Number(rowKh[2]) || 0;
+            const tgtVal = Number(rowKh[1]) || 0;
+            const pctVal = tgtVal > 0 ? ((actVal / tgtVal) * 100).toFixed(1) + '%' : '-';
+            summaryBullets.push(`<b>Mục tiêu Team Offline:</b> Số KH đi được đạt <b>${wrInt(actVal)} KH</b> (${pctVal} so với mục tiêu ${wrInt(tgtVal)} KH).`);
+        }
+    }
+    if (bsc.muctieuOnline && Array.isArray(bsc.muctieuOnline) && bsc.muctieuOnline.length > 1) {
+        const rowLh = bsc.muctieuOnline.find(r => r && String(r[0]).includes('liên hệ'));
+        if (rowLh) {
+            const actVal = Number(rowLh[2]) || 0;
+            const tgtVal = Number(rowLh[1]) || 0;
+            const pctVal = tgtVal > 0 ? ((actVal / tgtVal) * 100).toFixed(1) + '%' : '-';
+            summaryBullets.push(`<b>Mục tiêu Team Online:</b> Số KH liên hệ đạt <b>${wrInt(actVal)} KH</b> (${pctVal} so với mục tiêu ${wrInt(tgtVal)} KH).`);
+        }
+    }
+    if (bsc.provinceImpact?.totalRow || bsc.provinceImpact?.total) {
+        const totImp = bsc.provinceImpact.totalRow || bsc.provinceImpact.total;
+        summaryBullets.push(`<b>Tỷ lệ Impact Offline:</b> Toàn quốc bình quân đạt <b>${totImp.t11 != null ? Number(totImp.t11).toFixed(2) + '%' : '-'}</b>; tiếp tục duy trì đà chuyển biến tích cực tại 16 tỉnh thành.`);
+    }
+    if (bsc.careRate) {
+        const totKyMoi = bsc.careRate.totKyMoi || bsc.careRate.totalRow?.kyMoi;
+        const avgInact = bsc.careRate.avgInactive || bsc.careRate.totalRow?.inactive;
+        const avgCham = bsc.careRate.avgScCham || bsc.careRate.totalRow?.scCham;
+        summaryBullets.push(`<b>Khách ký mới &amp; SC chăm sóc:</b> Toàn quốc có <b>${totKyMoi ? wrInt(totKyMoi) : '-'}</b> khách ký mới. Tỷ lệ Inactive New: <b>${avgInact != null ? avgInact.toFixed(2) + '%' : '-'}</b>; Tỷ lệ SC tiếp cận chăm sóc: <b>${avgCham != null ? avgCham.toFixed(2) + '%' : '-'}</b>.`);
+    }
+    if (bsc.tiepTrienKhai?.fnb) {
+        summaryBullets.push(`<b>Các tệp triển khai trọng điểm:</b> Đang kiểm soát chặt chẽ 3 tệp lớn (F&B lớn / lỗi, Booking 3 sao, Retail lớn dùng HĐĐT) để hạn chế rủi ro ngưng sử dụng.`);
+    }
+
+    // Bảng tóm tắt chỉ số điều hành
+    const sumTableRows = [];
+    if (bsc.headcountRegion?.totalRow) {
+        const tot = bsc.headcountRegion.totalRow;
+        sumTableRows.push(['Quân số toàn quốc', `<b>${tot.total} nhân sự</b>`, 'Nhân sự thử việc', `<b>${tot.probation || 0} nhân sự</b>`]);
+    }
+    if (bsc.activeRate?.latestMonth) {
+        const lm = bsc.activeRate.latestMonth;
+        sumTableRows.push(['Active Rate F&B', `<b class="${wrKpiTone(lm.fnb)}">${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b>`, 'Active Rate Retail', `<b class="${wrKpiTone(lm.retail)}">${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b>`]);
+        sumTableRows.push(['Active Rate Booking', `<b class="${wrKpiTone(lm.booking)}">${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b>`, 'Active Rate Trung bình', `<b class="wr-kpi-good">${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>`]);
+    }
+    if (bsc.careRate) {
+        const avgInact = bsc.careRate.avgInactive || bsc.careRate.totalRow?.inactive;
+        const avgCham = bsc.careRate.avgScCham || bsc.careRate.totalRow?.scCham;
+        sumTableRows.push(['Tỷ lệ Inactive New', `<b>${avgInact != null ? avgInact.toFixed(2) + '%' : '-'}</b>`, 'Tỷ lệ SC chăm khách New', `<b class="wr-kpi-good">${avgCham != null ? avgCham.toFixed(2) + '%' : '-'}</b>`]);
+    }
+
+    return `
+    <article id="weeklyReportDocument" class="wr-document" contenteditable="true">
+        <div class="wr-doc-header">
+            <h1 class="wr-doc-title">${wrEscapeHtml(docTitle)}</h1>
+            <div class="wr-doc-subtitle">BÁO CÁO ĐIỀU HÀNH SC (VER 2) · DỮ LIỆU TỪ ${wrFormatVNDate(fromDate).toUpperCase()} ĐẾN HẾT ${wrFormatVNDate(toDate).toUpperCase()}</div>
+            <div class="wr-doc-recipient">Kính gửi: <b class="wr-doc-recipient-val">${wrEscapeHtml(recipient)}</b></div>
+        </div>
+
+        <p class="wr-note">
+            Báo cáo điều hành tổng hợp chuẩn 7 mục trọng yếu của Khối Customer Success (SC): Quân số, Active Rate, Mục tiêu, Tỷ lệ Impact (Offline &amp; Online), KPI (Online &amp; Offline), Khách ký mới + SC chăm sóc và Các tệp triển khai chiến lược. Dữ liệu đồng bộ trực tiếp từ hệ thống Google Sheets Quản trị &amp; Điều hành.
+        </p>
+
+        ${summaryBullets.length ? `
+        <div style="background: #f8fafc; border-left: 4px solid #2563eb; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px;">
+            <h4 style="margin: 0 0 8px 0; color: #1e40af; font-size: 14px; text-transform: uppercase;">⭐ Điểm Tin Điều Hành Trọng Tâm:</h4>
+            ${wrBullets(summaryBullets)}
+        </div>` : ''}
+
+        ${sumTableRows.length ? `
+        <h3 style="margin-top: 10px;">Bảng tổng hợp chỉ số điều hành cốt lõi</h3>
+        ${wrTable(['Chỉ Số Trọng Yếu', 'Giá Trị', 'Chỉ Số So Sánh', 'Kết Quả'], sumTableRows, 'wr-report-table wr-sum-table')}` : ''}
+
+        <!-- 1. QUÂN SỐ -->
+        <section>
+            <h2>I. QUÂN SỐ</h2>
+            ${wrBullets([
+                `Tổng quân số toàn quốc hiện có <b>${bsc.headcountRegion?.totalRow?.total || 0} nhân sự</b>, trong đó: Khối Online gồm <b>${bsc.headcountRegion?.totalRow?.online || 0} nhân sự</b>, Khối Offline gồm <b>${bsc.headcountRegion?.totalRow?.offline || 0} nhân sự</b>, Sale Phần cứng: <b>${bsc.headcountRegion?.totalRow?.salePC || bsc.headcountRegion?.totalRow?.salePc || 0} nhân sự</b>, Quản lý: <b>${bsc.headcountRegion?.totalRow?.manager || 0} nhân sự</b>.`,
+                `Nhân sự thử việc hiện có <b>${bsc.headcountRegion?.totalRow?.probation || 0} nhân sự</b>. Đội ngũ tiếp tục đẩy mạnh công tác tuyển dụng và đào tạo nâng cao năng lực cho nhân sự mới tại các địa bàn trọng điểm.`,
+                `Cơ cấu phân bổ nhân sự phủ rộng trên 16 tỉnh thành trọng điểm toàn quốc (Hà Nội, TP.HCM, Đà Nẵng, Hải Phòng, Cần Thơ, Bình Dương, Đồng Nai, Nha Trang, Vũng Tàu, Nghệ An, Huế...).`
+            ])}
+
+            <h3>1. Cơ cấu quân số theo Vùng miền &amp; Vị trí (Sheet baocaotuan V2:AB5)</h3>
+            ${wrRenderHeadcountRegionTable(bsc.headcountRegion)}
+
+            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành (Sheet baocaotuan U7:W30)</h3>
+            ${wrRenderHeadcountProvinceTable(bsc.headcountProvince)}
+        </section>
+
+        <!-- 2. ACTIVE RATE -->
+        <section>
+            <h2>II. ACTIVE RATE</h2>
+            ${bsc.activeRate?.latestMonth ? wrBullets([
+                `Active Rate toàn quốc tháng gần nhất (<b>${bsc.activeRate.latestMonth.cleanLabel || bsc.activeRate.latestMonth.label}</b>): Ngành Retail đạt <b>${bsc.activeRate.latestMonth.retail != null ? bsc.activeRate.latestMonth.retail.toFixed(2) + '%' : '-'}</b>; Ngành F&B đạt <b>${bsc.activeRate.latestMonth.fnb != null ? bsc.activeRate.latestMonth.fnb.toFixed(2) + '%' : '-'}</b>; Ngành Booking đạt <b>${bsc.activeRate.latestMonth.booking != null ? bsc.activeRate.latestMonth.booking.toFixed(2) + '%' : '-'}</b>.`,
+                `Active Rate bình quân 3 ngành đạt <b>${bsc.activeRate.latestMonth.avg != null ? bsc.activeRate.latestMonth.avg.toFixed(2) + '%' : '-'}</b>, duy trì ổn định và bám sát hạn mức KPI đề ra.`,
+                `Diễn biến qua các tháng năm 2026 cho thấy tỷ lệ active giữ mức ổn định nhờ công tác chăm sóc trực tiếp và hỗ trợ kịp thời các gian hàng phát sinh tín hiệu inactive.`
+            ]) : ''}
+
+            <h3>1. Active Rate theo ngành hàng năm 2026 (Sheet baocaotuan A2:D14)</h3>
+            ${wrRenderActiveRateTable(bsc.activeRate)}
+        </section>
+
+        <!-- 3. MỤC TIÊU -->
+        <section>
+            <h2>III. MỤC TIÊU VẬN HÀNH</h2>
+            <p>Kết quả thực hiện các chỉ tiêu vận hành cốt lõi của Khối Customer Success (SC) giữa hai lực lượng Offline và Online:</p>
+
+            <h3>1. Mục tiêu Vận hành Team Offline (Sheet muctieu A2:I13)</h3>
+            ${wrRenderMuctieuTable(bsc.muctieuOffline, false)}
+
+            <h3>2. Mục tiêu Vận hành Team Online (Sheet muctieu A16:I28)</h3>
+            ${wrRenderMuctieuTable(bsc.muctieuOnline, true)}
+        </section>
+
+        <!-- 4. IMPACT -->
+        <section>
+            <h2>IV. TỶ LỆ IMPACT</h2>
+            <p>Chỉ số Impact phản ánh tỷ lệ khách hàng có sự chuyển biến tích cực (phát sinh giao dịch hoặc quay lại active) sau khi được SC tiếp cận chăm sóc:</p>
+
+            <h3>1. Khối Offline</h3>
+            <h4>1.1 Tỷ lệ Impact theo khu vực (16 tỉnh thành qua các tháng) (Sheet baocaotuan K2:Q19)</h4>
+            ${wrRenderProvinceImpactTable(bsc.provinceImpact)}
+
+            <h4>1.2 Tỷ lệ Impact theo nguồn data (Sheet baocaotuan AD1:AG11)</h4>
+            ${wrRenderImpactDataSourceTable(bsc.impactDataSource)}
+
+            <h4>1.3 Tỷ lệ Impact theo sản phẩm / ngành hàng (Sheet baocaotuan AD14:AG20)</h4>
+            ${wrRenderImpactIndustryTable(bsc.impactIndustry)}
+
+            <h3>2. Khối Online</h3>
+            <h4>2.1 Tỷ lệ Impact theo tệp khách hàng (Sheet impactonline A1:H6)</h4>
+            ${wrRenderImpactOnlineTable(bsc.impactOnline?.muc1 || (typeof IMPACT_ONLINE_STATE !== 'undefined' ? IMPACT_ONLINE_STATE.muc1 : null), 'Bảng 1: Phân Tích Tỷ Lệ Impact Theo Tệp Khách Hàng')}
+
+            <h4>2.2 Diễn biến Impact theo tháng năm 2026 (Sheet impactonline A9:H23)</h4>
+            ${wrRenderImpactOnlineTable(bsc.impactOnline?.muc2 || (typeof IMPACT_ONLINE_STATE !== 'undefined' ? IMPACT_ONLINE_STATE.muc2 : null), 'Bảng 2: Diễn Biến Impact Theo Tháng Năm 2026')}
+        </section>
+
+        <!-- 5. KPI -->
+        <section>
+            <h2>V. THEO DÕI KPI</h2>
+            <p>Theo dõi tiến độ hoàn thành các chỉ tiêu KPI trọng yếu của đội ngũ SC cả hai kênh Online và Offline:</p>
+
+            <h3>1. Khối Online</h3>
+            <h4>1.1 Bảng theo dõi KPI Team Online (Sheet baocaotuan AJ2:AP5)</h4>
+            ${wrRenderKpiOnlineT9Table(bsc.kpiOnlineT9)}
+
+            <h3>2. Khối Offline</h3>
+            <h4>2.1 Bảng theo dõi KPI Coacher Team Offline Tháng 11 (Sheet baocaotuan AJ13:AP17)</h4>
+            ${wrRenderKpiOfflineT10Table(bsc.kpiOfflineT10)}
+
+            <h4>2.2 Tư vấn chuyển Addon &amp; Phần cứng Tháng 11 (Sheet baocaotuan AJ22:AO30)</h4>
+            ${wrRenderAddonT10Table(bsc.addonT10)}
+        </section>
+
+        <!-- 6. KHÁCH KÝ MỚI + SC CHĂM -->
+        <section>
+            <h2>VI. KHÁCH KÝ MỚI &amp; SC CHĂM SÓC</h2>
+            ${bsc.careRate ? wrBullets([
+                `Toàn quốc ghi nhận tổng cộng <b>${bsc.careRate.totKyMoi ? wrInt(bsc.careRate.totKyMoi) : (bsc.careRate.totalRow?.kyMoi ? wrInt(bsc.careRate.totalRow.kyMoi) : '-')} khách ký mới</b>.`,
+                `Tỷ lệ Inactive New ghi nhận ở mức <b>${bsc.careRate.avgInactive != null ? bsc.careRate.avgInactive.toFixed(2) + '%' : (bsc.careRate.totalRow?.inactive != null ? bsc.careRate.totalRow.inactive.toFixed(2) + '%' : '-')}</b>.`,
+                `Tỷ lệ khách mới được SC tiếp cận chăm sóc đạt <b>${bsc.careRate.avgScCham != null ? bsc.careRate.avgScCham.toFixed(2) + '%' : (bsc.careRate.totalRow?.scCham != null ? bsc.careRate.totalRow.scCham.toFixed(2) + '%' : '-')}</b>, đảm bảo hỗ trợ đồng hành ngay trong giai đoạn Onboarding.`
+            ]) : ''}
+
+            <h3>1. Tỷ lệ Inactive New &amp; Tỷ lệ SC đã chăm sóc khách New (Sheet baocaotuan F2:I6)</h3>
+            ${wrRenderCareRateTable(bsc.careRate)}
+
+            <h3>2. Diễn biến Tỷ lệ Inactive New theo tháng năm 2026 (Sheet baocaotuan AV2:BB15)</h3>
+            ${wrRenderMonthlyInactiveTable(bsc.monthlyInactive)}
+        </section>
+
+        <!-- 7. CÁC TỆP TRIỂN KHAI -->
+        <section>
+            <h2>VII. CÁC TỆP TRIỂN KHAI TRỌNG ĐIỂM</h2>
+            <p>Báo cáo chi tiết kết quả rà soát và hỗ trợ 3 tệp khách hàng chiến lược từ sheet Google Sheets <i>'Các tiệp triển khai'</i>:</p>
+
+            <h3>1. Nhóm F&amp;B lớn / lỗi (Cột A:B)</h3>
+            ${wrRenderTiepFnbTable(bsc.tiepTrienKhai?.fnb || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.fnb : null))}
+
+            <h3>2. Nhóm Booking (3 sao) (Cột D:H)</h3>
+            ${wrRenderTiepBookingTable(bsc.tiepTrienKhai?.booking || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.booking : null))}
+
+            <h3>3. Nhóm Retail lớn (dùng HDDT) (Cột J:N)</h3>
+            ${wrRenderTiepRetailTable(bsc.tiepTrienKhai?.retail || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.retail : null))}
+        </section>
+
+        <!-- 8. ĐỀ XUẤT ĐIỀU HÀNH & KẾ HOẠCH HÀNH ĐỘNG -->
+        <section id="wrSectionProposals">
+            <h2>VIII. ĐỀ XUẤT ĐIỀU HÀNH &amp; KẾ HOẠCH HÀNH ĐỘNG</h2>
+            <p>Để đảm bảo hoàn thành vượt mức các mục tiêu kinh doanh và kiểm soát chất lượng khách hàng trong các kỳ tiếp theo, khối CS đề xuất các trọng tâm điều hành sau:</p>
+            ${wrBullets([
+                `<b>1. Tuyển dụng &amp; Ổn định quân số:</b> Đẩy nhanh tiến độ tuyển bù định biên còn thiếu cho khu vực miền Trung và miền Nam; phân công kèm cặp 1-1 cho các nhân sự thử việc mới để sớm độc lập phụ trách địa bàn.`,
+                `<b>2. Kiểm soát Active Rate &amp; Inactive New:</b> Triển khai quy trình tiếp cận tệp Inactive New ngay trong tuần đầu tiên phát sinh tín hiệu; ưu tiên nguồn lực chăm sóc tệp 3-4 tín hiệu Inactive để kéo khách quay trở lại sử dụng.`,
+                `<b>3. Nâng cao chất lượng hỗ trợ &amp; Tỷ lệ Impact:</b> Nâng cao chất lượng mỗi lượt ghé thăm và tư vấn từ xa, tập trung chuyển hóa khách hàng có chuyển biến tích cực (Impact thực chất) sau chăm sóc.`,
+                `<b>4. Tệp F&amp;B và Khách lớn:</b> Tập trung xử lý dứt điểm các phản ánh về in bếp LAN/BT và tối ưu tốc độ App/POS bán hàng trên các thiết bị cấu hình thấp.`,
+                `<b>5. Thúc đẩy Doanh thu Phần cứng &amp; Add-on:</b> Tăng cường tư vấn combo thiết bị máy in LAN/BT, giải pháp thanh toán QR Payment và tích hợp hóa đơn điện tử cho các cửa hàng mới ký.`
+            ])}
+            
+            <div id="wrProposalsDocWrap">
+                ${manual && manual.proposals && manual.proposals.trim() ? `
+                <div style="margin-top: 14px; padding: 12px 14px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 6px;">
+                    <h4 style="margin: 0 0 6px 0; color: #1e40af; font-size: 13.5px;">📌 Đề xuất điều hành bổ sung:</h4>
+                    ${wrBullets(wrLinesToList(manual.proposals).map(x => `<b>${wrEscapeHtml(x)}</b>`))}
+                </div>` : ''}
+            </div>
+        </section>
+
+        <!-- 9. CÁC MỤC TÙY CHỈNH (CUSTOM SECTIONS) -->
+        <div id="wrCustomSectionsDocWrap">
+        ${(() => {
+            let extra = '';
+            let secIdx = 9;
+            if (Array.isArray(manual.customSections) && manual.customSections.length) {
+                manual.customSections.forEach(sec => {
+                    const secTitle = sec.title ? sec.title.toUpperCase() : 'MỤC TÙY CHỈNH';
+                    const content = (sec.contentHtml && sec.contentHtml !== '<br>' && sec.contentHtml !== '<p><br></p>')
+                        ? sec.contentHtml
+                        : '<p style="color:#94a3b8;font-style:italic;">(Chưa có nội dung)</p>';
+                    extra += `
+        <section class="wr-custom-section" data-sec-id="${sec.id || ''}">
+            <h2>${wrToRoman(secIdx++)}. ${wrEscapeHtml(secTitle)}</h2>
+            <div class="wr-custom-content">${content}</div>
+        </section>`;
+                });
+            }
+            return extra;
+        })()}
+        </div>
+
+        <!-- LỜI KẾT & CHỮ KÝ BÁO CÁO -->
+        <div id="wrDocFooterBlock" style="margin-top: 28px; padding-top: 14px; border-top: 1px dashed var(--wr-border, #cbd5e1); font-size: 13px; color: var(--wr-text, #1e293b); font-style: italic;">
+            Trên đây là báo cáo định kỳ điều hành Customer Success (SC) kính gửi <b class="wr-doc-recipient-val">${wrEscapeHtml(recipient)}</b> nắm thông tin giúp em ạ. Em cảm ơn anh!
+        </div>
+
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--wr-border, #cbd5e1); display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="font-size: 11.5px; color: var(--wr-muted, #64748b); max-width: 340px;">
+                <div><b>Báo cáo tổng hợp tự động từ hệ thống CRM &amp; Google Sheets DVKH (Ver 2)</b></div>
+                <div style="margin-top: 4px;">Thời gian tạo: ${new Date().toLocaleString('vi-VN')}</div>
+                <div style="margin-top: 2px;">Bảo mật thông tin nội bộ · Khối Chăm Sóc Khách Hàng (Customer Success - SC).</div>
+            </div>
+            <div style="text-align: center; min-width: 250px;">
+                <div style="font-size: 12px; color: var(--wr-muted, #64748b); font-style: italic;">
+                    Hà Nội / TP.HCM, ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}
+                </div>
+                <div style="height: 48px;"></div>
+                <div style="font-size: 13px; font-weight: 700; color: var(--wr-text, #0f172a);">
+                    Đại diện Đội ngũ Customer Success (SC)
+                </div>
+                <div class="wr-doc-recipient-val" style="font-size: 12px; color: #1d4ed8; font-weight: 600; margin-top: 4px;">
+                    Trân trọng gửi ${wrEscapeHtml(recipient)}
+                </div>
+            </div>
+        </div>
+    </article>`;
+}
+
+// =========================================================================
+// BỘ ĐIỀU PHỐI TẠO BÁO CÁO CHÍNH
 // =========================================================================
 
 function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) {
+    if (window.weeklyReportVersion === 'v1') {
+        return wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual);
+    }
+    return wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual);
+}
+
+// =========================================================================
+// HÀM TẠO NỘI DUNG BÁO CÁO TOÀN DIỆN TỪ GOOGLE SHEETS (VER 1 - CRM & BSC)
+// =========================================================================
+
+function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual) {
     const k = metrics.kpi;
     const p = metrics.performance;
     const b = metrics.backlog;
@@ -2342,6 +3006,24 @@ async function generateWeeklyReport() {
         if (typeof loadMuctieu === 'function' && typeof MUCTIEU_STATE !== 'undefined' && (!MUCTIEU_STATE.offline || !MUCTIEU_STATE.online)) {
             try { await loadMuctieu(false); } catch (eMt) {}
         }
+        if (typeof loadImpactOnline === 'function') {
+            try {
+                if (!IMPACT_ONLINE_STATE || (!IMPACT_ONLINE_STATE.muc1 && !IMPACT_ONLINE_STATE.muc2)) {
+                    await loadImpactOnline(false, true);
+                }
+            } catch (eIo) {
+                console.warn('[Báo cáo tuần] Cảnh báo khi tải Sheet impactonline:', eIo);
+            }
+        }
+        if (typeof loadTiepTrienKhaiData === 'function') {
+            try {
+                if (!TIEP_TRIEN_KHAI_STATE || (!TIEP_TRIEN_KHAI_STATE.fnb && !TIEP_TRIEN_KHAI_STATE.booking && !TIEP_TRIEN_KHAI_STATE.retail)) {
+                    await loadTiepTrienKhaiData(false, true);
+                }
+            } catch (eTk) {
+                console.warn('[Báo cáo tuần] Cảnh báo khi tải Sheet Các tiệp triển khai:', eTk);
+            }
+        }
 
         const data = await wrEnsureAllData();
 
@@ -2374,6 +3056,10 @@ async function generateWeeklyReport() {
             provinceImpact: (typeof normalizeProvinceImpactData === 'function' && BAOCAOSC_STATE?.provinceImpact) 
                 ? normalizeProvinceImpactData(BAOCAOSC_STATE.provinceImpact) 
                 : null,
+            impactDataSource: BAOCAOSC_STATE?.impactDataSource || null,
+            impactIndustry: BAOCAOSC_STATE?.impactIndustry || null,
+            impactOnline: typeof IMPACT_ONLINE_STATE !== 'undefined' ? IMPACT_ONLINE_STATE : null,
+            tiepTrienKhai: typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE : null,
             fnbIssue: (typeof normalizeFnbIssueData === 'function' && BAOCAOSC_STATE?.fnbIssue) 
                 ? normalizeFnbIssueData(BAOCAOSC_STATE.fnbIssue) 
                 : null,
@@ -3084,6 +3770,8 @@ function initWeeklyReportTab() {
     const to = document.getElementById('wrToDate');
     if (!from || !to) return;
 
+    wrUpdateVersionUI();
+
     if (!from.value || !to.value) {
         const now = new Date();
         const first = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -3096,7 +3784,10 @@ function initWeeklyReportTab() {
     setVal('wrAddressTotal', manual.addressTotal);
     setVal('wrAddressDone', manual.addressDone);
     setVal('wrProposals', manual.proposals || '');
-    setVal('wrDocTitle', manual.docTitle || 'BÁO CÁO CHẤT LƯỢNG CUSTOMER SUCCESS (SC)');
+    const defaultTitle = window.weeklyReportVersion === 'v2' 
+        ? 'BÁO CÁO ĐIỀU HÀNH CUSTOMER SUCCESS (SC)' 
+        : 'BÁO CÁO CHẤT LƯỢNG CUSTOMER SUCCESS (SC)';
+    setVal('wrDocTitle', manual.docTitle || defaultTitle);
     setVal('wrRecipient', manual.recipient || 'anh Nguyễn Dũng Hải - SDM DVKH (Dịch Vụ Khách Hàng)');
     ['wrDocTitle', 'wrRecipient', 'wrAddressTotal', 'wrAddressDone', 'wrProposals'].forEach(id => {
         const el = document.getElementById(id);

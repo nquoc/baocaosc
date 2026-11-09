@@ -111,7 +111,7 @@
     📦 DATA TỒN
   </button>
   <button id="tabBtnBaoCao" class="tab-btn secret-tab-btn" onclick="switchTab('baocao')" style="display:none">
-    📝 Báo Cáo Điều Hành
+    📝 Báo Cáo Điều Hành (Ver 2)
   </button>
   <span id="secretTabSpot" class="secret-tab-spot" onclick="handleSecretTabClick(event)" title=""></span>
 </div>
@@ -1507,8 +1507,26 @@
 
         <div class="wr-toolbar-card">
             <div class="wr-toolbar-title">
-                <div><b>🧾 BÁO CÁO TUẦN TỰ ĐỘNG</b><small>Lấy số trực tiếp từ Dashboard → dựng lại đúng bảng gốc bằng HTML → copy sang Atlassian</small></div>
+                <div><b>🧾 BÁO CÁO ĐIỀU HÀNH SC</b><small>Dữ liệu hợp nhất từ CRM &amp; Google Sheets DVKH → xuất Word, HTML hoặc copy sang Atlassian</small></div>
                 <div id="wrSnapshotInfo" class="wr-snapshot-info"></div>
+            </div>
+
+            <!-- BỘ CHỌN PHIÊN BẢN BÁO CÁO (VER 1 vs VER 2) -->
+            <div class="wr-version-bar" style="display:flex; align-items:center; gap:10px; margin-bottom:14px; padding:10px 14px; background:linear-gradient(135deg, rgba(37,99,235,0.06), rgba(124,58,237,0.06)); border:1px solid #bfdbfe; border-radius:10px; flex-wrap:wrap;">
+                <span style="font-weight:700; font-size:13px; color:#1e40af; display:flex; align-items:center; gap:5px;">
+                    ⚡ Phiên Bản Báo Cáo:
+                </span>
+                <div class="wr-ver-selector" style="display:inline-flex; gap:6px; background:#e2e8f0; padding:3px; border-radius:8px;">
+                    <button type="button" id="wrVerBtnV2" class="wr-ver-btn" onclick="wrSwitchReportVersion('v2')" style="border:none; padding:6px 14px; border-radius:6px; font-weight:700; font-size:12px; cursor:pointer; background:#2563eb; color:#ffffff; transition:all .2s;">
+                        ⭐ Ver 2: Chuẩn Điều Hành 7 Mục (Mới)
+                    </button>
+                    <button type="button" id="wrVerBtnV1" class="wr-ver-btn" onclick="wrSwitchReportVersion('v1')" style="border:none; padding:6px 14px; border-radius:6px; font-weight:600; font-size:12px; cursor:pointer; background:transparent; color:#475569; transition:all .2s;">
+                        📄 Ver 1: Tổng Hợp CRM &amp; BSC
+                    </button>
+                </div>
+                <span id="wrVerDesc" style="font-size:12px; color:#64748b; margin-left:auto;">
+                    <b>Ver 2:</b> 1. Quân số · 2. Active Rate · 3. Mục tiêu · 4. Impact · 5. KPI · 6. Ký mới + SC chăm · 7. Các tệp triển khai
+                </span>
             </div>
 
             <div class="wr-controls-grid">
