@@ -1534,11 +1534,16 @@
                 <div class="wr-custom-sections-header" style="display:flex; justify-content:space-between; align-items:center; margin:14px 0 10px; flex-wrap:wrap; gap:10px;">
                     <div style="font-weight:700; font-size:13.5px; color:inherit; display:flex; align-items:center; gap:6px;">
                         <span>🎨 Các mục tùy chỉnh</span>
-                        <span style="font-size:11.5px; font-weight:normal; color:#64748b;">(Tự do đặt tên mục, viết văn bản, chèn/paste ảnh clipboard, tạo bảng)</span>
+                        <span style="font-size:11.5px; font-weight:normal; color:#64748b;">(Tự do đặt tên mục, viết văn bản, chèn/paste ảnh clipboard, tạo bảng — tự động cập nhật ngay vào báo cáo)</span>
                     </div>
-                    <button type="button" class="wr-btn wr-btn-blue" onclick="addWeeklyReportCustomSection()" style="padding:6px 12px; font-size:12px;">
-                        ➕ Thêm mục tùy chỉnh
-                    </button>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="wr-btn wr-btn-ghost" onclick="wrSyncCustomSectionsToActiveDoc(true)" style="padding:6px 12px; font-size:12px;" title="Cập nhật ngay vào báo cáo đang mở mà không cần tạo lại từ đầu">
+                            🔄 Cập nhật vào báo cáo
+                        </button>
+                        <button type="button" class="wr-btn wr-btn-blue" onclick="addWeeklyReportCustomSection()" style="padding:6px 12px; font-size:12px;">
+                            ➕ Thêm mục tùy chỉnh
+                        </button>
+                    </div>
                 </div>
 
                 <div id="wrCustomSectionsContainer" class="wr-custom-sections-container">

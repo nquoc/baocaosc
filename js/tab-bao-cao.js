@@ -592,7 +592,8 @@ function wrDebouncedSaveManual() {
     clearTimeout(wrSaveManualTimer);
     wrSaveManualTimer = setTimeout(() => {
         wrSaveManual();
-    }, 350);
+        wrSyncCustomSectionsToActiveDoc();
+    }, 250);
 }
 
 function wrLoadManual() {
@@ -608,7 +609,7 @@ function wrSaveManual() {
         const title = card.querySelector('.wr-custom-title-input')?.value.trim() || '';
         const editor = card.querySelector('.wr-custom-editor');
         const contentHtml = editor ? editor.innerHTML.trim() : '';
-        if (title || (contentHtml && contentHtml !== '<br>' && contentHtml !== '<p><br></p>')) {
+        if (secId) {
             customSections.push({ id: secId, title, contentHtml });
         }
     });
@@ -623,6 +624,173 @@ function wrSaveManual() {
     };
     localStorage.setItem(WEEKLY_REPORT_MANUAL_KEY, JSON.stringify(manual));
     return manual;
+}
+
+// ===== ĐỒNG BỘ NỘI DUNG TÙY CHỈNH VÀO TÀI LIỆU BÁO CÁO ĐANG MỞ (KHÔNG RESET NỘI DUNG ĐÃ SỬA) =====
+function wrSyncCustomSectionsToActiveDoc(showNotice = false) {
+    const doc = document.getElementById('weeklyReportDocument');
+    if (!doc) {
+        if (showNotice) {
+            alert('⚠️ Báo cáo chưa được tạo trên màn hình. Bạn hãy bấm "⚡ Tạo báo cáo tự động" trước một lần.');
+        }
+        return;
+    }
+
+    let wrap = doc.querySelector('#wrCustomSectionsDocWrap');
+    if (!wrap) {
+        const footer = doc.querySelector('#wrDocFooterBlock') || doc.querySelector('div[style*="border-top: 1px dashed"]') || doc.lastElementChild;
+        wrap = document.createElement('div');
+        wrap.id = 'wrCustomSectionsDocWrap';
+        if (footer) {
+            doc.insertBefore(wrap, footer);
+        } else {
+            doc.appendChild(wrap);
+        }
+    }
+
+    const cards = Array.from(document.querySelectorAll('#wrCustomSectionsContainer .wr-custom-sec-card'));
+    const currentIds = new Set();
+    let secIdx = 7; // Mục I đến VI là mục mặc định của báo cáo
+
+    cards.forEach(card => {
+        const id = card.getAttribute('data-sec-id') || '';
+        if (!id) return;
+        currentIds.add(id);
+
+        const titleVal = card.querySelector('.wr-custom-title-input')?.value.trim() || '';
+        const editor = card.querySelector('.wr-custom-editor');
+        const contentVal = editor ? editor.innerHTML.trim() : '';
+
+        const displayTitle = titleVal ? titleVal.toUpperCase() : 'MỤC TÙY CHỈNH';
+        const displayContent = (contentVal && contentVal !== '<br>' && contentVal !== '<p><br></p>')
+            ? contentVal
+            : '<p style="color:#94a3b8;font-style:italic;">(Chưa có nội dung)</p>';
+        const roman = wrToRoman(secIdx++);
+
+        let secEl = wrap.querySelector(`.wr-custom-section[data-sec-id="${id}"]`);
+        if (!secEl) {
+            secEl = document.createElement('section');
+            secEl.className = 'wr-custom-section';
+            secEl.setAttribute('data-sec-id', id);
+            secEl.innerHTML = `<h2>${roman}. ${wrEscapeHtml(displayTitle)}</h2><div class="wr-custom-content">${displayContent}</div>`;
+            wrap.appendChild(secEl);
+        } else {
+            const h2 = secEl.querySelector('h2');
+            if (h2) {
+                h2.innerText = `${roman}. ${displayTitle}`;
+            }
+            const activeEl = document.activeElement;
+            const contentEl = secEl.querySelector('.wr-custom-content');
+            if (contentEl && (!activeEl || !contentEl.contains(activeEl))) {
+                if (contentEl.innerHTML !== displayContent) {
+                    contentEl.innerHTML = displayContent;
+                }
+            }
+        }
+    });
+
+    // Xóa các mục trong tài liệu nếu thẻ card tương ứng đã bị xóa
+    wrap.querySelectorAll('.wr-custom-section').forEach(secEl => {
+        const id = secEl.getAttribute('data-sec-id');
+        if (!id || !currentIds.has(id)) {
+            secEl.remove();
+        }
+    });
+
+    // Đảm bảo thứ tự xuất hiện trong tài liệu khớp đúng thứ tự thẻ ở trên
+    cards.forEach(card => {
+        const id = card.getAttribute('data-sec-id');
+        const secEl = wrap.querySelector(`.wr-custom-section[data-sec-id="${id}"]`);
+        if (secEl) {
+            wrap.appendChild(secEl);
+        }
+    });
+
+    // Cập nhật state để khi bấm Copy Atlassian / Tải Word lấy đúng tài liệu mới nhất
+    if (window.weeklyReportState) {
+        window.weeklyReportState.html = doc.outerHTML;
+        window.weeklyReportState.plainText = wrHtmlToPlainText(doc.innerHTML);
+    }
+
+    if (showNotice) {
+        wrShowSaveIndicator('✓ Đã đồng bộ Mục tùy chỉnh vào báo cáo');
+        alert('✅ Đã đồng bộ các mục tùy chỉnh vào báo cáo thành công mà không làm mất các nội dung bạn đã chỉnh sửa!');
+    } else {
+        wrShowSaveIndicator('✓ Đã đồng bộ Mục tùy chỉnh');
+    }
+}
+
+function wrSyncDocCustomSectionsBackToCards() {
+    const doc = document.getElementById('weeklyReportDocument');
+    if (!doc) return;
+    const wrap = doc.querySelector('#wrCustomSectionsDocWrap');
+    if (!wrap) return;
+
+    wrap.querySelectorAll('.wr-custom-section').forEach(secEl => {
+        const id = secEl.getAttribute('data-sec-id');
+        if (!id) return;
+        const card = document.querySelector(`.wr-custom-sec-card[data-sec-id="${id}"]`);
+        if (!card) return;
+        const editor = card.querySelector('.wr-custom-editor');
+        const contentEl = secEl.querySelector('.wr-custom-content');
+        if (editor && contentEl && document.activeElement !== editor && !editor.contains(document.activeElement)) {
+            const html = contentEl.innerHTML;
+            if (html !== '<p style="color:#94a3b8;font-style:italic;">(Chưa có nội dung)</p>' && editor.innerHTML !== html) {
+                editor.innerHTML = html;
+            }
+        }
+        const h2 = secEl.querySelector('h2');
+        const titleInput = card.querySelector('.wr-custom-title-input');
+        if (h2 && titleInput && document.activeElement !== titleInput) {
+            const rawTitle = h2.innerText.replace(/^[IVXLCDM]+\.\s*/i, '').trim();
+            if (rawTitle && rawTitle !== 'MỤC TÙY CHỈNH' && titleInput.value.trim() !== rawTitle) {
+                titleInput.value = rawTitle;
+            }
+        }
+    });
+}
+
+function wrSyncProposalsToActiveDoc() {
+    const doc = document.getElementById('weeklyReportDocument');
+    if (!doc) return;
+    const wrap = doc.querySelector('#wrProposalsDocWrap');
+    if (!wrap) return;
+    const val = document.getElementById('wrProposals')?.value?.trim() || '';
+    if (val) {
+        wrap.innerHTML = `
+            <div style="margin-top: 14px; padding: 12px 14px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 6px;">
+                <h4 style="margin: 0 0 6px 0; color: #1e40af; font-size: 13.5px;">📌 Đề xuất điều hành bổ sung:</h4>
+                ${wrBullets(wrLinesToList(val).map(x => `<b>${wrEscapeHtml(x)}</b>`))}
+            </div>`;
+    } else {
+        wrap.innerHTML = '';
+    }
+    if (window.weeklyReportState) {
+        window.weeklyReportState.html = doc.outerHTML;
+        window.weeklyReportState.plainText = wrHtmlToPlainText(doc.innerHTML);
+    }
+}
+
+function wrSyncHeaderToActiveDoc() {
+    const doc = document.getElementById('weeklyReportDocument');
+    if (!doc) return;
+    const titleEl = doc.querySelector('.wr-doc-title');
+    const recipEl = doc.querySelector('.wr-doc-recipient');
+    const recipVals = doc.querySelectorAll('.wr-doc-recipient-val');
+    const newTitle = document.getElementById('wrDocTitle')?.value?.trim();
+    const newRecip = document.getElementById('wrRecipient')?.value?.trim();
+    if (titleEl && newTitle) titleEl.innerText = newTitle;
+    if (recipEl && newRecip) recipEl.innerText = 'Kính gửi: ' + newRecip;
+    if (recipVals && newRecip) {
+        recipVals.forEach(el => {
+            if (el.tagName === 'B') el.innerText = newRecip;
+            else if (el.innerText.includes('Trân trọng gửi')) el.innerText = 'Trân trọng gửi ' + newRecip;
+        });
+    }
+    if (window.weeklyReportState) {
+        window.weeklyReportState.html = doc.outerHTML;
+        window.weeklyReportState.plainText = wrHtmlToPlainText(doc.innerHTML);
+    }
 }
 
 // ===== BỘ CÔNG CỤ POPOVER MÀU & THAO TÁC BẢNG TÙY CHỈNH =====
@@ -868,6 +1036,7 @@ function addWeeklyReportCustomSection(data = null) {
                         reader.onload = function(evt) {
                             wrInsertImageAtCursor(editor, evt.target.result);
                             wrDebouncedSaveManual();
+                            wrSyncCustomSectionsToActiveDoc();
                         };
                         reader.readAsDataURL(blob);
                         return;
@@ -879,6 +1048,7 @@ function addWeeklyReportCustomSection(data = null) {
 
     if (!data) {
         wrSaveManual();
+        wrSyncCustomSectionsToActiveDoc();
         card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }
@@ -890,6 +1060,7 @@ function removeWeeklyReportCustomSection(id) {
     if (!confirm(`Bạn có chắc muốn xóa "${title}"?`)) return;
     card.remove();
     wrSaveManual();
+    wrSyncCustomSectionsToActiveDoc();
 }
 
 function wrTriggerImageUpload(id) {
@@ -907,6 +1078,7 @@ function wrHandleImageUpload(event, id) {
     reader.onload = function(e) {
         wrInsertImageAtCursor(editor, e.target.result);
         wrDebouncedSaveManual();
+        wrSyncCustomSectionsToActiveDoc();
     };
     reader.readAsDataURL(file);
     event.target.value = '';
@@ -919,6 +1091,7 @@ function wrInsertImageByUrl(id) {
     if (!editor) return;
     wrInsertImageAtCursor(editor, url.trim());
     wrDebouncedSaveManual();
+    wrSyncCustomSectionsToActiveDoc();
 }
 
 function wrInsertImageAtCursor(editor, src) {
@@ -1951,7 +2124,7 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
         <!-- HEADER BÁO CÁO -->
         <div class="wr-doc-title">${wrEscapeHtml(docTitle)}</div>
         <div class="wr-doc-subtitle" style="font-size: 13px; margin: 6px 0 20px; text-align: center;">
-            <div style="font-weight: 700; color: #1d4ed8; font-size: 14.5px; margin-bottom: 5px;">
+            <div class="wr-doc-recipient" style="font-weight: 700; color: #1d4ed8; font-size: 14.5px; margin-bottom: 5px;">
                 Kính gửi: ${wrEscapeHtml(recipient)}
             </div>
             <div style="color: #475569;">
@@ -1963,7 +2136,7 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
         <section>
             <h2>I. TỔNG QUAN &amp; TÓM TẮT ĐIỀU HÀNH</h2>
             <p>
-                Kính gửi anh <b>${wrEscapeHtml(recipient)}</b>, trong kỳ báo cáo từ <b>${wrFormatVNDate(fromDate)}</b> đến hết <b>${wrFormatVNDate(toDate)}</b>, 
+                Kính gửi anh <b class="wr-doc-recipient-val">${wrEscapeHtml(recipient)}</b>, trong kỳ báo cáo từ <b>${wrFormatVNDate(fromDate)}</b> đến hết <b>${wrFormatVNDate(toDate)}</b>, 
                 đội ngũ Customer Success (SC) đã tập trung triển khai đồng bộ các hoạt động chăm sóc tại chỗ, kiểm soát tỷ lệ Active Rate và xử lý các vấn đề phát sinh của khách hàng lớn:
             </p>
             ${wrBullets(summaryBullets)}
@@ -2047,7 +2220,7 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
         </section>
 
         <!-- MỤC VI: ĐỀ XUẤT ĐIỀU HÀNH & KẾ HOẠCH HÀNH ĐỘNG -->
-        <section>
+        <section id="wrSectionProposals">
             <h2>VI. ĐỀ XUẤT ĐIỀU HÀNH &amp; KẾ HOẠCH HÀNH ĐỘNG</h2>
             <p>Để đảm bảo hoàn thành vượt mức các mục tiêu kinh doanh và kiểm soát chất lượng khách hàng trong các kỳ tiếp theo, khối CS đề xuất các trọng tâm điều hành sau:</p>
             ${wrBullets([
@@ -2057,34 +2230,40 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
                 `<b>4. Thúc đẩy Doanh thu Phần cứng &amp; Add-on:</b> Tăng cường tư vấn combo thiết bị máy in LAN/BT, giải pháp thanh toán QR Payment và tích hợp giao vận Kship cho các cửa hàng mới ký.`
             ])}
             
-            ${manual && manual.proposals && manual.proposals.trim() ? `
-            <div style="margin-top: 14px; padding: 12px 14px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 6px;">
-                <h4 style="margin: 0 0 6px 0; color: #1e40af; font-size: 13.5px;">📌 Đề xuất điều hành bổ sung:</h4>
-                ${wrBullets(wrLinesToList(manual.proposals).map(x => `<b>${wrEscapeHtml(x)}</b>`))}
-            </div>` : ''}
+            <div id="wrProposalsDocWrap">
+                ${manual && manual.proposals && manual.proposals.trim() ? `
+                <div style="margin-top: 14px; padding: 12px 14px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 6px;">
+                    <h4 style="margin: 0 0 6px 0; color: #1e40af; font-size: 13.5px;">📌 Đề xuất điều hành bổ sung:</h4>
+                    ${wrBullets(wrLinesToList(manual.proposals).map(x => `<b>${wrEscapeHtml(x)}</b>`))}
+                </div>` : ''}
+            </div>
         </section>
 
         <!-- MỤC VII: CÁC MỤC TÙY CHỈNH (CUSTOM SECTIONS) -->
+        <div id="wrCustomSectionsDocWrap">
         ${(() => {
             let extra = '';
             let secIdx = 7;
             if (Array.isArray(manual.customSections) && manual.customSections.length) {
                 manual.customSections.forEach(sec => {
-                    if (!sec.title && !sec.contentHtml) return;
                     const secTitle = sec.title ? sec.title.toUpperCase() : 'MỤC TÙY CHỈNH';
+                    const content = (sec.contentHtml && sec.contentHtml !== '<br>' && sec.contentHtml !== '<p><br></p>')
+                        ? sec.contentHtml
+                        : '<p style="color:#94a3b8;font-style:italic;">(Chưa có nội dung)</p>';
                     extra += `
-        <section class="wr-custom-section">
+        <section class="wr-custom-section" data-sec-id="${sec.id || ''}">
             <h2>${wrToRoman(secIdx++)}. ${wrEscapeHtml(secTitle)}</h2>
-            <div class="wr-custom-content">${sec.contentHtml || ''}</div>
+            <div class="wr-custom-content">${content}</div>
         </section>`;
                 });
             }
             return extra;
         })()}
+        </div>
 
         <!-- LỜI KẾT & CHỮ KÝ BÁO CÁO -->
-        <div style="margin-top: 28px; padding-top: 14px; border-top: 1px dashed var(--wr-border, #cbd5e1); font-size: 13px; color: var(--wr-text, #1e293b); font-style: italic;">
-            Trên đây là báo cáo định kỳ chất lượng Customer Success (SC) kính gửi <b>anh Nguyễn Dũng Hải SDM DVKH</b> nắm thông tin giúp em ạ. Em cảm ơn anh!
+        <div id="wrDocFooterBlock" style="margin-top: 28px; padding-top: 14px; border-top: 1px dashed var(--wr-border, #cbd5e1); font-size: 13px; color: var(--wr-text, #1e293b); font-style: italic;">
+            Trên đây là báo cáo định kỳ chất lượng Customer Success (SC) kính gửi <b class="wr-doc-recipient-val">${wrEscapeHtml(recipient)}</b> nắm thông tin giúp em ạ. Em cảm ơn anh!
         </div>
 
         <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--wr-border, #cbd5e1); display: flex; justify-content: space-between; align-items: flex-start;">
@@ -2101,8 +2280,8 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
                 <div style="font-size: 13px; font-weight: 700; color: var(--wr-text, #0f172a);">
                     Đại diện Đội ngũ Customer Success (SC)
                 </div>
-                <div style="font-size: 12px; color: #1d4ed8; font-weight: 600; margin-top: 4px;">
-                    Trân trọng gửi anh Nguyễn Dũng Hải SDM DVKH
+                <div class="wr-doc-recipient-val" style="font-size: 12px; color: #1d4ed8; font-weight: 600; margin-top: 4px;">
+                    Trân trọng gửi ${wrEscapeHtml(recipient)}
                 </div>
             </div>
         </div>
@@ -2125,6 +2304,20 @@ async function generateWeeklyReport() {
     const status = document.getElementById('wrStatus');
     const preview = document.getElementById('weeklyReportPreview');
     const btn = document.getElementById('wrGenerateBtn');
+
+    // Cảnh báo chống mất dữ liệu nếu người dùng đã chỉnh sửa văn bản trực tiếp
+    if (window._wrDocIsDirty) {
+        const confirmMsg = "⚠️ Chú ý: Báo cáo hiện tại đang có những nội dung bạn đã chỉnh sửa trực tiếp!\n\n" +
+            "Nếu bấm 'OK', hệ thống sẽ tính toán lại số liệu và LÀM MỚI BÁO CÁO TỪ ĐẦU (các nội dung bạn gõ trực tiếp trong tài liệu sẽ bị mất).\n\n" +
+            "💡 Mẹo: Nếu bạn vừa thêm/sửa 'Các mục tùy chỉnh' hoặc 'Đề xuất', hệ thống ĐÃ TỰ ĐỘNG ĐỒNG BỘ trực tiếp vào báo cáo bên dưới rồi (không cần bấm Tạo lại)!\n\n" +
+            "Bạn có chắc chắn muốn TẠO LẠI TOÀN BỘ từ đầu không?";
+        if (!confirm(confirmMsg)) {
+            if (btn) { btn.disabled = false; btn.innerText = '⚡ Tạo báo cáo tự động'; }
+            if (status) status.innerHTML = '💡 Giữ nguyên báo cáo đã chỉnh sửa. Các mục tùy chỉnh đã được đồng bộ tự động.';
+            return;
+        }
+    }
+
     try {
         if (btn) { btn.disabled = true; btn.innerText = '⏳ Đang tổng hợp...'; }
         if (status) status.innerHTML = '⏳ Đang tải toàn bộ dữ liệu KPI, BSC, Hiệu suất, Quân số và Mục tiêu...';
@@ -2203,6 +2396,7 @@ async function generateWeeklyReport() {
 
         window.weeklyReportOriginalHtml = html;
         window.weeklyReportState = { metrics, html, plainText, previousSnapshot };
+        window._wrDocIsDirty = false;
         if (preview) {
             preview.innerHTML = html;
             wrInitDirectEditing();
@@ -2257,20 +2451,25 @@ function wrHandleDocEdit() {
     wrDocEditDebounceTimer = setTimeout(() => {
         const doc = document.getElementById('weeklyReportDocument');
         if (!doc) return;
+        window._wrDocIsDirty = true;
+        wrSyncDocCustomSectionsBackToCards();
+        wrSaveManual();
         if (window.weeklyReportState) {
             window.weeklyReportState.html = doc.outerHTML;
             window.weeklyReportState.plainText = wrHtmlToPlainText(doc.innerHTML);
         }
         wrShowSaveIndicator();
-    }, 400);
+    }, 350);
 }
 
-function wrShowSaveIndicator() {
+let wrSaveIndicatorTimer = null;
+function wrShowSaveIndicator(msg = '✓ Đã lưu nội dung sửa đổi vào bản xuất') {
     const hint = document.querySelector('.wr-edit-hint');
     if (hint) {
         const origText = 'Click chuột trực tiếp vào bất kỳ chữ, số hoặc ô bảng nào bên dưới để sửa nội dung trước khi xuất.';
-        hint.innerHTML = '<span style="color:#10b981; font-weight:800;">✓ Đã lưu nội dung sửa đổi vào bản xuất</span>';
-        setTimeout(() => {
+        hint.innerHTML = `<span style="color:#10b981; font-weight:800;">${msg}</span>`;
+        clearTimeout(wrSaveIndicatorTimer);
+        wrSaveIndicatorTimer = setTimeout(() => {
             if (hint) hint.innerHTML = origText;
         }, 2500);
     }
@@ -2304,12 +2503,13 @@ function wrResetToOriginalReport() {
     const preview = document.getElementById('weeklyReportPreview');
     if (preview) {
         preview.innerHTML = window.weeklyReportOriginalHtml;
+        window._wrDocIsDirty = false;
         if (window.weeklyReportState) {
             window.weeklyReportState.html = window.weeklyReportOriginalHtml;
             window.weeklyReportState.plainText = wrHtmlToPlainText(window.weeklyReportOriginalHtml);
         }
         wrInitDirectEditing();
-        wrShowSaveIndicator();
+        wrShowSaveIndicator('✓ Đã khôi phục số liệu gốc ban đầu');
     }
 }
 
@@ -2627,6 +2827,28 @@ function wrDocxBuildFromDom(docEl, state) {
                 });
             } else if (child.classList.contains('wr-backlog-grand')) {
                 body += wrDocxP(child.innerText.trim(), {bold: true, color: '17365D', size: 19, after: 80});
+            } else if (child.classList.contains('wr-custom-content')) {
+                const subNodes = Array.from(child.children);
+                if (!subNodes.length && child.innerText.trim()) {
+                    body += wrDocxP(child.innerText.trim(), {size: 18, after: 60});
+                } else {
+                    subNodes.forEach(sub => {
+                        const subTag = sub.tagName.toLowerCase();
+                        if (subTag === 'p' || subTag === 'div') {
+                            const txt = sub.innerText.trim();
+                            if (txt && !sub.querySelector('table')) body += wrDocxP(txt, {size: 18, after: 60});
+                        } else if (subTag === 'ul' || subTag === 'ol') {
+                            Array.from(sub.querySelectorAll('li')).forEach((li, idx) => {
+                                const prefix = subTag === 'ol' ? `${idx+1}. ` : '';
+                                body += wrDocxBullet(prefix + li.innerText.trim());
+                            });
+                        } else if (/^h[1-6]$/.test(subTag)) {
+                            body += wrDocxHeading(sub.innerText.trim(), 3);
+                        } else if (subTag === 'img') {
+                            body += wrDocxP(`[Hình ảnh: ${sub.alt || 'Ảnh minh họa'}]`, {italic: true, color: '666666', size: 16, after: 60});
+                        }
+                    });
+                }
             }
         });
     });
@@ -2853,6 +3075,8 @@ function resetWeeklyReportManual() {
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     const container = document.getElementById('wrCustomSectionsContainer');
     if (container) container.innerHTML = '';
+    wrSyncCustomSectionsToActiveDoc();
+    wrSyncProposalsToActiveDoc();
 }
 
 function initWeeklyReportTab() {
@@ -2877,7 +3101,16 @@ function initWeeklyReportTab() {
     ['wrDocTitle', 'wrRecipient', 'wrAddressTotal', 'wrAddressDone', 'wrProposals'].forEach(id => {
         const el = document.getElementById(id);
         if (el && !el.dataset.wrBound) {
-            el.addEventListener('change', wrSaveManual);
+            el.addEventListener('change', () => {
+                wrSaveManual();
+                if (id === 'wrDocTitle' || id === 'wrRecipient') wrSyncHeaderToActiveDoc();
+                if (id === 'wrProposals') wrSyncProposalsToActiveDoc();
+            });
+            el.addEventListener('input', () => {
+                wrDebouncedSaveManual();
+                if (id === 'wrDocTitle' || id === 'wrRecipient') wrSyncHeaderToActiveDoc();
+                if (id === 'wrProposals') wrSyncProposalsToActiveDoc();
+            });
             el.dataset.wrBound = '1';
         }
     });
