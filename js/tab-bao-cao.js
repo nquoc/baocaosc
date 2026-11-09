@@ -1702,7 +1702,7 @@ function wrRenderProvinceImpactTable(provinceImpact) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 8. KPI Coacher Team Offline Tháng 10 (Sheet baocaotuan AJ13:AP17)
+// 8. KPI Coacher Team Offline Tháng 11 (Sheet baocaotuan AJ13:AP17)
 function wrRenderKpiOfflineT10Table(kpiOff) {
     const headers = ['Coacher / Khu Vực', 'Số Nhân Sự', 'Active Ngày Check-in', 'Điểm Tổng', 'Addon', 'KPI Team', 'Impact'];
     let rows = [];
@@ -2015,14 +2015,14 @@ function wrBuildReportHtml(metrics, fromDate, toDate, previousSnapshot, manual) 
             <h4>1.1 Kết quả thực hiện mục tiêu vận hành (Sheet muctieu A2:I13)</h4>
             ${wrRenderMuctieuTable(bsc.muctieuOffline, false)}
 
-            <h4>1.2 Bảng theo dõi KPI Coacher Team Offline Tháng 10 (Sheet baocaotuan AJ13:AP17)</h4>
+            <h4>1.2 Bảng theo dõi KPI Coacher Team Offline Tháng 11 (Sheet baocaotuan AJ13:AP17)</h4>
             ${wrRenderKpiOfflineT10Table(bsc.kpiOfflineT10)}
 
             <h4>1.3 Tỷ lệ Impact 16 tỉnh thành qua các tháng (T7 - T12) (Sheet baocaotuan K2:Q19)</h4>
             <p>Số liệu tỷ lệ Impact thực tế qua các tháng từ Google Sheets:</p>
             ${wrRenderProvinceImpactTable(bsc.provinceImpact)}
 
-            <h4>1.4 Tư vấn chuyển Addon &amp; Phần cứng Tháng 10 (Sheet baocaotuan AJ22:AO30)</h4>
+            <h4>1.4 Tư vấn chuyển Addon &amp; Phần cứng Tháng 11 (Sheet baocaotuan AJ22:AO30)</h4>
             <p>Kết quả tư vấn giải pháp Addon và Phần cứng giữa Team Offline và Team Online:</p>
             ${wrRenderAddonT10Table(bsc.addonT10)}
 

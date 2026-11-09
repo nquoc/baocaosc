@@ -3018,10 +3018,10 @@ function exportImpactSection5Csv() {
 }
 
 /* ==========================================================================
-   MỤC 9: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON (THÁNG 9 & THÁNG 10)
-   - 9.1: KPI Team Online Tháng 9 (AJ2:AP5)
-   - 9.2: KPI Team Offline Tháng 10 (AJ13:AP17)
-   - 9.3: Tư Vấn Chuyển Addon Tháng 10 (AJ22:AM29)
+   MỤC 9: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON (THÁNG 10 & THÁNG 11)
+   - 9.1: KPI Team Online Tháng 10 (AJ2:AP5)
+   - 9.2: KPI Team Offline Tháng 11 (AJ13:AP17)
+   - 9.3: Tư Vấn Chuyển Addon Tháng 11 (AJ22:AO30)
    ========================================================================== */
 
 let BAOCAOSC_KPI_ONLINE_T9_SORT = { k: 'default', dir: -1 };
@@ -3304,17 +3304,17 @@ function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedA
   // Thẻ 1: KPI Team Online T9
   if (parsedOnline && parsedOnline.totalRow) {
     const tot = parsedOnline.totalRow;
-    html += K('KPI Team Online (T9)', `${tot.kpiTeam.toFixed(2)}%`, `Toàn quốc · ${tot.headcount} nhân sự (Điểm tổng: ${tot.kpiTotalScore.toFixed(1)}%)`, 'color:#38bdf8');
+    html += K('KPI Team Online (T10)', `${tot.kpiTeam.toFixed(2)}%`, `Toàn quốc · ${tot.headcount} nhân sự (Điểm tổng: ${tot.kpiTotalScore.toFixed(1)}%)`, 'color:#38bdf8');
   } else {
-    html += K('KPI Team Online (T9)', '–', 'Đang cập nhật', 'color:var(--mut)');
+    html += K('KPI Team Online (T10)', '–', 'Đang cập nhật', 'color:var(--mut)');
   }
 
   // Thẻ 2: KPI Team Offline T10
   if (parsedOffline && parsedOffline.totalRow) {
     const tot = parsedOffline.totalRow;
-    html += K('KPI Team Offline (T10)', `${tot.kpiTeam.toFixed(2)}%`, `Toàn quốc · ${tot.headcount} nhân sự (Impact: ${tot.impact.toFixed(1)}%)`, 'color:#a855f7');
+    html += K('KPI Team Offline (T11)', `${tot.kpiTeam.toFixed(2)}%`, `Toàn quốc · ${tot.headcount} nhân sự (Impact: ${tot.impact.toFixed(1)}%)`, 'color:#a855f7');
   } else {
-    html += K('KPI Team Offline (T10)', '–', 'Đang cập nhật', 'color:var(--mut)');
+    html += K('KPI Team Offline (T11)', '–', 'Đang cập nhật', 'color:var(--mut)');
   }
 
   // Thẻ 3: Talktime TB Online T9
@@ -3323,9 +3323,9 @@ function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedA
     const mb = parsedOnline.items.find(it => it.name.toLowerCase().includes('bắc'));
     const mn = parsedOnline.items.find(it => it.name.toLowerCase().includes('nam'));
     const subStr = (mb ? `MB: ${mb.talktimeStr}` : '') + (mb && mn ? ' · ' : '') + (mn ? `MN: ${mn.talktimeStr}` : '');
-    html += K('Talktime TB Online (T9)', tot.talktimeStr, subStr || 'Toàn quốc', 'color:#06b6d4');
+    html += K('Talktime TB Online (T10)', tot.talktimeStr, subStr || 'Toàn quốc', 'color:#06b6d4');
   } else {
-    html += K('Talktime TB Online (T9)', '–', 'Đang cập nhật', 'color:var(--mut)');
+    html += K('Talktime TB Online (T10)', '–', 'Đang cập nhật', 'color:var(--mut)');
   }
 
   // Thẻ 4: Tư Vấn Chuyển Addon T10
@@ -3334,9 +3334,9 @@ function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedA
     const off = tot.offline.toLocaleString('vi-VN');
     const on = tot.online.toLocaleString('vi-VN');
     const tar = tot.target.toLocaleString('vi-VN');
-    html += K('Tư Vấn Addon (T10)', `${tot.total.toLocaleString('vi-VN')}`, `Offline: ${off} · Online: ${on} · Mục tiêu: ${tar} (${tot.pct.toFixed(1)}%)`, 'color:#10b981');
+    html += K('Tư Vấn Addon (T11)', `${tot.total.toLocaleString('vi-VN')}`, `Offline: ${off} · Online: ${on} · Mục tiêu: ${tar} (${tot.pct.toFixed(1)}%)`, 'color:#10b981');
   } else {
-    html += K('Tư Vấn Addon (T10)', '–', 'Đang cập nhật', 'color:var(--mut)');
+    html += K('Tư Vấn Addon (T11)', '–', 'Đang cập nhật', 'color:var(--mut)');
   }
 
   c.innerHTML = html;
@@ -3604,14 +3604,14 @@ function sortAddonT10(col) {
  */
 function exportKpiOnlineT9Csv() {
   if (!BAOCAOSC_STATE.kpiOnlineT9) {
-    showToast('Chưa có dữ liệu KPI Team Online Tháng 9 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu KPI Team Online Tháng 10 để xuất CSV!', false);
     return;
   }
   const parsed = normalizeKpiOnlineT9Data(BAOCAOSC_STATE.kpiOnlineT9);
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 9.1: KPI TEAM ONLINE THÁNG 9 (AJ2:AP5)']);
+  lines.push(['BÁO CÁO SC - MỤC 9.1: KPI TEAM ONLINE THÁNG 10 (AJ2:AP5)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Phân Vùng / Miền', 'Số Nhân Sự', 'KPI Impact (%)', 'KPI Điểm Tổng (%)', 'KPI Addon (%)', 'KPI Team (%)', 'Talktime (TB)']);
@@ -3654,12 +3654,12 @@ function exportKpiOnlineT9Csv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_9_1_KPI_Team_Online_T9_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_9_1_KPI_Team_Online_T10_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV KPI Team Online Tháng 9 (Mục 9.1) thành công!', true);
+  showToast('Đã xuất file CSV KPI Team Online Tháng 10 (Mục 9.1) thành công!', true);
 }
 
 /**
@@ -3667,14 +3667,14 @@ function exportKpiOnlineT9Csv() {
  */
 function exportKpiOfflineT10Csv() {
   if (!BAOCAOSC_STATE.kpiOfflineT10) {
-    showToast('Chưa có dữ liệu KPI Team Offline Tháng 10 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu KPI Team Offline Tháng 11 để xuất CSV!', false);
     return;
   }
   const parsed = normalizeKpiOfflineT10Data(BAOCAOSC_STATE.kpiOfflineT10);
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 9.2: KPI TEAM OFFLINE THÁNG 10 (AJ13:AP17)']);
+  lines.push(['BÁO CÁO SC - MỤC 9.2: KPI TEAM OFFLINE THÁNG 11 (AJ13:AP17)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Coacher Quản Lý', 'Số Nhân Sự', 'KPI Active Ngày Checkin (%)', 'KPI Điểm Tổng (%)', 'KPI Addon (%)', 'KPI Team (%)', 'Tỷ Lệ Impact (%)']);
@@ -3717,12 +3717,12 @@ function exportKpiOfflineT10Csv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_9_2_KPI_Team_Offline_T10_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_9_2_KPI_Team_Offline_T11_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV KPI Team Offline Tháng 10 (Mục 9.2) thành công!', true);
+  showToast('Đã xuất file CSV KPI Team Offline Tháng 11 (Mục 9.2) thành công!', true);
 }
 
 /**
@@ -3730,14 +3730,14 @@ function exportKpiOfflineT10Csv() {
  */
 function exportAddonT10Csv() {
   if (!BAOCAOSC_STATE.addonT10) {
-    showToast('Chưa có dữ liệu Tư Vấn Chuyển Addon Tháng 10 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Tư Vấn Chuyển Addon Tháng 11 để xuất CSV!', false);
     return;
   }
   const parsed = normalizeAddonT10Data(BAOCAOSC_STATE.addonT10);
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 9.3: TƯ VẤN CHUYỂN ADDON THÁNG 10 (AJ22:AO30)']);
+  lines.push(['BÁO CÁO SC - MỤC 9.3: TƯ VẤN CHUYỂN ADDON THÁNG 11 (AJ22:AO30)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -3779,10 +3779,10 @@ function exportAddonT10Csv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_9_3_Tu_Van_Addon_T10_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_9_3_Tu_Van_Addon_T11_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Tư Vấn Chuyển Addon Tháng 10 (Mục 9.3) thành công!', true);
+  showToast('Đã xuất file CSV Tư Vấn Chuyển Addon Tháng 11 (Mục 9.3) thành công!', true);
 }
