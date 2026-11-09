@@ -641,45 +641,96 @@ function renderActiveRateCell(val, diff, isBase = false) {
 }
 
 /**
- * Hiển thị 3 thẻ KPI tóm tắt cho 3 ngành (Retail, F&B, Booking)
+ * Hiển thị 3 thẻ KPI tóm tắt cho 3 ngành (Retail, F&B, Booking) tháng hiện tại
+ * Kèm mục tiêu KPI và tỷ lệ đạt % KPI
  */
 function renderBaoCaoScSummaryCards(parsed) {
   const box = $('bscSummaryCards');
   if (!box || !parsed) return;
 
-  const lat = parsed.latestMonth;
-  const K = (label, val, sub, color = '') => `
-    <div class="card kpi">
-      <div class="l">${label}</div>
-      <div class="v" style="${color}">${val}</div>
-      <div class="s">${sub}</div>
-    </div>`;
-
-  const makeDiffSub = (diff, prevVal, prevLabel) => {
-    if (diff == null || isNaN(diff)) return 'Mốc so sánh khởi điểm';
-    if (diff > 0.0001) {
-      return `<b style="color:#10b981">▲ +${diff.toFixed(2)}%</b> so với ${prevLabel} (${prevVal.toFixed(2)}%)`;
-    }
-    if (diff < -0.0001) {
-      return `<b style="color:#ef4444">▼ ${diff.toFixed(2)}%</b> so với ${prevLabel} (${prevVal.toFixed(2)}%)`;
-    }
-    return `<span style="color:var(--mut)">— Không đổi</span> so với ${prevLabel} (${prevVal.toFixed(2)}%)`;
+  const kpis = (typeof ACTIVE_RATE_KPI !== 'undefined') ? ACTIVE_RATE_KPI : {
+    retail: 74.8,
+    fnb: 75.3,
+    booking: 66.0
   };
+
+  // Ưu tiên tháng hiện tại (Tháng 11)
+  const nowMonth = new Date().getMonth() + 1;
+  const curMonthData = parsed.months.find(m => m.mNum === nowMonth && (m.retail != null || m.fnb != null || m.booking != null));
+  const lat = curMonthData || parsed.latestMonth;
+  if (!lat) return;
 
   const dataMonths = parsed.months.filter(m => m.retail != null || m.fnb != null || m.booking != null);
   const latIdx = dataMonths.indexOf(lat);
   const prevM = latIdx > 0 ? dataMonths[latIdx - 1] : null;
   const prevLabel = prevM ? prevM.cleanLabel : '';
 
+  const makeCard = (title, icon, val, target, diff, prevVal, themeColor) => {
+    const valTxt = val != null ? val.toFixed(2) + '%' : '–';
+    const targetTxt = target != null ? target.toFixed(1) + '%' : '–';
+
+    let achievePct = null;
+    let achieveBadge = '';
+    let gapTxt = '–';
+    let gapColor = 'var(--mut)';
+
+    if (val != null && target != null && target > 0) {
+      achievePct = (val / target) * 100;
+      const gap = val - target;
+      gapTxt = (gap >= 0 ? '+' : '') + gap.toFixed(2) + '%';
+      gapColor = gap >= 0 ? '#10b981' : '#ef4444';
+
+      let bg = 'rgba(239,68,68,0.18)', color = '#f87171', border = 'rgba(239,68,68,0.35)';
+      if (achievePct >= 100) {
+        bg = 'rgba(16,185,129,0.18)'; color = '#34d399'; border = 'rgba(16,185,129,0.35)';
+      } else if (achievePct >= 98) {
+        bg = 'rgba(56,189,248,0.18)'; color = '#38bdf8'; border = 'rgba(56,189,248,0.35)';
+      } else if (achievePct >= 90) {
+        bg = 'rgba(245,158,11,0.18)'; color = '#fbbf24'; border = 'rgba(245,158,11,0.35)';
+      }
+
+      achieveBadge = `<span style="font-size:12.5px;font-weight:800;padding:3px 9px;border-radius:6px;background:${bg};color:${color};border:1px solid ${border};letter-spacing:0.2px">Đạt ${achievePct.toFixed(2)}%</span>`;
+    }
+
+    let momSub = '<span style="color:var(--mut)">Mốc khởi điểm</span>';
+    if (prevM && prevVal != null && diff != null && !isNaN(diff)) {
+      if (diff > 0.0001) {
+        momSub = `MoM: <b style="color:#10b981">▲ +${diff.toFixed(2)}%</b> so với ${prevLabel} (${prevVal.toFixed(2)}%)`;
+      } else if (diff < -0.0001) {
+        momSub = `MoM: <b style="color:#ef4444">▼ ${diff.toFixed(2)}%</b> so với ${prevLabel} (${prevVal.toFixed(2)}%)`;
+      } else {
+        momSub = `MoM: <span style="color:var(--mut)">— Không đổi</span> so với ${prevLabel} (${prevVal.toFixed(2)}%)`;
+      }
+    }
+
+    const progressWidth = achievePct != null ? Math.min(100, Math.max(0, achievePct)) : 0;
+
+    return `
+      <div class="card kpi" style="position:relative;overflow:hidden">
+        <div class="l" style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;color:var(--tx-heading);font-size:13px">${icon} ${title} (${esc(lat.cleanLabel)})</span>
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--tx-dim);border:1px solid rgba(255,255,255,0.08)">KPI: ${targetTxt}</span>
+        </div>
+        <div class="v" style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:6px">
+          <span style="color:${themeColor};font-size:26px;font-weight:900">${valTxt}</span>
+          ${achieveBadge}
+        </div>
+        <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;margin:8px 0 6px 0;overflow:hidden">
+          <div style="width:${progressWidth}%;height:100%;background:${themeColor};border-radius:3px"></div>
+        </div>
+        <div class="s" style="font-size:11.5px;line-height:1.5">
+          <div>Mục tiêu: <b style="color:var(--tx)">${targetTxt}</b> · Chênh lệch: <b style="color:${gapColor}">${gapTxt}</b></div>
+          <div style="margin-top:2px">${momSub}</div>
+        </div>
+      </div>`;
+  };
+
   box.innerHTML =
-    K(`Retail (${esc(lat.cleanLabel)})`, lat.retail != null ? lat.retail.toFixed(2) + '%' : '–', prevM && prevM.retail != null ? makeDiffSub(lat.diffRetail, prevM.retail, prevLabel) : 'Mốc đầu', 'color:#38bdf8') +
-    K(`F&B (${esc(lat.cleanLabel)})`, lat.fnb != null ? lat.fnb.toFixed(2) + '%' : '–', prevM && prevM.fnb != null ? makeDiffSub(lat.diffFnb, prevM.fnb, prevLabel) : 'Mốc đầu', 'color:#10b981') +
-    K(`Booking (${esc(lat.cleanLabel)})`, lat.booking != null ? lat.booking.toFixed(2) + '%' : '–', prevM && prevM.booking != null ? makeDiffSub(lat.diffBooking, prevM.booking, prevLabel) : 'Mốc đầu', 'color:#c084fc');
+    makeCard('Retail', '🛍️', lat.retail, kpis.retail, lat.diffRetail, prevM ? prevM.retail : null, '#38bdf8') +
+    makeCard('F&B', '🍽️', lat.fnb, kpis.fnb, lat.diffFnb, prevM ? prevM.fnb : null, '#10b981') +
+    makeCard('Booking', '🏨', lat.booking, kpis.booking, lat.diffBooking, prevM ? prevM.booking : null, '#c084fc');
 }
 
-/**
- * Placeholder cho hàm chart (đã lược bỏ biểu đồ theo yêu cầu)
- */
 function renderBaoCaoScCharts() {}
 
 /**
@@ -726,9 +777,9 @@ function renderActiveRateTimelineTable(parsed) {
 
   thead += `<th onclick="sortActiveRate('mNum')" style="width:60px;cursor:pointer;text-align:center">STT${sortArrow('mNum')}</th>`;
   thead += `<th onclick="sortActiveRate('mNum')" style="min-width:140px;cursor:pointer;text-align:center">Thời Gian (Tháng)${sortArrow('mNum')}</th>`;
-  thead += `<th onclick="sortActiveRate('retail')" style="min-width:160px;cursor:pointer;text-align:center">Retail (Active Rate)${sortArrow('retail')}</th>`;
-  thead += `<th onclick="sortActiveRate('fnb')" style="min-width:160px;cursor:pointer;text-align:center">F&B (Active Rate)${sortArrow('fnb')}</th>`;
-  thead += `<th onclick="sortActiveRate('booking')" style="min-width:160px;cursor:pointer;text-align:center">Booking (Active Rate)${sortArrow('booking')}</th>`;
+  thead += `<th onclick="sortActiveRate('retail')" style="min-width:160px;cursor:pointer;text-align:center">Retail (Active Rate)<div style="font-size:11px;font-weight:500;color:var(--mut);margin-top:2px">KPI: 74.8%</div>${sortArrow('retail')}</th>`;
+  thead += `<th onclick="sortActiveRate('fnb')" style="min-width:160px;cursor:pointer;text-align:center">F&B (Active Rate)<div style="font-size:11px;font-weight:500;color:var(--mut);margin-top:2px">KPI: 75.3%</div>${sortArrow('fnb')}</th>`;
+  thead += `<th onclick="sortActiveRate('booking')" style="min-width:160px;cursor:pointer;text-align:center">Booking (Active Rate)<div style="font-size:11px;font-weight:500;color:var(--mut);margin-top:2px">KPI: 66.0%</div>${sortArrow('booking')}</th>`;
   thead += `<th style="text-align:center;min-width:160px">Đánh Giá Xu Hướng</th>`;
   thead += '</tr></thead>';
 

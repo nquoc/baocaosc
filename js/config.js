@@ -14,6 +14,12 @@ const API_PHANCUNG_SOURCE = API_BASE + '?sheet=phancung&range=T1:W9'; // Endpoin
 const API_PHANCUNG_SALE = API_BASE + '?sheet=phancung&range=Y1:AB6'; // Endpoint cho Mục 3.2: Thống Kê SL Đơn Từ Sale
 const API_PHANCUNG_CONVERSION = API_BASE + '?sheet=phancung&range=AE1:AQ9'; // Endpoint cho Mục 4: Báo Cáo Tỷ Lệ Chốt Theo Nguồn (T10 & T11)
 const API_BAOCAOSC_MONTHLY_INACTIVE = API_BASE + '?sheet=baocaotuan&range=AV2:BB15'; // Mục 2: Tỷ Lệ Inactive Theo Tháng Năm 2026
+// KPI Mục tiêu Active Rate (Mục 3)
+const ACTIVE_RATE_KPI = {
+  retail: 74.8,
+  fnb: 75.3,
+  booking: 66.0
+};
 const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14'; // Mục 3: Active Rate Năm 2026
 const API_BAOCAOSC_CARE_RATE = API_BASE + '?sheet=baocaotuan&range=F2:I6'; // Mục 4: Tỷ Lệ Chăm Khách New T10
 const API_BAOCAOSC_FNB_ISSUE = API_BASE + '?sheet=baocaotuan&range=AR2:AS9'; // Mục 5: Triển Khai Tệp FNB Lớn
