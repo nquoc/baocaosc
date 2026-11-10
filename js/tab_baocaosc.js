@@ -2,16 +2,16 @@
  * tab_baocaosc.js - Logic xử lý dữ liệu và giao diện Tab 6: BÁO CÁO SC
  * Mục 1: Quân Số Đội Ngũ SC (Theo Miền, Vị Trí & Tỉnh Thành - V2:AB5 & U7:W30)
  * Mục 2: Active Rate Năm 2026 (Retail, F&B, Booking qua các tháng - A2:D14)
- * Mục 3: Báo Cáo Mục Tiêu & Tiến Độ Tháng (Team Offline & Online - Sheet muctieu)
- * Mục 4: Báo Cáo Tỷ Lệ Impact (4.1 Team Offline: baocaotuan · 4.2 Team Online: impactonline)
- * Mục 5: Hiệu Suất KPI Team & Tư Vấn Chuyển Addon (5.1 Online T10 · 5.2 Offline T11 · 5.3 Addon T11)
- * Mục 6: Tỷ Lệ Chăm Khách New T10 (Ký Mới, Inactive, SC Chăm - F2:I6)
- * Mục 7: Báo Cáo Các Tệp Triển Khai (7.1 F&B Lớn / Lỗi · 7.2 Booking 3 Sao · 7.3 Retail Lớn HĐĐT)
- * Mục 8: Tỷ Lệ Inactive Theo Tháng Năm 2026 (Sheet baocaotuan AV2:BB15)
+ * Mục 3: Tỷ Lệ Inactive Theo Tháng Năm 2026 (Sheet baocaotuan AV2:BB15)
+ * Mục 4: Báo Cáo Mục Tiêu & Tiến Độ Tháng (Team Offline & Online - Sheet muctieu)
+ * Mục 5: Báo Cáo Tỷ Lệ Impact (5.1 Team Offline: baocaotuan · 5.2 Team Online: impactonline)
+ * Mục 6: Hiệu Suất KPI Team (6.1 Online T10 · 6.2 Offline T11)
+ * Mục 7: Tỷ Lệ Chăm Khách New T10 (Ký Mới, Inactive, SC Chăm - F2:I6)
+ * Mục 8: Báo Cáo Các Tệp Triển Khai (8.1 F&B Lớn / Lỗi · 8.2 Booking 3 Sao · 8.3 Retail Lớn HĐĐT)
  */
 
 /* ==========================================================================
-   MỤC 3: BÁO CÁO MỤC TIÊU & TIẾN ĐỘ THÁNG (TEAM OFFLINE & TEAM ONLINE)
+   MỤC 4: BÁO CÁO MỤC TIÊU & TIẾN ĐỘ THÁNG (TEAM OFFLINE & TEAM ONLINE)
    - Sheet: 'muctieu' (A2:I13 cho Offline & A16:I28 cho Online)
    ========================================================================== */
 
@@ -101,7 +101,7 @@ function exportMuctieuOfflineCsv() {
     return;
   }
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 3.1: MỤC TIÊU TEAM OFFLINE']);
+  lines.push(['BÁO CÁO SC - MỤC 4.1: MỤC TIÊU TEAM OFFLINE']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   data.forEach((row, r) => {
@@ -114,11 +114,11 @@ function exportMuctieuOfflineCsv() {
   const csv = '\ufeff' + lines.map(r => r.join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `BaoCaoSC_Muc_3_1_Muctieu_Offline_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_4_1_Muctieu_Offline_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  showToast('Đã xuất file CSV Mục Tiêu Team Offline (Mục 3.1) thành công!', true);
+  showToast('Đã xuất file CSV Mục Tiêu Team Offline (Mục 4.1) thành công!', true);
 }
 
 function exportMuctieuOnlineCsv() {
@@ -128,7 +128,7 @@ function exportMuctieuOnlineCsv() {
     return;
   }
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 3.2: MỤC TIÊU TEAM ONLINE']);
+  lines.push(['BÁO CÁO SC - MỤC 4.2: MỤC TIÊU TEAM ONLINE']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   data.forEach((row, r) => {
@@ -141,11 +141,11 @@ function exportMuctieuOnlineCsv() {
   const csv = '\ufeff' + lines.map(r => r.join(',')).join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `BaoCaoSC_Muc_3_2_Muctieu_Online_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_4_2_Muctieu_Online_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  showToast('Đã xuất file CSV Mục Tiêu Team Online (Mục 3.2) thành công!', true);
+  showToast('Đã xuất file CSV Mục Tiêu Team Online (Mục 4.2) thành công!', true);
 }
 
 // Helper parse số tỷ lệ phần trăm từ Google Sheet
@@ -164,7 +164,7 @@ function parseActiveRateVal(val) {
 }
 
 /* ==========================================================================
-   MỤC 8: TỶ LỆ INACTIVE THEO THÁNG NĂM 2026
+   MỤC 3: TỶ LỆ INACTIVE THEO THÁNG NĂM 2026
    - Sheet: 'baocaotuan' (range AV2:BB15)
    - Cột: Tháng ký | Tổng gian hàng | Số GH Inactive | % Inactive | SL SC chăm | % SC chăm | % SC Onboarding
    ========================================================================== */
@@ -262,7 +262,7 @@ function normalizeMonthlyInactiveData(rawData) {
 }
 
 /**
- * Hiển thị 4 thẻ KPI tóm tắt Mục 8
+ * Hiển thị 4 thẻ KPI tóm tắt Mục 3
  */
 function renderMonthlyInactiveSummaryCards(parsed) {
   const box = $('bscMonthlyInactiveSummaryCards');
@@ -284,7 +284,7 @@ function renderMonthlyInactiveSummaryCards(parsed) {
 }
 
 /**
- * Điều khiển sắp xếp bảng Mục 8
+ * Điều khiển sắp xếp bảng Mục 3
  */
 function sortMonthlyInactive(key) {
   if (BAOCAOSC_MONTHLY_INACTIVE_SORT.k === key) {
@@ -300,7 +300,7 @@ function sortMonthlyInactive(key) {
 }
 
 /**
- * Lọc tìm kiếm theo tháng Mục 8
+ * Lọc tìm kiếm theo tháng Mục 3
  */
 function onMonthlyInactiveSearch(val) {
   BAOCAOSC_MONTHLY_INACTIVE_SEARCH = String(val || '').trim().toLowerCase();
@@ -311,7 +311,7 @@ function onMonthlyInactiveSearch(val) {
 }
 
 /**
- * Render bảng chi tiết Mục 8: Tỷ Lệ Inactive Theo Tháng
+ * Render bảng chi tiết Mục 3: Tỷ Lệ Inactive Theo Tháng
  */
 function renderMonthlyInactiveTable(parsed) {
   const tbl = $('bscMonthlyInactiveTable');
@@ -408,7 +408,7 @@ function renderMonthlyInactiveTable(parsed) {
 }
 
 /**
- * Xuất file CSV Mục 8
+ * Xuất file CSV Mục 3
  */
 function exportMonthlyInactiveCsv() {
   if (!BAOCAOSC_STATE.monthlyInactive) {
@@ -435,11 +435,11 @@ function exportMonthlyInactiveCsv() {
   }
 
   exportGenericCsv(
-    'BÁO CÁO SC - MỤC 8: TỶ LỆ INACTIVE THEO THÁNG NĂM 2026 (SHEET baocaotuan AV2:BB15)',
+    'BÁO CÁO SC - MỤC 3: TỶ LỆ INACTIVE THEO THÁNG NĂM 2026 (SHEET baocaotuan AV2:BB15)',
     ['STT', 'Tháng Ký', 'Tổng Gian Hàng', 'Số GH Inactive', 'Tỷ Lệ Inactive (%)', 'SL SC Chăm Sóc', 'Tỷ Lệ SC Chăm (%)', 'Tỷ Lệ SC Onboarding (%)'],
     rows,
-    'BaoCaoSC_Muc_8_TyLe_Inactive_TheoThang_2026',
-    'Đã xuất file CSV Tỷ Lệ Inactive Theo Tháng (Mục 8) thành công!'
+    'BaoCaoSC_Muc_3_TyLe_Inactive_TheoThang_2026',
+    'Đã xuất file CSV Tỷ Lệ Inactive Theo Tháng (Mục 3) thành công!'
   );
 }
 
@@ -866,7 +866,7 @@ function onActiveRateSearch(val) {
 }
 
 /* ==========================================================================
-   MỤC 6: TỶ LỆ CHĂM KHÁCH NEW T10 (KÝ MỚI · INACTIVE · SC CHĂM)
+   MỤC 7: TỶ LỆ CHĂM KHÁCH NEW T10 (KÝ MỚI · INACTIVE · SC CHĂM)
    ========================================================================== */
 
 /**
@@ -944,7 +944,7 @@ function normalizeCareRateData(rawData) {
 }
 
 /**
- * Hiển thị 3 thẻ KPI tóm tắt cho Mục 6
+ * Hiển thị 3 thẻ KPI tóm tắt cho Mục 7
  */
 function renderBaoCaoScCareSummaryCards(parsedCare) {
   const box = $('bscCareSummaryCards');
@@ -966,7 +966,7 @@ function renderBaoCaoScCareSummaryCards(parsedCare) {
 }
 
 /**
- * Hiển thị bảng chi tiết Mục 6
+ * Hiển thị bảng chi tiết Mục 7
  */
 function renderBaoCaoScCareTable(parsedCare) {
   const tbl = $('bscCareTable');
@@ -1026,7 +1026,7 @@ function renderBaoCaoScCareTable(parsedCare) {
 }
 
 /**
- * Sắp xếp bảng Mục 6
+ * Sắp xếp bảng Mục 7
  */
 function sortCareRate(key) {
   if (BAOCAOSC_CARE_SORT.k === key) {
@@ -1077,7 +1077,7 @@ function renderBaoCaoSc() {
     }
   }
 
-  // Mục 7: Báo Cáo Các Tệp Triển Khai (7.1 F&B Lớn, 7.2 Booking 3 Hotel Sao, 7.3 Retail Lớn HĐĐT)
+  // Mục 8: Báo Cáo Các Tệp Triển Khai (8.1 F&B Lớn, 8.2 Booking 3 Hotel Sao, 8.3 Retail Lớn HĐĐT)
   if (typeof renderTiepTrienKhai === 'function') {
     renderTiepTrienKhai();
   } else if (BAOCAOSC_STATE.fnbIssue) {
@@ -1088,7 +1088,7 @@ function renderBaoCaoSc() {
     }
   }
 
-  // Mục 4.2: Impact Team Online (lấy từ Tab Impact Online - sheet impactonline)
+  // Mục 5.2: Impact Team Online (lấy từ Tab Impact Online - sheet impactonline)
   if (typeof renderImpactOnline === 'function' && typeof IMPACT_ONLINE_STATE !== 'undefined' && (IMPACT_ONLINE_STATE.muc1 || IMPACT_ONLINE_STATE.muc2)) {
     renderImpactOnline();
   }
@@ -1117,14 +1117,12 @@ function renderBaoCaoSc() {
     if (parsedProvince) renderHeadcountProvinceTable(parsedProvince);
   }
 
-  if (BAOCAOSC_STATE.kpiOnlineT9 || BAOCAOSC_STATE.kpiOfflineT10 || BAOCAOSC_STATE.addonT10) {
+  if (BAOCAOSC_STATE.kpiOnlineT9 || BAOCAOSC_STATE.kpiOfflineT10) {
     const parsedOnline = BAOCAOSC_STATE.kpiOnlineT9 ? normalizeKpiOnlineT9Data(BAOCAOSC_STATE.kpiOnlineT9) : null;
     const parsedOffline = BAOCAOSC_STATE.kpiOfflineT10 ? normalizeKpiOfflineT10Data(BAOCAOSC_STATE.kpiOfflineT10) : null;
-    const parsedAddon = BAOCAOSC_STATE.addonT10 ? normalizeAddonT10Data(BAOCAOSC_STATE.addonT10) : null;
-    renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedAddon);
+    renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline);
     if (parsedOnline) renderKpiOnlineT9Table(parsedOnline);
     if (parsedOffline) renderKpiOfflineT10Table(parsedOffline);
-    if (parsedAddon) renderAddonT10Table(parsedAddon);
   }
 }
 
@@ -1157,7 +1155,7 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
         req.onerror = () => resolve(null);
       });
 
-      if (cached && cached.muctieuOffline && cached.muctieuOnline && cached.monthlyInactive && cached.activeRate && Array.isArray(cached.activeRate) && cached.activeRate.length >= 2 && cached.fnbIssue && cached.provinceImpact && cached.headcountRegion && cached.headcountProvince && cached.impactDataSource && cached.impactIndustry && cached.kpiOnlineT9 && cached.kpiOfflineT10 && cached.addonT10) {
+      if (cached && cached.muctieuOffline && cached.muctieuOnline && cached.monthlyInactive && cached.activeRate && Array.isArray(cached.activeRate) && cached.activeRate.length >= 2 && cached.fnbIssue && cached.provinceImpact && cached.headcountRegion && cached.headcountProvince && cached.impactDataSource && cached.impactIndustry && cached.kpiOnlineT9 && cached.kpiOfflineT10) {
         const ageMs = Date.now() - (cached.savedAt || 0);
         const minsAgo = Math.max(0, Math.floor(ageMs / 60000));
         const timeLabel = minsAgo === 0 ? 'vừa xong' : `${minsAgo} phút trước`;
@@ -1206,7 +1204,6 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
   const urlHeadcountProvince = API_BAOCAOSC_HEADCOUNT_PROVINCE + (API_BAOCAOSC_HEADCOUNT_PROVINCE.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlKpiOnlineT9 = API_BAOCAOSC_KPI_ONLINE_T9 + (API_BAOCAOSC_KPI_ONLINE_T9.includes('?') ? '&' : '?') + '_t=' + Date.now();
   const urlKpiOfflineT10 = API_BAOCAOSC_KPI_OFFLINE_T10 + (API_BAOCAOSC_KPI_OFFLINE_T10.includes('?') ? '&' : '?') + '_t=' + Date.now();
-  const urlAddonT10 = API_BAOCAOSC_ADDON_T10 + (API_BAOCAOSC_ADDON_T10.includes('?') ? '&' : '?') + '_t=' + Date.now();
 
   try {
     const [
@@ -1222,8 +1219,7 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
       resHeadcountRegion,
       resHeadcountProvince,
       resKpiOnlineT9,
-      resKpiOfflineT10,
-      resAddonT10
+      resKpiOfflineT10
     ] = await Promise.all([
       safeFetchJson(urlMuctieuOffline, 2),
       safeFetchJson(urlMuctieuOnline, 2),
@@ -1237,8 +1233,7 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
       safeFetchJson(urlHeadcountRegion, 2),
       safeFetchJson(urlHeadcountProvince, 2),
       safeFetchJson(urlKpiOnlineT9, 2),
-      safeFetchJson(urlKpiOfflineT10, 2),
-      safeFetchJson(urlAddonT10, 2)
+      safeFetchJson(urlKpiOfflineT10, 2)
     ]);
 
     if (resActive.status !== 'success' || !Array.isArray(resActive.data) || resActive.data.length < 2) {
@@ -1262,7 +1257,6 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
       headcountProvince: resHeadcountProvince && resHeadcountProvince.data ? resHeadcountProvince.data : null,
       kpiOnlineT9: resKpiOnlineT9 && resKpiOnlineT9.data ? resKpiOnlineT9.data : null,
       kpiOfflineT10: resKpiOfflineT10 && resKpiOfflineT10.data ? resKpiOfflineT10.data : null,
-      addonT10: resAddonT10 && resAddonT10.data ? resAddonT10.data : null,
       savedAt: Date.now(),
       timeStr: timeStr
     };
@@ -1387,11 +1381,11 @@ function exportActiveRateCsv() {
 }
 
 /**
- * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 6
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 7
  */
 function exportCareRateCsv() {
   if (!BAOCAOSC_STATE.careRate) {
-    showToast('Chưa có dữ liệu Mục 6 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 7 để xuất CSV!', false);
     return;
   }
   const parsed = normalizeCareRateData(BAOCAOSC_STATE.careRate);
@@ -1400,7 +1394,7 @@ function exportCareRateCsv() {
   const lines = [];
 
   // Tiêu đề
-  lines.push(['BÁO CÁO SC - MỤC 6: TỶ LỆ CHĂM KHÁCH NEW T10']);
+  lines.push(['BÁO CÁO SC - MỤC 7: TỶ LỆ CHĂM KHÁCH NEW T10']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -1437,16 +1431,16 @@ function exportCareRateCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_6_ChamKhachNew_T10_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_7_ChamKhachNew_T10_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Chăm Khách New (Mục 6) thành công!', true);
+  showToast('Đã xuất file CSV Chăm Khách New (Mục 7) thành công!', true);
 }
 
 /* ==========================================================================
-   MỤC 7.1 (LEGACY): TRIỂN KHAI TỆP FNB LỚN (SHEET 'baocaotuan', RANGE AR2:AS9)
+   MỤC 8.1 (LEGACY): TRIỂN KHAI TỆP FNB LỚN (SHEET 'baocaotuan', RANGE AR2:AS9)
    ========================================================================== */
 
 /**
@@ -1520,7 +1514,7 @@ function normalizeFnbIssueData(rawData) {
 }
 
 /**
- * Hiển thị 4 thẻ KPI tóm tắt cho Mục 7.1: Triển Khai Tệp FNB Lớn
+ * Hiển thị 4 thẻ KPI tóm tắt cho Mục 8.1: Triển Khai Tệp FNB Lớn
  */
 function renderBaoCaoScFnbIssueSummaryCards(parsed) {
   const box = $('bscFnbIssueSummaryCards');
@@ -1546,7 +1540,7 @@ function renderBaoCaoScFnbIssueSummaryCards(parsed) {
 }
 
 /**
- * Hiển thị bảng chi tiết Mục 7.1: Nhóm Vấn Đề / Lỗi Phát Sinh
+ * Hiển thị bảng chi tiết Mục 8.1: Nhóm Vấn Đề / Lỗi Phát Sinh
  */
 function renderFnbIssueTable(parsed) {
   const tbl = $('bscFnbIssueTable');
@@ -1622,18 +1616,18 @@ function sortFnbIssue(col) {
 }
 
 /**
- * Xuất file CSV UTF-8 với BOM - Mục 7.1: Triển Khai Tệp FNB Lớn
+ * Xuất file CSV UTF-8 với BOM - Mục 8.1: Triển Khai Tệp FNB Lớn
  */
 function exportFnbIssueCsv() {
   if (!BAOCAOSC_STATE.fnbIssue) {
-    showToast('Chưa có dữ liệu Mục 7.1 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 8.1 để xuất CSV!', false);
     return;
   }
   const parsed = normalizeFnbIssueData(BAOCAOSC_STATE.fnbIssue);
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 7.1: TRIỂN KHAI TỆP FNB LỚN (AR2:AS9)']);
+  lines.push(['BÁO CÁO SC - MỤC 8.1: TRIỂN KHAI TỆP FNB LỚN (AR2:AS9)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Nhóm Vấn Đề / Lỗi Phát Sinh', 'Số Lượng', 'Tỷ Trọng (%)']);
@@ -1658,16 +1652,16 @@ function exportFnbIssueCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_7_1_TrienKhai_FnbLon_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_8_1_TrienKhai_FnbLon_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Triển Khai Tệp FNB Lớn (Mục 7.1) thành công!', true);
+  showToast('Đã xuất file CSV Triển Khai Tệp FNB Lớn (Mục 8.1) thành công!', true);
 }
 
 /* ==========================================================================
-   MỤC 4.1.1: IMPACT THEO TỈNH THÀNH PHỐ (SHEET 'baocaotuan', RANGE K2:Q19)
+   MỤC 5.1.1: IMPACT THEO TỈNH THÀNH PHỐ (SHEET 'baocaotuan', RANGE K2:Q19)
    ========================================================================== */
 
 function parseProvinceImpactVal(val) {
@@ -1828,7 +1822,7 @@ function normalizeProvinceImpactData(rawData) {
 }
 
 /**
- * Hiển thị các thẻ KPI tóm tắt Mục 4.1.1
+ * Hiển thị các thẻ KPI tóm tắt Mục 5.1.1
  */
 function renderBaoCaoScProvinceSummaryCards(parsed) {
   const box = $('bscProvinceSummaryCards');
@@ -1910,7 +1904,7 @@ function renderProvinceMonthCell(monthInfo) {
 }
 
 /**
- * Hiển thị bảng chi tiết Mục 4.1.1: Impact Theo Tỉnh Thành (8 cột: STT + Tỉnh + T7..T12)
+ * Hiển thị bảng chi tiết Mục 5.1.1: Impact Theo Tỉnh Thành (8 cột: STT + Tỉnh + T7..T12)
  */
 function renderProvinceImpactTable(parsed) {
   const tbl = $('bscProvinceTable');
@@ -2001,7 +1995,7 @@ function renderProvinceImpactTable(parsed) {
 }
 
 /**
- * Sắp xếp bảng Mục 4.1.1
+ * Sắp xếp bảng Mục 5.1.1
  */
 function sortProvinceImpact(key) {
   if (BAOCAOSC_PROVINCE_SORT.k === key) {
@@ -2017,7 +2011,7 @@ function sortProvinceImpact(key) {
 }
 
 /**
- * Tìm kiếm tỉnh thành ở Mục 4.1.1
+ * Tìm kiếm tỉnh thành ở Mục 5.1.1
  */
 function onProvinceImpactSearch(val) {
   BAOCAOSC_PROVINCE_SEARCH = String(val || '').trim();
@@ -2028,18 +2022,18 @@ function onProvinceImpactSearch(val) {
 }
 
 /**
- * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 4.1.1
+ * Xuất file CSV UTF-8 với BOM tương thích 100% Microsoft Excel - Mục 5.1.1
  */
 function exportProvinceImpactCsv() {
   if (!BAOCAOSC_STATE.provinceImpact) {
-    showToast('Chưa có dữ liệu Mục 4.1.1 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 5.1.1 để xuất CSV!', false);
     return;
   }
   const parsed = normalizeProvinceImpactData(BAOCAOSC_STATE.provinceImpact);
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 4.1.1: IMPACT THEO TỈNH THÀNH PHỐ (T7 - T12)']);
+  lines.push(['BÁO CÁO SC - MỤC 5.1.1: IMPACT THEO TỈNH THÀNH PHỐ (T7 - T12)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -2094,12 +2088,12 @@ function exportProvinceImpactCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_4_1_1_Impact_TheoTinhThanh_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_5_1_1_Impact_TheoTinhThanh_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Impact Theo Tỉnh Thành (Mục 4.1.1) thành công!', true);
+  showToast('Đã xuất file CSV Impact Theo Tỉnh Thành (Mục 5.1.1) thành công!', true);
 }
 
 /* ==========================================================================
@@ -2793,7 +2787,7 @@ function exportHeadcountProvinceCsv() {
 }
 
 /* ==========================================================================
-   MỤC 4.1.2 & 4.1.3: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (AD1:AG11 & AD14:AG20)
+   MỤC 5.1.2 & 5.1.3: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (AD1:AG11 & AD14:AG20)
    ========================================================================== */
 
 /**
@@ -2936,7 +2930,7 @@ function sortImpactIndustry(key) {
 }
 
 /**
- * Hiển thị 4 thẻ KPI tóm tắt cho Mục 4.1.2 & 4.1.3
+ * Hiển thị 4 thẻ KPI tóm tắt cho Mục 5.1.2 & 5.1.3
  */
 function renderBaoCaoScImpactSummaryCards(parsedSource, parsedIndustry) {
   const box = $('bscImpactSummaryCards');
@@ -3118,7 +3112,7 @@ function renderImpactIndustryTable(parsed) {
 }
 
 /**
- * Xuất file CSV Bảng 1: Impact Theo Nguồn Data (Mục 4.1.2)
+ * Xuất file CSV Bảng 1: Impact Theo Nguồn Data (Mục 5.1.2)
  */
 function exportImpactSourceCsv() {
   if (!BAOCAOSC_STATE.impactDataSource) {
@@ -3129,7 +3123,7 @@ function exportImpactSourceCsv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 4.1.2: IMPACT THEO NGUỒN DATA']);
+  lines.push(['BÁO CÁO SC - MỤC 5.1.2: IMPACT THEO NGUỒN DATA']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Tệp / Nguồn Data', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
@@ -3154,16 +3148,16 @@ function exportImpactSourceCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_4_1_2_Impact_NguonData_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_5_1_2_Impact_NguonData_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Impact Theo Nguồn Data (Mục 4.1.2) thành công!', true);
+  showToast('Đã xuất file CSV Impact Theo Nguồn Data (Mục 5.1.2) thành công!', true);
 }
 
 /**
- * Xuất file CSV Bảng 2: Impact Theo Ngành Hàng (Mục 4.1.3)
+ * Xuất file CSV Bảng 2: Impact Theo Ngành Hàng (Mục 5.1.3)
  */
 function exportImpactIndustryCsv() {
   if (!BAOCAOSC_STATE.impactIndustry) {
@@ -3174,7 +3168,7 @@ function exportImpactIndustryCsv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 4.1.3: IMPACT THEO NGÀNH HÀNG']);
+  lines.push(['BÁO CÁO SC - MỤC 5.1.3: IMPACT THEO NGÀNH HÀNG']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Ngành Hàng', 'Số Lượng ACT', 'Số Lượng Impact', 'Tỷ Lệ Impact (%)']);
@@ -3199,25 +3193,25 @@ function exportImpactIndustryCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_4_1_3_Impact_NganhHang_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_5_1_3_Impact_NganhHang_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Impact Theo Ngành Hàng (Mục 4.1.3) thành công!', true);
+  showToast('Đã xuất file CSV Impact Theo Ngành Hàng (Mục 5.1.3) thành công!', true);
 }
 
 /**
- * Xuất file CSV Tổng Hợp Mục 4.1 (Gồm cả 2 bảng Nguồn Data & Ngành Hàng)
+ * Xuất file CSV Tổng Hợp Mục 5.1 (Gồm cả 2 bảng Nguồn Data & Ngành Hàng)
  */
 function exportImpactSection7Csv() {
   if (!BAOCAOSC_STATE.impactDataSource && !BAOCAOSC_STATE.impactIndustry) {
-    showToast('Chưa có dữ liệu Mục 4.1 để xuất CSV!', false);
+    showToast('Chưa có dữ liệu Mục 5.1 để xuất CSV!', false);
     return;
   }
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 4.1: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG']);
+  lines.push(['BÁO CÁO SC - MỤC 5.1: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
@@ -3265,12 +3259,12 @@ function exportImpactSection7Csv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_4_1_Impact_NguonData_NganhHang_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_5_1_Impact_NguonData_NganhHang_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Tổng Hợp Mục 4.1 thành công!', true);
+  showToast('Đã xuất file CSV Tổng Hợp Mục 5.1 thành công!', true);
 }
 
 function exportImpactSection6Csv() {
@@ -3282,15 +3276,13 @@ function exportImpactSection5Csv() {
 }
 
 /* ==========================================================================
-   MỤC 5: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON (THÁNG 10 & THÁNG 11)
-   - 5.1: KPI Team Online Tháng 10 (AJ2:AP5)
-   - 5.2: KPI Team Offline Tháng 11 (AJ12:AQ16)
-   - 5.3: Tư Vấn Chuyển Addon Tháng 11 (AJ22:AO30)
+   MỤC 6: HIỆU SUẤT KPI TEAM (THÁNG 10 & THÁNG 11)
+   - 6.1: KPI Team Online Tháng 10 (AJ2:AP5)
+   - 6.2: KPI Team Offline Tháng 11 (AJ12:AQ16)
    ========================================================================== */
 
 let BAOCAOSC_KPI_ONLINE_T9_SORT = { k: 'default', dir: -1 };
 let BAOCAOSC_KPI_OFFLINE_T10_SORT = { k: 'default', dir: -1 };
-let BAOCAOSC_ADDON_T10_SORT = { k: 'default', dir: -1 };
 
 /**
  * Helper phân tích số thập phân
@@ -3362,7 +3354,7 @@ function getKpiPercentBadge(pct, baseline = 100) {
 }
 
 /**
- * Chuẩn hóa dữ liệu thô 6.1: KPI Team Online Tháng 9 (AJ2:AP5)
+ * Chuẩn hóa dữ liệu thô 6.1: KPI Team Online Tháng 10 (AJ2:AP5)
  */
 function normalizeKpiOnlineT9Data(rawData) {
   if (!Array.isArray(rawData) || rawData.length < 2) return null;
@@ -3406,7 +3398,7 @@ function normalizeKpiOnlineT9Data(rawData) {
 }
 
 /**
- * Chuẩn hóa dữ liệu thô 5.2: KPI Team Offline Tháng 11 (AJ12:AQ16)
+ * Chuẩn hóa dữ liệu thô 6.2: KPI Team Offline Tháng 11 (AJ12:AQ16)
  */
 function normalizeKpiOfflineT10Data(rawData) {
   if (!Array.isArray(rawData) || rawData.length < 2) return null;
@@ -3488,111 +3480,9 @@ function normalizeKpiOfflineT10Data(rawData) {
 }
 
 /**
- * Helper định dạng hiển thị cho các cột bổ sung của bảng Addon (Cột AN & AO)
+ * Render 3 thẻ KPI tóm tắt đầu Mục 6
  */
-function formatAddonExtraCell(val) {
-  if (val == null || val === '' || val === '-') return '-';
-  const str = String(val).trim();
-  if (str.toUpperCase().includes('#DIV/0')) return '0';
-  if (str.endsWith('%')) return str;
-  const num = Number(val);
-  if (!isNaN(num)) {
-    if (Math.abs(num) <= 1 && num !== 0 && (str.includes('.') || str.includes(','))) {
-      return (num * 100).toFixed(2) + '%';
-    }
-    return Number.isInteger(num) ? num.toLocaleString('vi-VN') : num.toFixed(2);
-  }
-  return str;
-}
-
-/**
- * Chuẩn hóa dữ liệu thô 9.3: Tư Vấn Chuyển Addon Tháng 10 (AJ22:AO30)
- * Dòng 22 là tiêu đề bảng, dòng 24 là header thực tế:
- *   [Dịch vụ Addon, Mục tiêu, Team offline, Team online, Tổng, Tỷ lệ đạt]
- */
-function normalizeAddonT10Data(rawData) {
-  if (!Array.isArray(rawData) || rawData.length < 2) return null;
-
-  // 1. Tự động tìm dòng header thực tế
-  let headerRowIdx = 0;
-  for (let r = 0; r < rawData.length; r++) {
-    const row = rawData[r] || [];
-    const joined = row.map(c => String(c || '').toLowerCase()).join(' ');
-    if (joined.includes('mục tiêu') || joined.includes('offline') || joined.includes('online')) {
-      headerRowIdx = r;
-      break;
-    }
-  }
-
-  const items = [];
-  let totTarget = 0;
-  let totOffline = 0;
-  let totOnline = 0;
-  let totTotal = 0;
-
-  for (let r = headerRowIdx + 1; r < rawData.length; r++) {
-    const row = rawData[r];
-    if (!row || !row.length) continue;
-    const name = String(row[0] || '').trim();
-    if (!name) continue;
-
-    // Bỏ qua dòng trống hoặc dòng lặp lại tiêu đề
-    if (name.toLowerCase().includes('dịch vụ addon') || name.toLowerCase().includes('tư vấn chuyển')) continue;
-
-    const rawTarget = parseBscDecimal(row[1]);
-    const target = Math.round(rawTarget);
-    const offline = parseBscNumber(row[2]);
-    const online = parseBscNumber(row[3]);
-    const total = parseBscNumber(row[4]);
-    let pct = parseBscPct(row[5]);
-    if (!pct && target > 0) {
-      pct = (total / target) * 100;
-    }
-
-    const item = {
-      name,
-      target,
-      rawTarget,
-      offline,
-      online,
-      total,
-      pct,
-      rawRow: row
-    };
-
-    if (name.toLowerCase().includes('tổng cộng') || name.toLowerCase() === 'tổng') {
-      // Nếu có sẵn dòng tổng từ sheet thì có thể dùng
-    } else {
-      items.push(item);
-      totTarget += rawTarget;
-      totOffline += offline;
-      totOnline += online;
-      totTotal += total;
-    }
-  }
-
-  const totalRow = {
-    name: 'TỔNG CỘNG',
-    target: Math.round(totTarget),
-    rawTarget: totTarget,
-    offline: totOffline,
-    online: totOnline,
-    total: totTotal,
-    pct: totTarget > 0 ? (totTotal / totTarget) * 100 : 0
-  };
-
-  return {
-    headers: ['Dịch Vụ Addon', 'Mục Tiêu', 'Team Offline', 'Team Online', 'Tổng Thực Đạt', 'Tỷ Lệ Đạt'],
-    items,
-    totalRow,
-    grandTotal: totTotal
-  };
-}
-
-/**
- * Render 4 thẻ KPI tóm tắt đầu Mục 5
- */
-function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedAddon) {
+function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline) {
   const c = $('bscKpiAddonSummaryCards');
   if (!c) return;
 
@@ -3605,7 +3495,7 @@ function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedA
 
   let html = '';
 
-  // Thẻ 1: KPI Team Online T9
+  // Thẻ 1: KPI Team Online T10
   if (parsedOnline && parsedOnline.totalRow) {
     const tot = parsedOnline.totalRow;
     html += K('KPI Team Online (T10)', `${tot.kpiTeam.toFixed(2)}%`, `Toàn quốc · ${tot.headcount} nhân sự (Điểm tổng: ${tot.kpiTotalScore.toFixed(1)}%)`, 'color:#38bdf8');
@@ -3613,7 +3503,7 @@ function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedA
     html += K('KPI Team Online (T10)', '–', 'Đang cập nhật', 'color:var(--mut)');
   }
 
-  // Thẻ 2: KPI Team Offline T10
+  // Thẻ 2: KPI Team Offline T11
   if (parsedOffline && parsedOffline.totalRow) {
     const tot = parsedOffline.totalRow;
     html += K('KPI Team Offline (T11)', `${tot.kpiTeam.toFixed(2)}%`, `Toàn quốc · ${tot.headcount} nhân sự (Impact: ${tot.impact.toFixed(1)}%)`, 'color:#a855f7');
@@ -3621,7 +3511,7 @@ function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedA
     html += K('KPI Team Offline (T11)', '–', 'Đang cập nhật', 'color:var(--mut)');
   }
 
-  // Thẻ 3: Talktime TB Online T9
+  // Thẻ 3: Talktime TB Online T10
   if (parsedOnline && parsedOnline.totalRow) {
     const tot = parsedOnline.totalRow;
     const mb = parsedOnline.items.find(it => it.name.toLowerCase().includes('bắc'));
@@ -3630,17 +3520,6 @@ function renderBaoCaoScKpiAddonSummaryCards(parsedOnline, parsedOffline, parsedA
     html += K('Talktime TB Online (T10)', tot.talktimeStr, subStr || 'Toàn quốc', 'color:#06b6d4');
   } else {
     html += K('Talktime TB Online (T10)', '–', 'Đang cập nhật', 'color:var(--mut)');
-  }
-
-  // Thẻ 4: Tư Vấn Chuyển Addon T10
-  if (parsedAddon && parsedAddon.totalRow) {
-    const tot = parsedAddon.totalRow;
-    const off = tot.offline.toLocaleString('vi-VN');
-    const on = tot.online.toLocaleString('vi-VN');
-    const tar = tot.target.toLocaleString('vi-VN');
-    html += K('Tư Vấn Addon (T11)', `${tot.total.toLocaleString('vi-VN')}`, `Offline: ${off} · Online: ${on} · Mục tiêu: ${tar} (${tot.pct.toFixed(1)}%)`, 'color:#10b981');
-  } else {
-    html += K('Tư Vấn Addon (T11)', '–', 'Đang cập nhật', 'color:var(--mut)');
   }
 
   c.innerHTML = html;
@@ -3781,93 +3660,7 @@ function renderKpiOfflineT10Table(parsed) {
 }
 
 /**
- * BẢNG 3: TƯ VẤN CHUYỂN ADDON THÁNG 10 (AJ22:AO30)
- */
-function renderAddonT10Table(parsed) {
-  const tbl = $('bscAddonT10Table');
-  if (!tbl || !parsed) return;
-
-  const items = [...parsed.items];
-  const { k, dir } = BAOCAOSC_ADDON_T10_SORT;
-
-  if (k !== 'default') {
-    items.sort((a, b) => {
-      if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
-      return dir * ((a[k] || 0) - (b[k] || 0));
-    });
-  }
-
-  const sortArrow = col => (BAOCAOSC_ADDON_T10_SORT.k === col ? (BAOCAOSC_ADDON_T10_SORT.dir === 1 ? ' ▲' : ' ▼') : ' ⇅');
-
-  let thead = '<thead><tr>';
-  thead += `<th style="width:55px;text-align:center">STT</th>`;
-  thead += `<th onclick="sortAddonT10('name')" style="cursor:pointer;text-align:center;min-width:180px">Dịch Vụ Addon${sortArrow('name')}</th>`;
-  thead += `<th onclick="sortAddonT10('target')" style="cursor:pointer;text-align:center;min-width:110px">Mục Tiêu${sortArrow('target')}</th>`;
-  thead += `<th onclick="sortAddonT10('offline')" style="cursor:pointer;text-align:center;min-width:120px">Team Offline${sortArrow('offline')}</th>`;
-  thead += `<th onclick="sortAddonT10('online')" style="cursor:pointer;text-align:center;min-width:120px">Team Online${sortArrow('online')}</th>`;
-  thead += `<th onclick="sortAddonT10('total')" style="cursor:pointer;text-align:center;min-width:130px">Tổng Thực Đạt${sortArrow('total')}</th>`;
-  thead += `<th onclick="sortAddonT10('pct')" style="cursor:pointer;text-align:center;min-width:150px">Tỷ Lệ Đạt${sortArrow('pct')}</th>`;
-  thead += '</tr></thead>';
-
-  let tbody = '<tbody>';
-  items.forEach((item, idx) => {
-    let barColor = '#38bdf8';
-    let badgeBg = 'rgba(56, 189, 248, 0.15)';
-    if (item.pct >= 100) {
-      barColor = '#10b981';
-      badgeBg = 'rgba(16, 185, 129, 0.16)';
-    } else if (item.pct >= 50) {
-      barColor = '#38bdf8';
-      badgeBg = 'rgba(56, 189, 248, 0.16)';
-    } else if (item.pct >= 25) {
-      barColor = '#f59e0b';
-      badgeBg = 'rgba(245, 158, 11, 0.16)';
-    } else {
-      barColor = '#f43f5e';
-      badgeBg = 'rgba(244, 63, 94, 0.16)';
-    }
-
-    tbody += '<tr>';
-    tbody += `<td style="text-align:center;color:var(--mut);font-weight:700">${idx + 1}</td>`;
-    tbody += `<td style="text-align:left;font-weight:700;color:var(--tx-heading)">${esc(item.name)}</td>`;
-    tbody += `<td style="text-align:center;font-weight:600;color:var(--tx-muted)">${item.target.toLocaleString('vi-VN')}</td>`;
-    tbody += `<td style="text-align:center;font-weight:600">${item.offline.toLocaleString('vi-VN')}</td>`;
-    tbody += `<td style="text-align:center;font-weight:600">${item.online.toLocaleString('vi-VN')}</td>`;
-    tbody += `<td style="text-align:center;font-weight:800;color:#38bdf8">${item.total.toLocaleString('vi-VN')}</td>`;
-    tbody += `<td style="text-align:center">
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
-        <div style="flex:1;max-width:65px;height:6px;border-radius:3px;background:rgba(148,163,184,0.18);overflow:hidden">
-          <div style="width:${Math.min(100, Math.max(0, item.pct))}%;height:100%;background:${barColor};border-radius:3px"></div>
-        </div>
-        <span style="display:inline-block;padding:2px 7px;border-radius:5px;font-weight:800;font-size:12px;color:${barColor};background:${badgeBg};min-width:60px;text-align:center">
-          ${item.pct.toFixed(2)}%
-        </span>
-      </div>
-    </td>`;
-    tbody += '</tr>';
-  });
-  tbody += '</tbody>';
-
-  let tfoot = '';
-  if (parsed.totalRow) {
-    const tot = parsed.totalRow;
-    let totColor = tot.pct >= 100 ? '#10b981' : (tot.pct >= 50 ? '#38bdf8' : '#f59e0b');
-    tfoot += '<tfoot><tr>';
-    tfoot += `<td style="text-align:center;color:var(--mut)">★</td>`;
-    tfoot += `<td style="text-align:left;font-weight:800;color:var(--tx-heading)">TỔNG CỘNG</td>`;
-    tfoot += `<td style="text-align:center;font-weight:800;color:var(--tx-muted)">${tot.target.toLocaleString('vi-VN')}</td>`;
-    tfoot += `<td style="text-align:center;font-weight:800">${tot.offline.toLocaleString('vi-VN')}</td>`;
-    tfoot += `<td style="text-align:center;font-weight:800">${tot.online.toLocaleString('vi-VN')}</td>`;
-    tfoot += `<td style="text-align:center;font-weight:800;color:#38bdf8">${tot.total.toLocaleString('vi-VN')}</td>`;
-    tfoot += `<td style="text-align:center;font-weight:800;color:${totColor}">${tot.pct.toFixed(2)}%</td>`;
-    tfoot += '</tr></tfoot>';
-  }
-
-  tbl.innerHTML = thead + tbody + tfoot;
-}
-
-/**
- * Xử lý sắp xếp Bảng 1: KPI Team Online T9
+ * Xử lý sắp xếp Bảng 1: KPI Team Online T10
  */
 function sortKpiOnlineT9(col) {
   if (BAOCAOSC_KPI_ONLINE_T9_SORT.k === col) {
@@ -3882,7 +3675,7 @@ function sortKpiOnlineT9(col) {
 }
 
 /**
- * Xử lý sắp xếp Bảng 2: KPI Team Offline T10
+ * Xử lý sắp xếp Bảng 2: KPI Team Offline T11
  */
 function sortKpiOfflineT10(col) {
   if (BAOCAOSC_KPI_OFFLINE_T10_SORT.k === col) {
@@ -3897,22 +3690,7 @@ function sortKpiOfflineT10(col) {
 }
 
 /**
- * Xử lý sắp xếp Bảng 3: Addon T10
- */
-function sortAddonT10(col) {
-  if (BAOCAOSC_ADDON_T10_SORT.k === col) {
-    BAOCAOSC_ADDON_T10_SORT.dir *= -1;
-  } else {
-    BAOCAOSC_ADDON_T10_SORT = { k: col, dir: -1 };
-  }
-  if (BAOCAOSC_STATE.addonT10) {
-    const parsed = normalizeAddonT10Data(BAOCAOSC_STATE.addonT10);
-    renderAddonT10Table(parsed);
-  }
-}
-
-/**
- * Xuất file CSV Bảng 1 Mục 5: KPI Team Online Tháng 10
+ * Xuất file CSV Bảng 1 Mục 6: KPI Team Online Tháng 10
  */
 function exportKpiOnlineT9Csv() {
   if (!BAOCAOSC_STATE.kpiOnlineT9) {
@@ -3923,7 +3701,7 @@ function exportKpiOnlineT9Csv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 5.1: KPI TEAM ONLINE THÁNG 10 (AJ2:AP5)']);
+  lines.push(['BÁO CÁO SC - MỤC 6.1: KPI TEAM ONLINE THÁNG 10 (AJ2:AP5)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Phân Vùng / Miền', 'Số Nhân Sự', 'KPI Impact (%)', 'KPI Điểm Tổng (%)', 'KPI Addon (%)', 'KPI Team (%)', 'Talktime (TB)']);
@@ -3966,16 +3744,16 @@ function exportKpiOnlineT9Csv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_5_1_KPI_Team_Online_T10_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_6_1_KPI_Team_Online_T10_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV KPI Team Online Tháng 10 (Mục 5.1) thành công!', true);
+  showToast('Đã xuất file CSV KPI Team Online Tháng 10 (Mục 6.1) thành công!', true);
 }
 
 /**
- * Xuất file CSV Bảng 2 Mục 5: KPI Team Offline Tháng 11
+ * Xuất file CSV Bảng 2 Mục 6: KPI Team Offline Tháng 11
  */
 function exportKpiOfflineT10Csv() {
   if (!BAOCAOSC_STATE.kpiOfflineT10) {
@@ -3986,7 +3764,7 @@ function exportKpiOfflineT10Csv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 5.2: KPI TEAM OFFLINE THÁNG 11 (AJ12:AQ16)']);
+  lines.push(['BÁO CÁO SC - MỤC 6.2: KPI TEAM OFFLINE THÁNG 11 (AJ12:AQ16)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
   lines.push(['STT', 'Coacher Quản Lý', 'Số Nhân Sự', 'KPI Active Ngày Checkin (%)', 'KPI Điểm Tổng (%)', 'KPI Addon (%)', 'KPI Team (%)', 'Tỷ Lệ Impact (%)', 'SLA (%)']);
@@ -4031,72 +3809,10 @@ function exportKpiOfflineT10Csv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `BaoCaoSC_Muc_5_2_KPI_Team_Offline_T11_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `BaoCaoSC_Muc_6_2_KPI_Team_Offline_T11_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV KPI Team Offline Tháng 11 (Mục 5.2) thành công!', true);
-}
-
-/**
- * Xuất file CSV Bảng 3 Mục 5: Tư Vấn Chuyển Addon Tháng 11
- */
-function exportAddonT10Csv() {
-  if (!BAOCAOSC_STATE.addonT10) {
-    showToast('Chưa có dữ liệu Tư Vấn Chuyển Addon Tháng 11 để xuất CSV!', false);
-    return;
-  }
-  const parsed = normalizeAddonT10Data(BAOCAOSC_STATE.addonT10);
-  if (!parsed) return;
-
-  const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 5.3: TƯ VẤN CHUYỂN ADDON THÁNG 11 (AJ22:AO30)']);
-  lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
-  lines.push([]);
-
-  lines.push(['STT', 'Dịch Vụ Addon', 'Mục Tiêu', 'Team Offline', 'Team Online', 'Tổng Thực Đạt', 'Tỷ Lệ Đạt (%)']);
-
-  parsed.items.forEach((it, idx) => {
-    lines.push([
-      idx + 1,
-      it.name,
-      it.target,
-      it.offline,
-      it.online,
-      it.total,
-      it.pct.toFixed(2) + '%'
-    ]);
-  });
-
-  if (parsed.totalRow) {
-    const tot = parsed.totalRow;
-    lines.push([
-      '★',
-      'TỔNG CỘNG',
-      tot.target,
-      tot.offline,
-      tot.online,
-      tot.total,
-      tot.pct.toFixed(2) + '%'
-    ]);
-  }
-
-  const csvContent = '\ufeff' + lines.map(row => {
-    return row.map(cell => {
-      const s = String(cell == null ? '' : cell);
-      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    }).join(',');
-  }).join('\r\n');
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `BaoCaoSC_Muc_5_3_Tu_Van_Addon_T11_${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('Đã xuất file CSV Tư Vấn Chuyển Addon Tháng 11 (Mục 5.3) thành công!', true);
+  showToast('Đã xuất file CSV KPI Team Offline Tháng 11 (Mục 6.2) thành công!', true);
 }

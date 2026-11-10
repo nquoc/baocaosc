@@ -127,7 +127,7 @@ function switchTab(tab) {
       renderPhanCung();
     }
   } else if (tab === 'baocaosc') {
-    if (!BAOCAOSC_STATE.muctieuOffline || !BAOCAOSC_STATE.muctieuOnline || !BAOCAOSC_STATE.activeRate || !BAOCAOSC_STATE.fnbIssue || !BAOCAOSC_STATE.provinceImpact || !BAOCAOSC_STATE.headcountRegion || !BAOCAOSC_STATE.impactDataSource || !BAOCAOSC_STATE.impactIndustry || !BAOCAOSC_STATE.kpiOnlineT9 || !BAOCAOSC_STATE.kpiOfflineT10 || !BAOCAOSC_STATE.addonT10) {
+    if (!BAOCAOSC_STATE.muctieuOffline || !BAOCAOSC_STATE.muctieuOnline || !BAOCAOSC_STATE.activeRate || !BAOCAOSC_STATE.monthlyInactive || !BAOCAOSC_STATE.fnbIssue || !BAOCAOSC_STATE.provinceImpact || !BAOCAOSC_STATE.headcountRegion || !BAOCAOSC_STATE.impactDataSource || !BAOCAOSC_STATE.impactIndustry || !BAOCAOSC_STATE.kpiOnlineT9 || !BAOCAOSC_STATE.kpiOfflineT10) {
       loadBaoCaoSc(false);
     } else {
       renderBaoCaoSc();

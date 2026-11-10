@@ -159,7 +159,7 @@ async function loadImpactOnline(forceReload = false, isSilent = false) {
 }
 
 /**
- * Render toàn bộ giao diện Tab Impact Online & Mục 4.2 Báo Cáo SC
+ * Render toàn bộ giao diện Tab Impact Online & Mục 5.2 Báo Cáo SC
  */
 function renderImpactOnline() {
   const d1 = IMPACT_ONLINE_STATE.muc1;

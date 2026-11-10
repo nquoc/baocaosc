@@ -652,7 +652,7 @@ function wrSyncCustomSectionsToActiveDoc(showNotice = false) {
     const cards = Array.from(document.querySelectorAll('#wrCustomSectionsContainer .wr-custom-sec-card'));
     const currentIds = new Set();
     const baseSecs = doc.querySelectorAll('article > section:not(.wr-custom-section)');
-    let secIdx = (baseSecs && baseSecs.length) ? (baseSecs.length + 1) : (window.weeklyReportVersion === 'v2' ? 9 : 7);
+    let secIdx = (baseSecs && baseSecs.length) ? (baseSecs.length + 1) : (window.weeklyReportVersion === 'v2' ? 10 : 7);
 
     cards.forEach(card => {
         const id = card.getAttribute('data-sec-id') || '';
@@ -1973,45 +1973,7 @@ function wrRenderKpiOfflineT10Table(kpiOff) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 9. Tư Vấn Chuyển Addon & Phần Cứng Tháng 10 (Sheet baocaotuan AJ22:AO30)
-function wrRenderAddonT10Table(addon) {
-    const headers = ['Dịch Vụ Addon / Phần Cứng', 'Mục Tiêu', 'Team Offline', 'Team Online', 'Tổng Thực Hiện', 'Tỷ Lệ Đạt'];
-    let rows = [];
-
-    const list = addon?.items || [];
-    if (Array.isArray(list) && list.length) {
-        rows = list.map(it => {
-            const pctStr = it.pct != null ? `${it.pct.toFixed(1)}%` : '-';
-            const tone = it.pct != null ? wrKpiTone(it.pct) : '';
-            return [
-                `<b>${wrEscapeHtml(it.name)}</b>`,
-                wrInt(it.target),
-                wrInt(it.offline),
-                wrInt(it.online),
-                `<b>${wrInt(it.total)}</b>`,
-                `<b class="${tone}">${pctStr}</b>`
-            ];
-        });
-        const tot = addon.totalRow || addon.total;
-        if (tot) {
-            const totPctStr = tot.pct != null ? `${tot.pct.toFixed(1)}%` : '-';
-            rows.push([
-                `<b>${wrEscapeHtml(tot.name || 'TỔNG CỘNG')}</b>`,
-                `<b>${wrInt(tot.target)}</b>`,
-                `<b>${wrInt(tot.offline)}</b>`,
-                `<b>${wrInt(tot.online)}</b>`,
-                `<b>${wrInt(tot.total)}</b>`,
-                `<b class="${wrKpiTone(tot.pct)}">${totPctStr}</b>`
-            ]);
-        }
-    } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-']];
-    }
-
-    return wrTable(headers, rows, 'wr-report-table');
-}
-
-// 10. F&B Issues Table (Sheet baocaotuan AR2:AS9)
+// 9. F&B Issues Table (Sheet baocaotuan AR2:AS9)
 function wrRenderFnbIssueTable(fnbIssue) {
     const headers = ['Nhóm Lỗi Kỹ Thuật F&B', 'Số Gian Hàng Ghi Nhận', 'Tỷ Trọng (%)', 'Đánh Giá & Hướng Xử Lý'];
     let rows = [];
@@ -2486,7 +2448,7 @@ function wrSwitchReportVersion(ver) {
         }
         const status = document.getElementById('wrStatus');
         if (status) {
-            status.innerHTML = `⚡ Đã chuyển sang <b>${ver === 'v2' ? 'Báo cáo Điều Hành Ver 2 (7 Mục Chuẩn)' : 'Báo Cáo Tổng Hợp Ver 1 (CRM & BSC)'}</b>.`;
+            status.innerHTML = `⚡ Đã chuyển sang <b>${ver === 'v2' ? 'Báo cáo Điều Hành Ver 2 (8 Mục Chuẩn)' : 'Báo Cáo Tổng Hợp Ver 1 (CRM & BSC)'}</b>.`;
         }
     }
 }
@@ -2509,7 +2471,7 @@ function wrUpdateVersionUI() {
     }
     if (desc) {
         if (isV2) {
-            desc.innerHTML = `<b>Ver 2 (Chuẩn):</b> 1. Quân số · 2. Active Rate · 3. Mục tiêu · 4. Impact (Off/On) · 5. KPI · 6. Ký mới + SC chăm · 7. Các tệp triển khai`;
+            desc.innerHTML = `<b>Ver 2 (Chuẩn):</b> 1. Quân số · 2. Active Rate · 3. Tỷ lệ Inactive 2026 · 4. Mục tiêu · 5. Impact (Off/On) · 6. KPI · 7. Ký mới + SC chăm · 8. Các tệp triển khai`;
         } else {
             desc.innerHTML = `<b>Ver 1 (Tổng hợp):</b> I. Tổng quan CRM · II. Quân số · III. Active Rate &amp; Inactive · IV. Vận hành &amp; KPI · V. F&amp;B · VI. Đề xuất`;
         }
@@ -2517,7 +2479,7 @@ function wrUpdateVersionUI() {
 }
 
 // =========================================================================
-// BÁO CÁO ĐIỀU HÀNH VER 2 (CHUẨN 7 MỤC)
+// BÁO CÁO ĐIỀU HÀNH VER 2 (CHUẨN 8 MỤC)
 // =========================================================================
 
 function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual) {
@@ -2537,6 +2499,13 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         const achF = lm.fnb != null ? ((lm.fnb / kpiF) * 100).toFixed(2) + '%' : '-';
         const achB = lm.booking != null ? ((lm.booking / kpiB) * 100).toFixed(2) + '%' : '-';
         summaryBullets.push(`<b>Chỉ số Active Rate (${lm.cleanLabel || lm.label}):</b> Ngành Retail đạt <b>${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b> (KPI: <b>67.8%</b>, đạt <b>${achR}</b>); Ngành F&B đạt <b>${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b> (KPI: <b>75.3%</b>, đạt <b>${achF}</b>); Ngành Booking đạt <b>${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b> (KPI: <b>66.0%</b>, đạt <b>${achB}</b>); Bình quân 3 ngành đạt <b>${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>.`);
+    }
+    if (bsc.monthlyInactive?.totalItem) {
+        const totIn = bsc.monthlyInactive.totalItem;
+        const itemsIn = bsc.monthlyInactive.items || [];
+        const latIn = itemsIn.length ? itemsIn[itemsIn.length - 1] : null;
+        const latPart = latIn ? `; riêng ${wrEscapeHtml(latIn.label)}: Inactive <b>${latIn.pctInactive.toFixed(2)}%</b>, SC chăm <b>${latIn.pctSccs.toFixed(2)}%</b>` : '';
+        summaryBullets.push(`<b>Tỷ lệ Inactive theo tháng (2026):</b> Tổng cộng <b>${wrInt(totIn.noRetailer)}</b> gian hàng ký mới, tỷ lệ Inactive lũy kế <b>${totIn.pctInactive.toFixed(2)}%</b> (${wrInt(totIn.noInactive)} gian hàng), tỷ lệ SC chăm <b>${totIn.pctSccs.toFixed(2)}%</b>${latPart}.`);
     }
     if (bsc.muctieuOffline && Array.isArray(bsc.muctieuOffline) && bsc.muctieuOffline.length > 1) {
         const rowKh = bsc.muctieuOffline.find(r => r && String(r[0]).includes('đi được'));
@@ -2609,7 +2578,7 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         </div>
 
         <p class="wr-note">
-            Báo cáo điều hành tổng hợp chuẩn 7 mục trọng yếu của Khối Customer Success (SC): Quân số, Active Rate, Mục tiêu, Tỷ lệ Impact (Offline &amp; Online), KPI (Online &amp; Offline), Khách ký mới + SC chăm sóc và Các tệp triển khai chiến lược. Dữ liệu đồng bộ trực tiếp từ hệ thống Google Sheets Quản trị &amp; Điều hành.
+            Báo cáo điều hành tổng hợp chuẩn 8 mục trọng yếu của Khối Customer Success (SC): Quân số, Active Rate, Tỷ lệ Inactive 2026, Mục tiêu, Tỷ lệ Impact (Offline &amp; Online), KPI (Online &amp; Offline), Khách ký mới + SC chăm sóc và Các tệp triển khai chiến lược. Dữ liệu đồng bộ trực tiếp từ hệ thống Google Sheets Quản trị &amp; Điều hành.
         </p>
 
         ${summaryBullets.length ? `
@@ -2651,9 +2620,21 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             ${wrRenderActiveRateTable(bsc.activeRate)}
         </section>
 
-        <!-- 3. MỤC TIÊU -->
+        <!-- 3. TỶ LỆ INACTIVE THEO THÁNG NĂM 2026 -->
         <section>
-            <h2>III. MỤC TIÊU VẬN HÀNH</h2>
+            <h2>III. TỶ LỆ INACTIVE THEO THÁNG NĂM 2026</h2>
+            ${bsc.monthlyInactive?.totalItem ? wrBullets([
+                `Lũy kế năm 2026 ghi nhận <b>${wrInt(bsc.monthlyInactive.totalItem.noRetailer)} gian hàng ký mới</b>, trong đó có <b>${wrInt(bsc.monthlyInactive.totalItem.noInactive)} gian hàng Inactive</b> (tỷ lệ bình quân <b>${bsc.monthlyInactive.totalItem.pctInactive.toFixed(2)}%</b>).`,
+                `Tỷ lệ đội ngũ SC tiếp cận chăm sóc lũy kế đạt <b>${bsc.monthlyInactive.totalItem.pctSccs.toFixed(2)}%</b> (${wrInt(bsc.monthlyInactive.totalItem.numSccs)} gian hàng); tỷ lệ SC Onboarding đạt <b>${bsc.monthlyInactive.totalItem.pctSccsOnboarding.toFixed(2)}%</b>.`
+            ]) : '<p>Theo dõi diễn biến số lượng gian hàng ký mới, tỷ lệ Inactive và tỷ lệ SC tiếp cận chăm sóc qua các tháng năm 2026:</p>'}
+
+            <h3>1. Bảng chi tiết Tỷ lệ Inactive &amp; SC Chăm sóc theo tháng năm 2026</h3>
+            ${wrRenderMonthlyInactiveTable(bsc.monthlyInactive)}
+        </section>
+
+        <!-- 4. MỤC TIÊU -->
+        <section>
+            <h2>IV. MỤC TIÊU VẬN HÀNH</h2>
             <p>Kết quả thực hiện các chỉ tiêu vận hành cốt lõi của Khối Customer Success (SC) giữa hai lực lượng Offline và Online:</p>
 
             <h3>1. Mục tiêu Vận hành Team Offline</h3>
@@ -2663,9 +2644,9 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             ${wrRenderMuctieuTable(bsc.muctieuOnline, true)}
         </section>
 
-        <!-- 4. IMPACT -->
+        <!-- 5. IMPACT -->
         <section>
-            <h2>IV. TỶ LỆ IMPACT</h2>
+            <h2>V. TỶ LỆ IMPACT</h2>
             <p>Chỉ số Impact phản ánh tỷ lệ khách hàng có sự chuyển biến tích cực (phát sinh giao dịch hoặc quay lại active) sau khi được SC tiếp cận chăm sóc:</p>
 
             <h3>1. Khối Offline</h3>
@@ -2686,9 +2667,9 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             ${wrRenderImpactOnlineTable(bsc.impactOnline?.muc2 || (typeof IMPACT_ONLINE_STATE !== 'undefined' ? IMPACT_ONLINE_STATE.muc2 : null), 'Bảng 2: Diễn Biến Impact Theo Tháng Năm 2026')}
         </section>
 
-        <!-- 5. KPI -->
+        <!-- 6. KPI -->
         <section>
-            <h2>V. THEO DÕI KPI</h2>
+            <h2>VI. THEO DÕI KPI</h2>
             <p>Theo dõi tiến độ hoàn thành các chỉ tiêu KPI trọng yếu của đội ngũ SC cả hai kênh Online và Offline:</p>
 
             <h3>1. Khối Online</h3>
@@ -2698,14 +2679,11 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             <h3>2. Khối Offline</h3>
             <h4>2.1 Bảng theo dõi KPI Coacher Team Offline Tháng 11</h4>
             ${wrRenderKpiOfflineT10Table(bsc.kpiOfflineT10)}
-
-            <h4>2.2 Tư vấn chuyển Addon &amp; Phần cứng Tháng 11</h4>
-            ${wrRenderAddonT10Table(bsc.addonT10)}
         </section>
 
-        <!-- 6. KHÁCH KÝ MỚI + SC CHĂM -->
+        <!-- 7. KHÁCH KÝ MỚI + SC CHĂM -->
         <section>
-            <h2>VI. KHÁCH KÝ MỚI &amp; SC CHĂM SÓC</h2>
+            <h2>VII. KHÁCH KÝ MỚI &amp; SC CHĂM SÓC</h2>
             ${bsc.careRate ? wrBullets([
                 `Toàn quốc ghi nhận tổng cộng <b>${bsc.careRate.totKyMoi ? wrInt(bsc.careRate.totKyMoi) : (bsc.careRate.totalRow?.kyMoi ? wrInt(bsc.careRate.totalRow.kyMoi) : '-')} khách ký mới</b>.`,
                 `Tỷ lệ Inactive New ghi nhận ở mức <b>${bsc.careRate.avgInactive != null ? bsc.careRate.avgInactive.toFixed(2) + '%' : (bsc.careRate.totalRow?.inactive != null ? bsc.careRate.totalRow.inactive.toFixed(2) + '%' : '-')}</b>.`,
@@ -2714,14 +2692,11 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
 
             <h3>1. Tỷ lệ Inactive New &amp; Tỷ lệ SC đã chăm sóc khách New</h3>
             ${wrRenderCareRateTable(bsc.careRate)}
-
-            <h3>2. Diễn biến Tỷ lệ Inactive New theo tháng năm 2026</h3>
-            ${wrRenderMonthlyInactiveTable(bsc.monthlyInactive)}
         </section>
 
-        <!-- 7. CÁC TỆP TRIỂN KHAI -->
+        <!-- 8. CÁC TỆP TRIỂN KHAI -->
         <section>
-            <h2>VII. CÁC TỆP TRIỂN KHAI TRỌNG ĐIỂM</h2>
+            <h2>VIII. CÁC TỆP TRIỂN KHAI TRỌNG ĐIỂM</h2>
             <p>Báo cáo chi tiết kết quả rà soát và hỗ trợ 3 tệp khách hàng chiến lược:</p>
 
             <h3>1. Nhóm F&amp;B lớn / lỗi</h3>
@@ -2734,9 +2709,9 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             ${wrRenderTiepRetailTable(bsc.tiepTrienKhai?.retail || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.retail : null))}
         </section>
 
-        <!-- 8. ĐỀ XUẤT ĐIỀU HÀNH & KẾ HOẠCH HÀNH ĐỘNG -->
+        <!-- 9. ĐỀ XUẤT ĐIỀU HÀNH & KẾ HOẠCH HÀNH ĐỘNG -->
         <section id="wrSectionProposals">
-            <h2>VIII. ĐỀ XUẤT ĐIỀU HÀNH &amp; KẾ HOẠCH HÀNH ĐỘNG</h2>
+            <h2>IX. ĐỀ XUẤT ĐIỀU HÀNH &amp; KẾ HOẠCH HÀNH ĐỘNG</h2>
             <p>Để đảm bảo hoàn thành vượt mức các mục tiêu kinh doanh và kiểm soát chất lượng khách hàng trong các kỳ tiếp theo, khối CS đề xuất các trọng tâm điều hành sau:</p>
             ${wrBullets([
                 `<b>1. Tuyển dụng &amp; Ổn định quân số:</b> Đẩy nhanh tiến độ tuyển bù định biên còn thiếu cho khu vực miền Trung và miền Nam; phân công kèm cặp 1-1 cho các nhân sự thử việc mới để sớm độc lập phụ trách địa bàn.`,
@@ -2755,11 +2730,11 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             </div>
         </section>
 
-        <!-- 9. CÁC MỤC TÙY CHỈNH (CUSTOM SECTIONS) -->
+        <!-- 10. CÁC MỤC TÙY CHỈNH (CUSTOM SECTIONS) -->
         <div id="wrCustomSectionsDocWrap">
         ${(() => {
             let extra = '';
-            let secIdx = 9;
+            let secIdx = 10;
             if (Array.isArray(manual.customSections) && manual.customSections.length) {
                 manual.customSections.forEach(sec => {
                     const secTitle = sec.title ? sec.title.toUpperCase() : 'MỤC TÙY CHỈNH';
@@ -2863,10 +2838,6 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
             summaryBullets.push(`<b>Vận hành Team Online:</b> Số KH liên hệ đạt <b>${wrInt(actVal)} KH</b> (đạt <b>${pctVal}</b> so với mục tiêu ${wrInt(tgtVal)} KH).`);
         }
     }
-    if (bsc.addonT10?.totalRow) {
-        const totAddon = bsc.addonT10.totalRow;
-        summaryBullets.push(`<b>Tư vấn Addon & Phần cứng:</b> Tổng thực hiện đạt <b>${wrInt(totAddon.total)} dịch vụ</b> (Team Offline: ${wrInt(totAddon.offline)}, Team Online: ${wrInt(totAddon.online)}, đạt <b>${totAddon.pct != null ? totAddon.pct.toFixed(1) + '%' : '-'}</b> kế hoạch tháng).`);
-    }
     if (bsc.fnbIssue?.totalRow) {
         const totFnb = bsc.fnbIssue.totalRow;
         summaryBullets.push(`<b>Chăm sóc F&B lớn:</b> Ghi nhận <b>${wrInt(totFnb.count)} gian hàng</b> phát sinh lỗi kỹ thuật và vận hành; toàn bộ các phản ánh đã được tiếp nhận và phối hợp hỗ trợ.`);
@@ -2912,10 +2883,6 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
     if (bsc.kpiOnlineT9?.totalRow) {
         const totOn = bsc.kpiOnlineT9.totalRow;
         sumTableRows.push(['Impact Team Online', `<b class="wr-kpi-good">${totOn.kpiImpact != null ? totOn.kpiImpact.toFixed(2) + '%' : '-'}</b>`, 'KPI Team Online', `<b class="wr-kpi-good">${totOn.kpiTeam != null ? totOn.kpiTeam.toFixed(2) + '%' : '-'}</b>`]);
-    }
-    if (bsc.addonT10?.totalRow) {
-        const totAddon = bsc.addonT10.totalRow;
-        sumTableRows.push(['Tổng Addon & Phần cứng', `<b>${wrInt(totAddon.total)} dịch vụ</b>`, 'Tỷ lệ đạt Addon', `<b class="${wrKpiTone(totAddon.pct)}">${totAddon.pct != null ? totAddon.pct.toFixed(1) + '%' : '-'}</b>`]);
     }
     if (bsc.fnbIssue?.totalRow) {
         const totFnb = bsc.fnbIssue.totalRow;
@@ -3000,10 +2967,6 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
             <h4>1.3 Tỷ lệ Impact 16 tỉnh thành qua các tháng (T7 - T12)</h4>
             <p>Số liệu tỷ lệ Impact thực tế qua các tháng từ Google Sheets:</p>
             ${wrRenderProvinceImpactTable(bsc.provinceImpact)}
-
-            <h4>1.4 Tư vấn chuyển Addon &amp; Phần cứng Tháng 11</h4>
-            <p>Kết quả tư vấn giải pháp Addon và Phần cứng giữa Team Offline và Team Online:</p>
-            ${wrRenderAddonT10Table(bsc.addonT10)}
 
             <h3>2. Kết quả hoạt động Team Online</h3>
             <h4>2.1 Kết quả thực hiện mục tiêu Team Online</h4>
@@ -3202,9 +3165,6 @@ async function generateWeeklyReport() {
                 : null,
             kpiOfflineT10: (typeof normalizeKpiOfflineT10Data === 'function' && BAOCAOSC_STATE?.kpiOfflineT10) 
                 ? normalizeKpiOfflineT10Data(BAOCAOSC_STATE.kpiOfflineT10) 
-                : null,
-            addonT10: (typeof normalizeAddonT10Data === 'function' && BAOCAOSC_STATE?.addonT10) 
-                ? normalizeAddonT10Data(BAOCAOSC_STATE.addonT10) 
                 : null,
             muctieuOffline: BAOCAOSC_STATE?.muctieuOffline || (typeof MUCTIEU_STATE !== 'undefined' ? MUCTIEU_STATE.offline : null),
             muctieuOnline: BAOCAOSC_STATE?.muctieuOnline || (typeof MUCTIEU_STATE !== 'undefined' ? MUCTIEU_STATE.online : null)
