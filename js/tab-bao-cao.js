@@ -1936,9 +1936,9 @@ function wrRenderProvinceImpactTable(provinceImpact) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 8. KPI Coacher Team Offline Tháng 11 (Sheet baocaotuan AJ13:AP17)
+// 8. KPI Coacher Team Offline Tháng 11 (Sheet baocaotuan AJ12:AQ16)
 function wrRenderKpiOfflineT10Table(kpiOff) {
-    const headers = ['Coacher / Khu Vực', 'Số Nhân Sự', 'Active Ngày Check-in', 'Điểm Tổng', 'Addon', 'KPI Team', 'Impact'];
+    const headers = ['Coacher / Khu Vực', 'Số Nhân Sự', 'Active Ngày Check-in', 'Điểm Tổng', 'Addon', 'KPI Team', 'Impact', 'SLA'];
     let rows = [];
 
     const list = kpiOff?.items || [];
@@ -1950,7 +1950,8 @@ function wrRenderKpiOfflineT10Table(kpiOff) {
             `${it.kpiTotalScore != null ? it.kpiTotalScore.toFixed(1) + '%' : '-'}`,
             `${it.kpiAddon != null ? it.kpiAddon.toFixed(1) + '%' : '-'}`,
             `<b><span class="${wrKpiTone(it.kpiTeam)}">${it.kpiTeam != null ? it.kpiTeam.toFixed(1) + '%' : '-'}</span></b>`,
-            `${it.impact != null ? it.impact.toFixed(1) + '%' : '-'}`
+            `${it.impact != null ? it.impact.toFixed(1) + '%' : '-'}`,
+            `${it.sla != null ? it.sla.toFixed(1) + '%' : '-'}`
         ]);
         const tot = kpiOff.totalRow || kpiOff.total;
         if (tot) {
@@ -1961,11 +1962,12 @@ function wrRenderKpiOfflineT10Table(kpiOff) {
                 `<b>${tot.kpiTotalScore != null ? tot.kpiTotalScore.toFixed(1) + '%' : '-'}</b>`,
                 `<b>${tot.kpiAddon != null ? tot.kpiAddon.toFixed(1) + '%' : '-'}</b>`,
                 `<b>${tot.kpiTeam != null ? tot.kpiTeam.toFixed(1) + '%' : '-'}</b>`,
-                `<b>${tot.impact != null ? tot.impact.toFixed(1) + '%' : '-'}</b>`
+                `<b>${tot.impact != null ? tot.impact.toFixed(1) + '%' : '-'}</b>`,
+                `<b>${tot.sla != null ? tot.sla.toFixed(1) + '%' : '-'}</b>`
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');

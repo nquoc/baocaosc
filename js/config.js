@@ -29,7 +29,7 @@ const API_BAOCAOSC_IMPACT_INDUSTRY = API_BASE + '?sheet=baocaotuan&range=AD14:AG
 const API_BAOCAOSC_HEADCOUNT_REGION = API_BASE + '?sheet=baocaotuan&range=V2:AB5'; // Mục 1.1: Quân số theo Miền & Vị trí
 const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:W30'; // Mục 1.2: Quân số theo Tỉnh thành
 const API_BAOCAOSC_KPI_ONLINE_T9 = API_BASE + '?sheet=baocaotuan&range=AJ2:AP5'; // Mục 5.1: KPI Team Online Tháng 10
-const API_BAOCAOSC_KPI_OFFLINE_T10 = API_BASE + '?sheet=baocaotuan&range=AJ13:AP17'; // Mục 5.2: KPI Team Offline Tháng 11
+const API_BAOCAOSC_KPI_OFFLINE_T10 = API_BASE + '?sheet=baocaotuan&range=AJ12:AQ16'; // Mục 5.2: KPI Team Offline Tháng 11
 const API_BAOCAOSC_ADDON_T10 = API_BASE + '?sheet=baocaotuan&range=AJ22:AO30'; // Mục 5.3: Tư Vấn Chuyển Addon Tháng 11
 const API_KPI_ONLINE = API_BASE + '?sheet=KPI%20online'; // Endpoint cho Tab 7: KPI Team Online
 const API_IMPACT_ONLINE_1 = API_BASE + '?sheet=impactonline&range=A1:H6'; // Mục 4.2.1 & Tab KPI: Impact Online Mục 1 (A1:H6)

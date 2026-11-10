@@ -3284,7 +3284,7 @@ function exportImpactSection5Csv() {
 /* ==========================================================================
    MỤC 5: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON (THÁNG 10 & THÁNG 11)
    - 5.1: KPI Team Online Tháng 10 (AJ2:AP5)
-   - 5.2: KPI Team Offline Tháng 11 (AJ13:AP17)
+   - 5.2: KPI Team Offline Tháng 11 (AJ12:AQ16)
    - 5.3: Tư Vấn Chuyển Addon Tháng 11 (AJ22:AO30)
    ========================================================================== */
 
@@ -3406,26 +3406,65 @@ function normalizeKpiOnlineT9Data(rawData) {
 }
 
 /**
- * Chuẩn hóa dữ liệu thô 6.2: KPI Team Offline Tháng 10 (AJ13:AP17)
+ * Chuẩn hóa dữ liệu thô 5.2: KPI Team Offline Tháng 11 (AJ12:AQ16)
  */
 function normalizeKpiOfflineT10Data(rawData) {
   if (!Array.isArray(rawData) || rawData.length < 2) return null;
 
+  // Tìm dòng header thực tế (hỗ trợ cả trường hợp AJ12 là header hoặc AJ12 là tiêu đề gộp)
+  let headerRowIdx = 0;
+  for (let r = 0; r < Math.min(rawData.length, 3); r++) {
+    const row = rawData[r] || [];
+    const nonEmptyCount = row.filter(c => c != null && String(c).trim() !== '').length;
+    const joined = row.map(c => String(c || '').toLowerCase()).join(' ');
+    if (
+      nonEmptyCount >= 3 &&
+      (joined.includes('nhân sự') ||
+        joined.includes('coacher') ||
+        joined.includes('sla') ||
+        joined.includes('điểm tổng') ||
+        joined.includes('active'))
+    ) {
+      headerRowIdx = r;
+      break;
+    }
+  }
+
+  const headerRow = rawData[headerRowIdx] || [];
+  let slaCol = headerRow.findIndex(c => String(c || '').toLowerCase().includes('sla'));
+  if (slaCol < 0) slaCol = 7; // Mặc định cột AQ (index 7 trong dải AJ:AQ)
+
   const items = [];
   let totalRow = null;
 
-  for (let r = 1; r < rawData.length; r++) {
+  for (let r = headerRowIdx + 1; r < rawData.length; r++) {
     const row = rawData[r];
     if (!row || !row.length) continue;
     const name = String(row[0] || '').trim();
     if (!name) continue;
 
+    const lowerName = name.toLowerCase();
     const headcount = parseBscNumber(row[1]);
+    const lowerJoined = row.map(c => String(c || '').toLowerCase()).join(' ');
+    if (
+      lowerName === 'coacher quản lý' ||
+      lowerName === 'coacher / khu vực' ||
+      lowerName === 'stt' ||
+      lowerName.includes('kpi team offline') ||
+      (headcount === 0 && (lowerName.includes('coacher') || lowerName.includes('khu vực')) && lowerJoined.includes('nhân sự'))
+    ) {
+      continue;
+    }
+
     const kpiActive = parseBscPct(row[2]);
     const kpiTotalScore = parseBscPct(row[3]);
     const kpiAddon = parseBscPct(row[4]);
     const kpiTeam = parseBscPct(row[5]);
     const impact = parseBscPct(row[6]);
+
+    const rawSla = row.length > slaCol ? row[slaCol] : undefined;
+    const hasSla = rawSla !== undefined && rawSla !== null && rawSla !== '' && String(rawSla).trim() !== '-';
+    const sla = hasSla ? parseBscPct(rawSla) : null;
 
     const item = {
       name,
@@ -3434,10 +3473,11 @@ function normalizeKpiOfflineT10Data(rawData) {
       kpiTotalScore,
       kpiAddon,
       kpiTeam,
-      impact
+      impact,
+      sla
     };
 
-    if (name.toLowerCase().includes('toàn quốc') || name.toLowerCase() === 'tổng') {
+    if (lowerName.includes('toàn quốc') || lowerName === 'tổng' || lowerName.includes('tổng cộng')) {
       totalRow = item;
     } else {
       items.push(item);
@@ -3670,7 +3710,7 @@ function renderKpiOnlineT9Table(parsed) {
 }
 
 /**
- * BẢNG 2: KPI TEAM OFFLINE THÁNG 10
+ * BẢNG 2: KPI TEAM OFFLINE THÁNG 11 (AJ12:AQ16)
  */
 function renderKpiOfflineT10Table(parsed) {
   const tbl = $('bscKpiOfflineT10Table');
@@ -3682,7 +3722,12 @@ function renderKpiOfflineT10Table(parsed) {
   if (k !== 'default') {
     items.sort((a, b) => {
       if (k === 'name') return dir * a.name.localeCompare(b.name, 'vi');
-      return dir * ((a[k] || 0) - (b[k] || 0));
+      const va = a[k];
+      const vb = b[k];
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      return dir * (va - vb);
     });
   }
 
@@ -3697,6 +3742,7 @@ function renderKpiOfflineT10Table(parsed) {
   thead += `<th onclick="sortKpiOfflineT10('kpiAddon')" style="cursor:pointer;text-align:center;min-width:130px">KPI Addon${sortArrow('kpiAddon')}</th>`;
   thead += `<th onclick="sortKpiOfflineT10('kpiTeam')" style="cursor:pointer;text-align:center;min-width:130px">KPI Team${sortArrow('kpiTeam')}</th>`;
   thead += `<th onclick="sortKpiOfflineT10('impact')" style="cursor:pointer;text-align:center;min-width:130px">Tỷ Lệ Impact${sortArrow('impact')}</th>`;
+  thead += `<th onclick="sortKpiOfflineT10('sla')" style="cursor:pointer;text-align:center;min-width:110px">SLA${sortArrow('sla')}</th>`;
   thead += '</tr></thead>';
 
   let tbody = '<tbody>';
@@ -3710,6 +3756,7 @@ function renderKpiOfflineT10Table(parsed) {
     tbody += `<td style="text-align:center">${getKpiPercentBadge(item.kpiAddon, 50)}</td>`;
     tbody += `<td style="text-align:center">${getKpiPercentBadge(item.kpiTeam, 50)}</td>`;
     tbody += `<td style="text-align:center">${getKpiPercentBadge(item.impact, 50)}</td>`;
+    tbody += `<td style="text-align:center">${getKpiPercentBadge(item.sla, 50)}</td>`;
     tbody += '</tr>';
   });
   tbody += '</tbody>';
@@ -3726,6 +3773,7 @@ function renderKpiOfflineT10Table(parsed) {
     tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.kpiAddon, 50)}</td>`;
     tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.kpiTeam, 50)}</td>`;
     tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.impact, 50)}</td>`;
+    tfoot += `<td style="text-align:center;font-weight:800">${getKpiPercentBadge(tot.sla, 50)}</td>`;
     tfoot += '</tr></tfoot>';
   }
 
@@ -3938,10 +3986,10 @@ function exportKpiOfflineT10Csv() {
   if (!parsed) return;
 
   const lines = [];
-  lines.push(['BÁO CÁO SC - MỤC 5.2: KPI TEAM OFFLINE THÁNG 11 (AJ13:AP17)']);
+  lines.push(['BÁO CÁO SC - MỤC 5.2: KPI TEAM OFFLINE THÁNG 11 (AJ12:AQ16)']);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
-  lines.push(['STT', 'Coacher Quản Lý', 'Số Nhân Sự', 'KPI Active Ngày Checkin (%)', 'KPI Điểm Tổng (%)', 'KPI Addon (%)', 'KPI Team (%)', 'Tỷ Lệ Impact (%)']);
+  lines.push(['STT', 'Coacher Quản Lý', 'Số Nhân Sự', 'KPI Active Ngày Checkin (%)', 'KPI Điểm Tổng (%)', 'KPI Addon (%)', 'KPI Team (%)', 'Tỷ Lệ Impact (%)', 'SLA (%)']);
 
   parsed.items.forEach((it, idx) => {
     lines.push([
@@ -3952,7 +4000,8 @@ function exportKpiOfflineT10Csv() {
       it.kpiTotalScore.toFixed(2) + '%',
       it.kpiAddon.toFixed(2) + '%',
       it.kpiTeam.toFixed(2) + '%',
-      it.impact.toFixed(2) + '%'
+      it.impact.toFixed(2) + '%',
+      it.sla != null ? it.sla.toFixed(2) + '%' : '–'
     ]);
   });
 
@@ -3966,7 +4015,8 @@ function exportKpiOfflineT10Csv() {
       tot.kpiTotalScore.toFixed(2) + '%',
       tot.kpiAddon.toFixed(2) + '%',
       tot.kpiTeam.toFixed(2) + '%',
-      tot.impact.toFixed(2) + '%'
+      tot.impact.toFixed(2) + '%',
+      tot.sla != null ? tot.sla.toFixed(2) + '%' : '–'
     ]);
   }
 
