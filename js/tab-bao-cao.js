@@ -260,8 +260,9 @@ async function wrFetchSheet(tabName) {
     if (tabName === 'thongke') fetchUrl += '&range=K3:AQ11';
     if (tabName === 'kpi') fetchUrl += '&range=A16:O27';
 
-    const response = await fetch(fetchUrl);
-    const result = await response.json();
+    const result = typeof safeFetchJson === 'function'
+        ? await safeFetchJson(fetchUrl, 2)
+        : await (await fetch(typeof appendAuthKey === 'function' ? appendAuthKey(fetchUrl) : fetchUrl)).json();
     if (!result || result.status !== 'success') {
         throw new Error(`Không tải được sheet ${tabName}: ${result && result.message ? result.message : 'Không rõ lỗi'}`);
     }
@@ -3949,6 +3950,12 @@ function initWeeklyReportTab() {
             preview.innerHTML = window.weeklyReportState.html;
         }
         wrInitDirectEditing();
+    } else if (preview && !document.getElementById('weeklyReportDocument') && typeof generateWeeklyReport === 'function' && !window._wrAutoGenerating) {
+        window._wrAutoGenerating = true;
+        preview.innerHTML = '<div class="wr-empty">⏳ Đang tự động tổng hợp dữ liệu Báo Cáo Điều Hành...</div>';
+        Promise.resolve(generateWeeklyReport()).finally(() => {
+            window._wrAutoGenerating = false;
+        });
     }
 
     renderWeeklyReportSnapshotInfo();
