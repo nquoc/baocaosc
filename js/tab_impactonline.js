@@ -43,9 +43,11 @@ async function loadImpactOnline(forceReload = false, isSilent = false) {
     btn.disabled = true;
     btn.textContent = '⏳ Đang tải…';
   }
-  if (badge && !isSilent) {
-    badge.className = 'badge b-load';
-    badge.textContent = 'Đang tải…';
+  const bscBadge = $('bscImpactOnlineSrcBadge');
+  if (!isSilent) {
+    [badge, bscBadge].forEach(b => {
+      if (b) { b.className = 'badge b-load'; b.textContent = 'Đang tải…'; }
+    });
   }
 
   // 1. Kiểm tra IndexedDB Smart Cache: Hiển thị ngay < 0.05s và TỰ ĐỘNG đồng bộ từ Google Sheets (Stale-While-Revalidate)
@@ -66,10 +68,9 @@ async function loadImpactOnline(forceReload = false, isSilent = false) {
 
         IMPACT_ONLINE_STATE = cached;
         renderImpactOnline();
-        if (badge) {
-          badge.className = 'badge b-load';
-          badge.textContent = `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`;
-        }
+        [badge, bscBadge].forEach(b => {
+          if (b) { b.className = 'badge b-load'; b.textContent = `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`; }
+        });
         // Không return! Tự động tiếp tục gọi API Google Sheets để kéo số mới nhất
       }
     } catch (e) {
@@ -77,7 +78,9 @@ async function loadImpactOnline(forceReload = false, isSilent = false) {
     }
   }
 
-  if (typeof _isFetchingImpactOnline !== 'undefined' && _isFetchingImpactOnline) return;
+  if (typeof _isFetchingImpactOnline !== 'undefined' && _isFetchingImpactOnline && window._impactOnlinePromise) {
+    return window._impactOnlinePromise;
+  }
   window._isFetchingImpactOnline = true;
 
   // 2. Tải trực tiếp từ Google Apps Script API (sheet impactonline: A1:H6 & A9:H23)
@@ -85,84 +88,99 @@ async function loadImpactOnline(forceReload = false, isSilent = false) {
   const url1 = `${API_IMPACT_ONLINE_1}&_t=${t}`;
   const url2 = `${API_IMPACT_ONLINE_2}&_t=${t + 1}`;
 
-  try {
-    const [res1, res2] = await Promise.all([
-      safeFetchJson(url1, 2),
-      safeFetchJson(url2, 2)
-    ]);
-
-    const data1 = res1 && res1.data ? res1.data : (Array.isArray(res1) ? res1 : null);
-    const data2 = res2 && res2.data ? res2.data : (Array.isArray(res2) ? res2 : null);
-
-    if (!data1 && !data2) {
-      throw new Error('Không nhận được dữ liệu từ sheet impactonline.');
-    }
-
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-
-    IMPACT_ONLINE_STATE = {
-      muc1: data1,
-      muc2: data2,
-      savedAt: Date.now(),
-      timeStr: timeStr
-    };
-
-    // Lưu cache IndexedDB
+  window._impactOnlinePromise = (async () => {
     try {
-      const db = await openDB();
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).put(IMPACT_ONLINE_STATE, CACHE_KEY_IMPACT_ONLINE);
-    } catch (e) {}
+      const [res1, res2] = await Promise.all([
+        safeFetchJson(url1, 2),
+        safeFetchJson(url2, 2)
+      ]);
 
-    if (badge) {
-      badge.className = 'badge b-live';
-      badge.textContent = `API trực tiếp ${timeStr}`;
-    }
+      const data1 = res1 && res1.data ? res1.data : (Array.isArray(res1) ? res1 : null);
+      const data2 = res2 && res2.data ? res2.data : (Array.isArray(res2) ? res2 : null);
 
-    renderImpactOnline();
+      if (!data1 && !data2) {
+        throw new Error('Không nhận được dữ liệu từ sheet impactonline.');
+      }
 
-    if (!isSilent && forceReload) {
-      showToast('Đã cập nhật dữ liệu Impact Online mới nhất!', true);
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+      IMPACT_ONLINE_STATE = {
+        muc1: data1,
+        muc2: data2,
+        savedAt: Date.now(),
+        timeStr: timeStr
+      };
+
+      // Lưu cache IndexedDB
+      try {
+        const db = await openDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put(IMPACT_ONLINE_STATE, CACHE_KEY_IMPACT_ONLINE);
+      } catch (e) {}
+
+      renderImpactOnline();
+
+      [badge, bscBadge].forEach(b => {
+        if (b) { b.className = 'badge b-live'; b.textContent = `API trực tiếp ${timeStr}`; }
+      });
+
+      if (!isSilent && forceReload) {
+        showToast('Đã cập nhật dữ liệu Impact Online mới nhất!', true);
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải Impact Online:', err);
+      [badge, bscBadge].forEach(b => {
+        if (b) { b.className = 'badge b-err'; b.textContent = 'Lỗi tải API'; }
+      });
+      if (!IMPACT_ONLINE_STATE || !IMPACT_ONLINE_STATE.muc1) {
+        ['impactOnlineTbl1Container', 'bscImpactOnlineTbl1Container'].forEach(id => {
+          const c1 = $(id);
+          if (c1) c1.innerHTML = `<div style="padding:16px;color:#ef4444;text-align:center">⚠️ Không thể tải dữ liệu Mục 1 (A1:H6): ${esc(err.message || String(err))}</div>`;
+        });
+      }
+      if (!IMPACT_ONLINE_STATE || !IMPACT_ONLINE_STATE.muc2) {
+        ['impactOnlineTbl2Container', 'bscImpactOnlineTbl2Container'].forEach(id => {
+          const c2 = $(id);
+          if (c2) c2.innerHTML = `<div style="padding:16px;color:#ef4444;text-align:center">⚠️ Không thể tải dữ liệu Mục 2 (A9:H23): ${esc(err.message || String(err))}</div>`;
+        });
+      }
+    } finally {
+      window._isFetchingImpactOnline = false;
+      window._impactOnlinePromise = null;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '⟳ Tải lại Impact Online';
+      }
     }
-  } catch (err) {
-    console.error('Lỗi khi tải Impact Online:', err);
-    if (badge) {
-      badge.className = 'badge b-err';
-      badge.textContent = 'Lỗi tải API';
-    }
-    const c1 = $('impactOnlineTbl1Container');
-    const c2 = $('impactOnlineTbl2Container');
-    if (c1 && (!IMPACT_ONLINE_STATE || !IMPACT_ONLINE_STATE.muc1)) {
-      c1.innerHTML = `<div style="padding:16px;color:#ef4444;text-align:center">⚠️ Không thể tải dữ liệu Mục 1 (A1:H6): ${esc(err.message || String(err))}</div>`;
-    }
-    if (c2 && (!IMPACT_ONLINE_STATE || !IMPACT_ONLINE_STATE.muc2)) {
-      c2.innerHTML = `<div style="padding:16px;color:#ef4444;text-align:center">⚠️ Không thể tải dữ liệu Mục 2 (A9:H23): ${esc(err.message || String(err))}</div>`;
-    }
-  } finally {
-    window._isFetchingImpactOnline = false;
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = '⟳ Tải lại Impact Online';
-    }
-  }
+  })();
+
+  return window._impactOnlinePromise;
 }
 
 /**
- * Render toàn bộ giao diện Tab Impact Online
+ * Render toàn bộ giao diện Tab Impact Online & Mục 4.2 Báo Cáo SC
  */
 function renderImpactOnline() {
   const d1 = IMPACT_ONLINE_STATE.muc1;
   const d2 = IMPACT_ONLINE_STATE.muc2;
 
-  renderImpactOnlineTable(d1, 'impactOnlineTbl1Container', 'muc1');
-  renderImpactOnlineTable(d2, 'impactOnlineTbl2Container', 'muc2');
+  renderImpactOnlineTable(d1, 'impactOnlineTbl1Container', 'muc1', false);
+  renderImpactOnlineTable(d2, 'impactOnlineTbl2Container', 'muc2', false);
+  renderImpactOnlineTable(d1, 'bscImpactOnlineTbl1Container', 'muc1', true);
+  renderImpactOnlineTable(d2, 'bscImpactOnlineTbl2Container', 'muc2', true);
+
+  const bscBadge = $('bscImpactOnlineSrcBadge');
+  if (bscBadge && IMPACT_ONLINE_STATE && IMPACT_ONLINE_STATE.timeStr && !window._isFetchingImpactOnline) {
+    bscBadge.className = 'badge b-live';
+    bscBadge.textContent = `Đã đồng bộ ${IMPACT_ONLINE_STATE.timeStr}`;
+  }
 }
 
 /**
  * Render một bảng Impact Online theo cấu trúc mảng 2 chiều
  */
-function renderImpactOnlineTable(rawData, containerId, sectionKey) {
+function renderImpactOnlineTable(rawData, containerId, sectionKey, ignoreSearch = false) {
   const el = $(containerId);
   if (!el) return;
 
@@ -172,7 +190,7 @@ function renderImpactOnlineTable(rawData, containerId, sectionKey) {
   }
 
   const headers = rawData[0] || [];
-  const query = IMPACT_ONLINE_SEARCH;
+  const query = ignoreSearch ? '' : IMPACT_ONLINE_SEARCH;
 
   let html = '<table class="excel-table"><thead><tr>';
   headers.forEach((h, idx) => {

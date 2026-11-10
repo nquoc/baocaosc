@@ -8,9 +8,9 @@
 const SA_SPREADSHEET_ID = '1Wghthkrt0A8QQ08gDVSnQO55ix8CGCZHt87qhRcpKEY';
 const SA_SHEET_NAME = 'Các tiệp triển khai';
 const SA_RANGES = [
-  `'${SA_SHEET_NAME}'!A1:B50`,  // Mục 5.1: Nhóm FNB lớn / lỗi (cột A:B)
-  `'${SA_SHEET_NAME}'!D1:H60`,  // Mục 5.2: Nhóm Booking 3 Hotel sao (cột D:H)
-  `'${SA_SHEET_NAME}'!J1:N60`   // Mục 5.3: Nhóm retail lớn HDDT (cột J:N)
+  `'${SA_SHEET_NAME}'!A1:B50`,  // Mục 7.1: Nhóm FNB lớn / lỗi (cột A:B)
+  `'${SA_SHEET_NAME}'!D1:H60`,  // Mục 7.2: Nhóm Booking 3 Hotel sao (cột D:H)
+  `'${SA_SHEET_NAME}'!J1:N60`   // Mục 7.3: Nhóm retail lớn HDDT (cột J:N)
 ];
 
 const SA_CREDENTIALS = {
@@ -1162,7 +1162,7 @@ function exportTiepFnbCsv() {
   if (!p) return showToast('Chưa có dữ liệu F&B để xuất CSV', false);
 
   const lines = [
-    ['BÁO CÁO CÁC TỆP TRIỂN KHAI - MỤC 5.1: NHÓM FNB LỚN / LỖI (' + p.month + ')'],
+    ['BÁO CÁO CÁC TỆP TRIỂN KHAI - MỤC 7.1: NHÓM FNB LỚN / LỖI (' + p.month + ')'],
     ['STT', 'Nhóm Lỗi / Vấn Đề', 'Số Lượng Case', 'Tỷ Trọng (%)']
   ];
 
@@ -1182,7 +1182,7 @@ function exportTiepBookingCsv() {
   if (!p) return showToast('Chưa có dữ liệu Booking để xuất CSV', false);
 
   const lines = [
-    ['BÁO CÁO CÁC TỆP TRIỂN KHAI - MỤC 5.2: NHÓM BOOKING 3 HOTEL SAO (' + p.month + ')'],
+    ['BÁO CÁO CÁC TỆP TRIỂN KHAI - MỤC 7.2: NHÓM BOOKING 3 HOTEL SAO (' + p.month + ')'],
     [],
     ['--- BẢNG 1: TÌNH TRẠNG TRAO ĐỔI & IMPACT ---'],
     p.tbl1.headers
@@ -1212,7 +1212,7 @@ function exportTiepRetailCsv() {
   if (!p) return showToast('Chưa có dữ liệu Retail để xuất CSV', false);
 
   const lines = [
-    ['BÁO CÁO CÁC TỆP TRIỂN KHAI - MỤC 5.3: NHÓM RETAIL LỚN HDDT (' + p.month + ')'],
+    ['BÁO CÁO CÁC TỆP TRIỂN KHAI - MỤC 7.3: NHÓM RETAIL LỚN HDDT (' + p.month + ')'],
     [],
     ['--- BẢNG 1: THỰC TRẠNG CỬA HÀNG & IMPACT ---'],
     p.tbl1.headers
@@ -1251,7 +1251,7 @@ function exportAllTiepTrienKhaiCsv() {
 
   const pfnb = TIEP_TRIEN_KHAI_STATE.fnb;
   if (pfnb) {
-    lines.push(['============================== 5.1: NHÓM FNB LỚN / LỖI ==============================']);
+    lines.push(['============================== 7.1: NHÓM FNB LỚN / LỖI ==============================']);
     lines.push(['STT', 'Nhóm Lỗi / Vấn Đề', 'Số Lượng Case', 'Tỷ Trọng (%)']);
     pfnb.items.forEach(it => lines.push([it.id, it.name, it.count, it.pct.toFixed(2) + '%']));
     lines.push(['TỔNG CỘNG', '', pfnb.grandTotal, '100.00%']);
@@ -1261,7 +1261,7 @@ function exportAllTiepTrienKhaiCsv() {
 
   const pbook = TIEP_TRIEN_KHAI_STATE.booking;
   if (pbook) {
-    lines.push(['============================== 5.2: NHÓM BOOKING 3 HOTEL SAO ==============================']);
+    lines.push(['============================== 7.2: NHÓM BOOKING 3 HOTEL SAO ==============================']);
     lines.push(pbook.tbl1.headers);
     pbook.tbl1.rows.forEach((r, i) => lines.push([i + 1, ...r]));
     if (pbook.tbl1.total) lines.push(['TỔNG CỘNG', ...pbook.tbl1.total.slice(1)]);
@@ -1274,7 +1274,7 @@ function exportAllTiepTrienKhaiCsv() {
 
   const pret = TIEP_TRIEN_KHAI_STATE.retail;
   if (pret) {
-    lines.push(['============================== 5.3: NHÓM RETAIL LỚN HDDT ==============================']);
+    lines.push(['============================== 7.3: NHÓM RETAIL LỚN HDDT ==============================']);
     lines.push(pret.tbl1.headers);
     pret.tbl1.rows.forEach((r, i) => lines.push([i + 1, ...r]));
     if (pret.tbl1.total) lines.push(['TỔNG CỘNG', ...pret.tbl1.total.slice(1)]);

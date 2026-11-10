@@ -13,27 +13,27 @@ const API_PHANCUNG_OCT = API_BASE + '?sheet=opp'; // Endpoint cho Mục 2: Chi T
 const API_PHANCUNG_SOURCE = API_BASE + '?sheet=phancung&range=T1:W9'; // Endpoint cho Mục 3.1: Bán Hàng Từ Nguồn
 const API_PHANCUNG_SALE = API_BASE + '?sheet=phancung&range=Y1:AB6'; // Endpoint cho Mục 3.2: Thống Kê SL Đơn Từ Sale
 const API_PHANCUNG_CONVERSION = API_BASE + '?sheet=phancung&range=AE1:AQ9'; // Endpoint cho Mục 4: Báo Cáo Tỷ Lệ Chốt Theo Nguồn (T10 & T11)
-const API_BAOCAOSC_MONTHLY_INACTIVE = API_BASE + '?sheet=baocaotuan&range=AV2:BB15'; // Mục 2: Tỷ Lệ Inactive Theo Tháng Năm 2026
-// KPI Mục tiêu Active Rate (Mục 3)
+const API_BAOCAOSC_MONTHLY_INACTIVE = API_BASE + '?sheet=baocaotuan&range=AV2:BB15'; // Mục 8: Tỷ Lệ Inactive Theo Tháng Năm 2026
+// KPI Mục tiêu Active Rate (Mục 2)
 var ACTIVE_RATE_KPI = {
   retail: 67.8,
   fnb: 75.3,
   booking: 66.0
 };
-const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14'; // Mục 3: Active Rate Năm 2026
-const API_BAOCAOSC_CARE_RATE = API_BASE + '?sheet=baocaotuan&range=F2:I6'; // Mục 4: Tỷ Lệ Chăm Khách New T10
-const API_BAOCAOSC_FNB_ISSUE = API_BASE + '?sheet=baocaotuan&range=AR2:AS9'; // Mục 5: Triển Khai Tệp FNB Lớn
-const API_BAOCAOSC_PROVINCE_IMPACT = API_BASE + '?sheet=baocaotuan&range=K2:Q19'; // Mục 6: Impact Theo Tỉnh Thành Phố
-const API_BAOCAOSC_IMPACT_DATA_SOURCE = API_BASE + '?sheet=baocaotuan&range=AD1:AG11'; // Mục 7.1: Impact theo Nguồn Data
-const API_BAOCAOSC_IMPACT_INDUSTRY = API_BASE + '?sheet=baocaotuan&range=AD14:AG20'; // Mục 7.2: Impact theo Ngành Hàng
-const API_BAOCAOSC_HEADCOUNT_REGION = API_BASE + '?sheet=baocaotuan&range=V2:AB5'; // Mục 8.1: Quân số theo Miền & Vị trí
-const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:W30'; // Mục 8.2: Quân số theo Tỉnh thành
-const API_BAOCAOSC_KPI_ONLINE_T9 = API_BASE + '?sheet=baocaotuan&range=AJ2:AP5'; // Mục 9.1: KPI Team Online Tháng 10
-const API_BAOCAOSC_KPI_OFFLINE_T10 = API_BASE + '?sheet=baocaotuan&range=AJ13:AP17'; // Mục 9.2: KPI Team Offline Tháng 11
-const API_BAOCAOSC_ADDON_T10 = API_BASE + '?sheet=baocaotuan&range=AJ22:AO30'; // Mục 9.3: Tư Vấn Chuyển Addon Tháng 11
+const API_BAOCAOSC_ACTIVE_RATE = API_BASE + '?sheet=baocaotuan&range=A2:D14'; // Mục 2: Active Rate Năm 2026
+const API_BAOCAOSC_CARE_RATE = API_BASE + '?sheet=baocaotuan&range=F2:I6'; // Mục 6: Tỷ Lệ Chăm Khách New T10
+const API_BAOCAOSC_FNB_ISSUE = API_BASE + '?sheet=baocaotuan&range=AR2:AS9'; // Mục 7.1 (Legacy): Triển Khai Tệp FNB Lớn
+const API_BAOCAOSC_PROVINCE_IMPACT = API_BASE + '?sheet=baocaotuan&range=K2:Q19'; // Mục 4.1.1: Impact Theo Tỉnh Thành Phố
+const API_BAOCAOSC_IMPACT_DATA_SOURCE = API_BASE + '?sheet=baocaotuan&range=AD1:AG11'; // Mục 4.1.2: Impact theo Nguồn Data
+const API_BAOCAOSC_IMPACT_INDUSTRY = API_BASE + '?sheet=baocaotuan&range=AD14:AG20'; // Mục 4.1.3: Impact theo Ngành Hàng
+const API_BAOCAOSC_HEADCOUNT_REGION = API_BASE + '?sheet=baocaotuan&range=V2:AB5'; // Mục 1.1: Quân số theo Miền & Vị trí
+const API_BAOCAOSC_HEADCOUNT_PROVINCE = API_BASE + '?sheet=baocaotuan&range=U7:W30'; // Mục 1.2: Quân số theo Tỉnh thành
+const API_BAOCAOSC_KPI_ONLINE_T9 = API_BASE + '?sheet=baocaotuan&range=AJ2:AP5'; // Mục 5.1: KPI Team Online Tháng 10
+const API_BAOCAOSC_KPI_OFFLINE_T10 = API_BASE + '?sheet=baocaotuan&range=AJ13:AP17'; // Mục 5.2: KPI Team Offline Tháng 11
+const API_BAOCAOSC_ADDON_T10 = API_BASE + '?sheet=baocaotuan&range=AJ22:AO30'; // Mục 5.3: Tư Vấn Chuyển Addon Tháng 11
 const API_KPI_ONLINE = API_BASE + '?sheet=KPI%20online'; // Endpoint cho Tab 7: KPI Team Online
-const API_IMPACT_ONLINE_1 = API_BASE + '?sheet=impactonline&range=A1:H6'; // Endpoint cho Tab KPI: Impact Online Mục 1 (A1:H6)
-const API_IMPACT_ONLINE_2 = API_BASE + '?sheet=impactonline&range=A9:H23'; // Endpoint cho Tab KPI: Impact Online Mục 2 (A9:H23)
+const API_IMPACT_ONLINE_1 = API_BASE + '?sheet=impactonline&range=A1:H6'; // Mục 4.2.1 & Tab KPI: Impact Online Mục 1 (A1:H6)
+const API_IMPACT_ONLINE_2 = API_BASE + '?sheet=impactonline&range=A9:H23'; // Mục 4.2.2 & Tab KPI: Impact Online Mục 2 (A9:H23)
 const API_DATATON_ONLINE = API_BASE + '?sheet=ton%20online'; // Endpoint cho Tab 8: Data Tồn Online
 const API_DATATON_OFFLINE = API_BASE + '?sheet=ton%20offline'; // Endpoint cho Tab 8: Data Tồn Offline
 

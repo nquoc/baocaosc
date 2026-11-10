@@ -575,7 +575,7 @@
           <span>📑 Báo Cáo Tổng Hợp SC (Báo Cáo Tuần &amp; Chỉ Số Vận Hành)</span>
         </h2>
         <div class="mut sm" style="margin-top:3px">
-          Dữ liệu đồng bộ trực tiếp từ Google Sheets (sheet <b>baocaotuan</b>) · Hỗ trợ so sánh biến động tháng liền kề xanh / đỏ
+          Dữ liệu đồng bộ trực tiếp từ Google Sheets · Hỗ trợ so sánh biến động tháng liền kề xanh / đỏ
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -585,99 +585,66 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 1: MỤC TIÊU TEAM OFFLINE & ONLINE ==================== -->
-  <div id="bscSecMuctieu" class="bsc-centered-block">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 1 -->
+  <!-- ==================== MỤC 1: QUÂN SỐ ĐỘI NGŨ SC ==================== -->
+  <div id="bscSecHeadcount" class="bsc-centered-block">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#2563eb;color:#ffffff;letter-spacing:0.5px">MỤC 1</span>
-        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Báo Cáo Mục Tiêu &amp; Tiến Độ Tháng (Team Offline &amp; Team Online)</h2>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#8b5cf6;color:#ffffff;letter-spacing:0.5px">MỤC 1</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Quân Số Đội Ngũ SC (Theo Miền, Vị Trí &amp; Tỉnh Thành)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>muctieu</b> (A2:I13 &amp; A16:I28) · Đồng bộ trực tiếp Google Sheets
+        Nguồn: Sheet <b>baocaotuan</b>
       </div>
     </div>
 
     <!-- CÁC THẺ KPI TÓM TẮT MỤC 1 -->
-    <div class="grid kpis" id="bscMuctieuSummaryCards" style="margin-bottom:16px"></div>
+    <div class="grid kpis" id="bscHeadcountSummaryCards" style="margin-bottom:16px"></div>
 
-    <!-- 1.1: BÁO CÁO MỤC TIÊU TEAM OFFLINE -->
-    <div id="bscSecMuctieuOffline" class="card" style="margin-bottom:18px;padding:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h3 style="margin:0;font-size:15px;color:#facc15;display:flex;align-items:center;gap:6px">
-            <span>🏢 1.1: Mục Tiêu Team Offline</span>
-          </h3>
-        </div>
-        <div>
-          <button onclick="exportMuctieuOfflineCsv()" style="background:#2563eb;color:#fff;border-color:#3b82f6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 1.1</button>
-        </div>
-      </div>
-      <div class="excel-table-wrap">
-        <div id="bscOfflineTblContainer" style="overflow-x:auto">Đang tải dữ liệu…</div>
-      </div>
-    </div>
-
-    <!-- 1.2: BÁO CÁO MỤC TIÊU TEAM ONLINE -->
-    <div id="bscSecMuctieuOnline" class="card" style="margin-bottom:18px;padding:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h3 style="margin:0;font-size:15px;color:#38bdf8;display:flex;align-items:center;gap:6px">
-            <span>🌐 1.2: Mục Tiêu Team Online</span>
-          </h3>
-        </div>
-        <div>
-          <button onclick="exportMuctieuOnlineCsv()" style="background:#0284c7;color:#fff;border-color:#0ea5e9;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 1.2</button>
-        </div>
-      </div>
-      <div class="excel-table-wrap">
-        <div id="bscOnlineTblContainer" style="overflow-x:auto">Đang tải dữ liệu…</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== MỤC 2: TỶ LỆ INACTIVE THEO THÁNG NĂM 2026 ==================== -->
-  <div id="bscSecMonthlyInactive" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 2 -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#e11d48;color:#ffffff;letter-spacing:0.5px">MỤC 2</span>
-        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Tỷ Lệ Inactive Theo Tháng Năm 2026</h2>
-      </div>
-      <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>baocaotuan</b> (AV2:BB15) · Thống kê Gian hàng ký mới, Inactive &amp; Tỷ lệ SC Chăm sóc
-      </div>
-    </div>
-
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 2 -->
-    <div class="grid kpis" id="bscMonthlyInactiveSummaryCards" style="margin-bottom:16px"></div>
-
-    <!-- BẢNG CHI TIẾT TỶ LỆ INACTIVE THEO THÁNG -->
+    <!-- BẢNG 1: PHÂN BỔ QUÂN SỐ THEO MIỀN & VỊ TRÍ -->
     <div class="card" style="padding:14px 16px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div>
           <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>📊 Bảng Chi Tiết Tỷ Lệ Inactive &amp; Chăm Sóc Theo Tháng (Tháng 1 – Tháng 10/2026)</span>
+            <span>👥 1.1: Phân Bổ Quân Số Theo Miền &amp; Vị Trí</span>
+            <span class="mut sm" style="font-weight:400">(Online · Offline · Sale Phần Cứng · Quản Lý · Thử Việc)</span>
+          </h3>
+        </div>
+        <div>
+          <button onclick="exportHeadcountRegionCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 1.1</button>
+        </div>
+      </div>
+      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscHeadcountRegionTable" class="kpi-table"></table>
+      </div>
+    </div>
+
+    <!-- BẢNG 2: PHÂN BỔ QUÂN SỐ THEO TỈNH THÀNH / KHU VỰC -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📍 1.2: Phân Bổ Quân Số Theo Khu Vực / Tỉnh Thành</span>
             <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
           </h3>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <input type="text" id="bscMonthlyInactiveSearch" placeholder="🔍 Lọc theo tháng..." oninput="onMonthlyInactiveSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
-          <button onclick="exportMonthlyInactiveCsv()" style="background:#e11d48;color:#fff;border-color:#f43f5e;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
+          <input type="text" id="bscHeadcountProvinceSearch" placeholder="🔍 Tìm khu vực..." oninput="onHeadcountProvinceSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
+          <div class="mut sm" id="bscHeadcountProvinceCount">...</div>
+          <button onclick="toggleAllHeadcountClusters()" id="btnToggleHeadcountClusters" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600" title="Thu gọn hoặc mở rộng tất cả các cụm">⮀ Thu/Mở Cụm</button>
+          <button onclick="exportHeadcountProvinceCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 1.2</button>
         </div>
       </div>
-      <div class="wrap" style="max-height:650px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-        <table id="bscMonthlyInactiveTable" class="kpi-table"></table>
+      <div class="wrap" style="max-height:600px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscHeadcountProvinceTable" class="kpi-table"></table>
       </div>
     </div>
   </div>
 
-  <!-- ==================== MỤC 3: ACTIVE RATE NĂM 2026 ==================== -->
+  <!-- ==================== MỤC 2: ACTIVE RATE NĂM 2026 ==================== -->
   <div id="bscSecActiveRate" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 3 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#10b981;color:#ffffff;letter-spacing:0.5px">MỤC 3</span>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#10b981;color:#ffffff;letter-spacing:0.5px">MỤC 2</span>
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Active Rate Năm 2026 (Retail · F&amp;B · Booking)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
@@ -709,12 +676,262 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 4: TỶ LỆ CHĂM KHÁCH NEW T10 ==================== -->
-  <div id="bscSecCareRate" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 4 -->
+  <!-- ==================== MỤC 3: MỤC TIÊU TEAM OFFLINE & ONLINE ==================== -->
+  <div id="bscSecMuctieu" class="bsc-centered-block" style="margin-top:24px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#0284c7;color:#ffffff;letter-spacing:0.5px">MỤC 4</span>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#2563eb;color:#ffffff;letter-spacing:0.5px">MỤC 3</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Báo Cáo Mục Tiêu &amp; Tiến Độ Tháng (Team Offline &amp; Team Online)</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Nguồn: Sheet <b>muctieu</b> · Đồng bộ trực tiếp Google Sheets
+      </div>
+    </div>
+
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 3 -->
+    <div class="grid kpis" id="bscMuctieuSummaryCards" style="margin-bottom:16px"></div>
+
+    <!-- 3.1: BÁO CÁO MỤC TIÊU TEAM OFFLINE -->
+    <div id="bscSecMuctieuOffline" class="card" style="margin-bottom:18px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:#facc15;display:flex;align-items:center;gap:6px">
+            <span>🏢 3.1: Mục Tiêu Team Offline</span>
+          </h3>
+        </div>
+        <div>
+          <button onclick="exportMuctieuOfflineCsv()" style="background:#2563eb;color:#fff;border-color:#3b82f6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 3.1</button>
+        </div>
+      </div>
+      <div class="excel-table-wrap">
+        <div id="bscOfflineTblContainer" style="overflow-x:auto">Đang tải dữ liệu…</div>
+      </div>
+    </div>
+
+    <!-- 3.2: BÁO CÁO MỤC TIÊU TEAM ONLINE -->
+    <div id="bscSecMuctieuOnline" class="card" style="margin-bottom:18px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:#38bdf8;display:flex;align-items:center;gap:6px">
+            <span>🌐 3.2: Mục Tiêu Team Online</span>
+          </h3>
+        </div>
+        <div>
+          <button onclick="exportMuctieuOnlineCsv()" style="background:#0284c7;color:#fff;border-color:#0ea5e9;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 3.2</button>
+        </div>
+      </div>
+      <div class="excel-table-wrap">
+        <div id="bscOnlineTblContainer" style="overflow-x:auto">Đang tải dữ liệu…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MỤC 4: TỶ LỆ IMPACT (TEAM OFFLINE & TEAM ONLINE) ==================== -->
+  <div id="bscSecImpact" class="bsc-centered-block" style="margin-top:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#d97706;color:#ffffff;letter-spacing:0.5px">MỤC 4</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Báo Cáo Tỷ Lệ Impact (Team Offline &amp; Team Online)</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Nguồn: Sheet <b>baocaotuan</b> &amp; <b>impactonline</b> · So sánh tháng trước: <span style="color:#10b981;font-weight:700">▲ Tăng</span> · <span style="color:#ef4444;font-weight:700">▼ Giảm</span>
+      </div>
+    </div>
+
+    <!-- 4.1: IMPACT TEAM OFFLINE -->
+    <div id="bscSecImpactOffline">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="font-size:14.5px;font-weight:800;color:#f59e0b">🏢 4.1: Impact Team Offline</span>
+      </div>
+
+      <!-- 4.1.1: IMPACT THEO TỈNH / THÀNH PHỐ (T7 - T12) -->
+      <div id="bscSecProvinceImpact">
+        <div class="grid kpis" id="bscProvinceSummaryCards" style="margin-bottom:16px"></div>
+
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div>
+              <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+                <span>📊 4.1.1: Impact Theo Tỉnh / Thành Phố (T7 – T12)</span>
+                <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+              </h3>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="text" id="bscProvinceSearch" placeholder="🔍 Tìm tỉnh thành..." oninput="onProvinceImpactSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
+              <div class="mut sm" id="bscProvinceTableCount">...</div>
+              <button onclick="exportProvinceImpactCsv()" style="background:#d97706;color:#fff;border-color:#f59e0b;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 4.1.1</button>
+            </div>
+          </div>
+          <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+            <table id="bscProvinceTable" class="kpi-table"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4.1.2 & 4.1.3: IMPACT THEO NGUỒN DATA & NGÀNH HÀNG -->
+      <div id="bscSecImpactSourceIndustry" style="margin-top:16px">
+        <div class="grid kpis" id="bscImpactSummaryCards" style="margin-bottom:16px"></div>
+
+        <div class="bsc-two-tables-grid">
+          <!-- 4.1.2: IMPACT THEO NGUỒN DATA -->
+          <div class="card" style="padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+              <div>
+                <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+                  <span>📁 4.1.2: Impact Theo Nguồn Data</span>
+                  <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+                </h3>
+              </div>
+              <button onclick="exportImpactSourceCsv()" style="background:#0ea5e9;color:#fff;border-color:#38bdf8;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 4.1.2</button>
+            </div>
+            <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+              <table id="bscImpactSourceTable" class="kpi-table"></table>
+            </div>
+          </div>
+
+          <!-- 4.1.3: IMPACT THEO NGÀNH HÀNG -->
+          <div class="card" style="padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+              <div>
+                <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+                  <span>🏢 4.1.3: Impact Theo Ngành Hàng</span>
+                  <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
+                </h3>
+              </div>
+              <button onclick="exportImpactIndustryCsv()" style="background:#8b5cf6;color:#fff;border-color:#a78bfa;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 4.1.3</button>
+            </div>
+            <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+              <table id="bscImpactIndustryTable" class="kpi-table"></table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4.2: IMPACT TEAM ONLINE -->
+    <div id="bscSecImpactOnline" style="margin-top:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:14.5px;font-weight:800;color:#38bdf8">🌐 4.2: Impact Team Online</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span id="bscImpactOnlineSrcBadge" class="badge b-load" style="font-size:11px">Đang tải…</span>
+          <button onclick="loadImpactOnline(true)" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⟳ Tải lại Impact Online</button>
+          <button onclick="exportImpactOnlineAllCsv()" style="background:#2563eb;color:#fff;border-color:#3b82f6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 4.2</button>
+        </div>
+      </div>
+
+      <!-- 4.2.1: IMPACT THEO TỆP (MỤC 1: TỔNG HỢP IMPACT ONLINE) -->
+      <div class="card" style="margin-bottom:16px;padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div>
+            <h3 style="margin:0;font-size:15px;color:#facc15;display:flex;align-items:center;gap:6px">
+              <span>📊 4.2.1: Impact Theo Tệp (Tổng Hợp Impact Online)</span>
+            </h3>
+          </div>
+          <div>
+            <button onclick="exportImpactOnlineCsv('muc1')" style="background:#2563eb;color:#fff;border-color:#3b82f6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 4.2.1</button>
+          </div>
+        </div>
+        <div class="excel-table-wrap">
+          <div id="bscImpactOnlineTbl1Container" style="overflow-x:auto">Đang tải dữ liệu…</div>
+        </div>
+      </div>
+
+      <!-- 4.2.2: IMPACT THEO THÁNG (MỤC 2: CHI TIẾT IMPACT ONLINE) -->
+      <div class="card" style="margin-bottom:16px;padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div>
+            <h3 style="margin:0;font-size:15px;color:#38bdf8;display:flex;align-items:center;gap:6px">
+              <span>📋 4.2.2: Impact Theo Tháng (Chi Tiết Impact Online)</span>
+            </h3>
+          </div>
+          <div>
+            <button onclick="exportImpactOnlineCsv('muc2')" style="background:#0284c7;color:#fff;border-color:#0ea5e9;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 4.2.2</button>
+          </div>
+        </div>
+        <div class="excel-table-wrap">
+          <div id="bscImpactOnlineTbl2Container" style="overflow-x:auto">Đang tải dữ liệu…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MỤC 5: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON ==================== -->
+  <div id="bscSecKpiAddon" class="bsc-centered-block" style="margin-top:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#ec4899;color:#ffffff;letter-spacing:0.5px">MỤC 5</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Hiệu Suất KPI Team &amp; Tư Vấn Chuyển Addon (Tháng 10 &amp; Tháng 11)</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600">
+        Nguồn: Sheet <b>baocaotuan</b>
+      </div>
+    </div>
+
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 5 -->
+    <div class="grid kpis" id="bscKpiAddonSummaryCards" style="margin-bottom:16px"></div>
+
+    <!-- BẢNG 1: KPI TEAM ONLINE THÁNG 10 -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>🌐 5.1: KPI Team Online Tháng 10</span>
+            <span class="mut sm" style="font-weight:400">(Miền Bắc · Miền Nam · Toàn Quốc)</span>
+          </h3>
+        </div>
+        <div>
+          <button onclick="exportKpiOnlineT9Csv()" style="background:#0284c7;color:#fff;border-color:#0ea5e9;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 5.1</button>
+        </div>
+      </div>
+      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscKpiOnlineT9Table" class="kpi-table"></table>
+      </div>
+    </div>
+
+    <!-- BẢNG 2: KPI TEAM OFFLINE THÁNG 11 -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>🏢 5.2: KPI Team Offline Tháng 11</span>
+            <span class="mut sm" style="font-weight:400">(Theo từng Coacher quản lý &amp; Toàn Quốc)</span>
+          </h3>
+        </div>
+        <div>
+          <button onclick="exportKpiOfflineT10Csv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 5.2</button>
+        </div>
+      </div>
+      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscKpiOfflineT10Table" class="kpi-table"></table>
+      </div>
+    </div>
+
+    <!-- BẢNG 3: TƯ VẤN CHUYỂN ADDON THÁNG 11 -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div>
+          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>🔄 5.3: Tư Vấn Chuyển Addon Tháng 11</span>
+            <span class="mut sm" style="font-weight:400">(So sánh Team Offline &amp; Team Online theo từng dịch vụ Addon)</span>
+          </h3>
+        </div>
+        <div>
+          <button onclick="exportAddonT10Csv()" style="background:#059669;color:#fff;border-color:#10b981;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 5.3</button>
+        </div>
+      </div>
+      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscAddonT10Table" class="kpi-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MỤC 6: TỶ LỆ CHĂM KHÁCH NEW T10 ==================== -->
+  <div id="bscSecCareRate" class="bsc-centered-block" style="margin-top:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#0284c7;color:#ffffff;letter-spacing:0.5px">MỤC 6</span>
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Tỷ Lệ Chăm Khách New T10 (Ký Mới · Inactive · SC Chăm)</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
@@ -722,10 +939,10 @@
       </div>
     </div>
 
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 4 -->
+    <!-- CÁC THẺ KPI TÓM TẮT MỤC 6 -->
     <div class="grid kpis" id="bscCareSummaryCards" style="margin-bottom:16px"></div>
 
-    <!-- BẢNG CHI TIẾT MỤC 4 -->
+    <!-- BẢNG CHI TIẾT MỤC 6 -->
     <div class="card" style="padding:14px 16px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div>
@@ -744,12 +961,11 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 5: BÁO CÁO CÁC TỆP TRIỂN KHAI ==================== -->
+  <!-- ==================== MỤC 7: BÁO CÁO CÁC TỆP TRIỂN KHAI ==================== -->
   <div id="bscSecTiepTrienKhai" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 5 -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#ea580c;color:#ffffff;letter-spacing:0.5px">MỤC 5</span>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#ea580c;color:#ffffff;letter-spacing:0.5px">MỤC 7</span>
         <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Báo Cáo Các Tệp Triển Khai (F&amp;B Lớn · Booking 3 Sao · Retail Lớn HĐĐT)</h2>
       </div>
       <div class="mut sm" style="font-weight:600;display:flex;align-items:center;gap:8px">
@@ -766,10 +982,10 @@
             <span>📁 Các tệp triển khai:</span>
           </label>
           <select id="bscSelectTiepTrienKhai" onchange="onBscTiepTrienKhaiChange(this.value)" style="font-size:13px;font-weight:700;color:#38bdf8;background:var(--card-sub);border:1px solid var(--line);border-radius:6px;padding:6px 14px;cursor:pointer">
-            <option value="all">📂 Tất cả các tệp triển khai (F&B · Booking · Retail HĐĐT)</option>
-            <option value="fnb">🍔 5.1: Nhóm FNB lớn / lỗi (Tháng 11)</option>
-            <option value="booking">🏨 5.2: Nhóm Booking 3 Hotel sao (Tháng 10)</option>
-            <option value="retail">🛒 5.3: Nhóm retail lớn HDDT (Tháng 11)</option>
+            <option value="all">📂 Tất cả các tệp triển khai (F&amp;B · Booking · Retail HĐĐT)</option>
+            <option value="fnb">🍔 7.1: Nhóm FNB lớn / lỗi (Tháng 11)</option>
+            <option value="booking">🏨 7.2: Nhóm Booking 3 Hotel sao (Tháng 10)</option>
+            <option value="retail">🛒 7.3: Nhóm retail lớn HDDT (Tháng 11)</option>
           </select>
 
           <!-- Quick Pill Tabs -->
@@ -790,10 +1006,10 @@
 
     <!-- CONTAINER HIỂN THỊ CÁC TỆP -->
     <div id="bscTiepContainer">
-      <!-- 5.1: NHÓM FNB LỚN / LỖI (CỘT A:B) -->
+      <!-- 7.1: NHÓM FNB LỚN / LỖI -->
       <div id="bscSecTiepFnb" style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:14px;font-weight:800;color:#f97316">🍔 5.1: Nhóm FNB Lớn / Lỗi (Tháng 11)</span>
+          <span style="font-size:14px;font-weight:800;color:#f97316">🍔 7.1: Nhóm FNB Lớn / Lỗi (Tháng 11)</span>
         </div>
         <div class="grid kpis" id="bscTiepFnbCards" style="margin-bottom:14px"></div>
         <div class="card" style="padding:14px 16px;margin-bottom:16px">
@@ -806,17 +1022,17 @@
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <input type="text" id="bscTiepFnbSearch" placeholder="🔍 Lọc nhóm lỗi..." oninput="onFnbSearch(this.value)" style="width:170px;font-size:12px;padding:4px 9px">
-              <button onclick="exportTiepFnbCsv()" style="background:#ea580c;color:#fff;border-color:#f97316;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 5.1</button>
+              <button onclick="exportTiepFnbCsv()" style="background:#ea580c;color:#fff;border-color:#f97316;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 7.1</button>
             </div>
           </div>
           <div class="wrap" id="bscTiepFnbTableWrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
         </div>
       </div>
 
-      <!-- 5.2: NHÓM BOOKING 3 HOTEL SAO (CỘT D:H) -->
+      <!-- 7.2: NHÓM BOOKING 3 HOTEL SAO -->
       <div id="bscSecTiepBooking" style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:14px;font-weight:800;color:#0284c7">🏨 5.2: Nhóm Booking 3 Hotel Sao (Tháng 10)</span>
+          <span style="font-size:14px;font-weight:800;color:#0284c7">🏨 7.2: Nhóm Booking 3 Hotel Sao (Tháng 10)</span>
         </div>
         <div class="grid kpis" id="bscTiepBookingCards" style="margin-bottom:14px"></div>
 
@@ -824,7 +1040,7 @@
         <div class="card" style="padding:14px 16px;margin-bottom:16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
             <h3 style="margin:0;font-size:14.5px;color:var(--tx-heading)">📊 Bảng 1: Tình Trạng Trao Đổi &amp; Tỷ Lệ Impact (Booking 3 Sao)</h3>
-            <button onclick="exportTiepBookingCsv()" style="background:#0284c7;color:#fff;border-color:#0ea5e9;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 5.2</button>
+            <button onclick="exportTiepBookingCsv()" style="background:#0284c7;color:#fff;border-color:#0ea5e9;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 7.2</button>
           </div>
           <div class="wrap" id="bscTiepBookingTbl1" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
         </div>
@@ -846,10 +1062,10 @@
         </div>
       </div>
 
-      <!-- 5.3: NHÓM RETAIL LỚN HDDT (CỘT J:N) -->
+      <!-- 7.3: NHÓM RETAIL LỚN HDDT -->
       <div id="bscSecTiepRetail" style="margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:14px;font-weight:800;color:#8b5cf6">🛒 5.3: Nhóm Retail Lớn HĐĐT (Tháng 11)</span>
+          <span style="font-size:14px;font-weight:800;color:#8b5cf6">🛒 7.3: Nhóm Retail Lớn HĐĐT (Tháng 11)</span>
         </div>
         <div class="grid kpis" id="bscTiepRetailCards" style="margin-bottom:14px"></div>
 
@@ -858,7 +1074,7 @@
           <div class="card" style="padding:14px 16px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
               <h3 style="margin:0;font-size:14px;color:var(--tx-heading)">🏪 Bảng 1: Thực Trạng Cửa Hàng &amp; Impact</h3>
-              <button onclick="exportTiepRetailCsv()" style="background:#8b5cf6;color:#fff;border-color:#a78bfa;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 5.3</button>
+              <button onclick="exportTiepRetailCsv()" style="background:#8b5cf6;color:#fff;border-color:#a78bfa;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 7.3</button>
             </div>
             <div class="wrap" id="bscTiepRetailTbl1" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
           </div>
@@ -890,227 +1106,46 @@
     </div>
   </div>
 
-  <!-- ==================== MỤC 6: IMPACT THEO TỈNH THÀNH PHỐ ==================== -->
-  <div id="bscSecProvinceImpact" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 6 -->
+  <!-- ==================== MỤC 8: TỶ LỆ INACTIVE THEO THÁNG NĂM 2026 ==================== -->
+  <div id="bscSecMonthlyInactive" class="bsc-centered-block" style="margin-top:24px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#d97706;color:#ffffff;letter-spacing:0.5px">MỤC 6</span>
-        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Impact Theo Tỉnh / Thành Phố (T7 – T12)</h2>
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#e11d48;color:#ffffff;letter-spacing:0.5px">MỤC 8</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Tỷ Lệ Inactive Theo Tháng Năm 2026</h2>
       </div>
       <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>baocaotuan</b> · So sánh với tháng trước: <span style="color:#10b981;font-weight:700">▲ Tăng</span> · <span style="color:#ef4444;font-weight:700">▼ Giảm</span>
-      </div>
-    </div>
-
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 6 -->
-    <div class="grid kpis" id="bscProvinceSummaryCards" style="margin-bottom:16px"></div>
-
-    <!-- BẢNG CHI TIẾT MỤC 6 -->
-    <div class="card" style="padding:14px 16px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>📊 Bảng Chi Tiết Tỷ Lệ Impact Theo Tỉnh Thành (T7 – T12)</span>
-            <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
-          </h3>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <input type="text" id="bscProvinceSearch" placeholder="🔍 Tìm tỉnh thành..." oninput="onProvinceImpactSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
-          <div class="mut sm" id="bscProvinceTableCount">...</div>
-          <button onclick="exportProvinceImpactCsv()" style="background:#d97706;color:#fff;border-color:#f59e0b;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
-        </div>
-      </div>
-      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-        <table id="bscProvinceTable" class="kpi-table"></table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== MỤC 7: TỶ LỆ IMPACT THEO NGUỒN DATA & NGÀNH HÀNG ==================== -->
-  <div id="bscSecImpactSourceIndustry" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 7 -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#0ea5e9;color:#ffffff;letter-spacing:0.5px">MỤC 7</span>
-        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Tỷ Lệ Impact Theo Nguồn Data &amp; Ngành Hàng</h2>
-      </div>
-      <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>baocaotuan</b>
-      </div>
-    </div>
-
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 7 -->
-    <div class="grid kpis" id="bscImpactSummaryCards" style="margin-bottom:16px"></div>
-
-    <!-- 2 BẢNG NẰM NGANG NHAU (SIDE BY SIDE) -->
-    <div class="bsc-two-tables-grid">
-      <!-- BẢNG 1: IMPACT THEO NGUỒN DATA -->
-      <div class="card" style="padding:14px 16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-          <div>
-            <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-              <span>📁 Bảng 1: Impact Theo Nguồn Data</span>
-              <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
-            </h3>
-          </div>
-          <button onclick="exportImpactSourceCsv()" style="background:#0ea5e9;color:#fff;border-color:#38bdf8;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
-        </div>
-        <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-          <table id="bscImpactSourceTable" class="kpi-table"></table>
-        </div>
-      </div>
-
-      <!-- BẢNG 2: IMPACT THEO NGÀNH HÀNG -->
-      <div class="card" style="padding:14px 16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-          <div>
-            <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-              <span>🏢 Bảng 2: Impact Theo Ngành Hàng</span>
-              <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
-            </h3>
-          </div>
-          <button onclick="exportImpactIndustryCsv()" style="background:#8b5cf6;color:#fff;border-color:#a78bfa;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
-        </div>
-        <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-          <table id="bscImpactIndustryTable" class="kpi-table"></table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== MỤC 8: QUÂN SỐ ĐỘI NGŨ SC ==================== -->
-  <div id="bscSecHeadcount" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 8 -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#8b5cf6;color:#ffffff;letter-spacing:0.5px">MỤC 8</span>
-        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Quân Số Đội Ngũ SC (Theo Miền, Vị Trí &amp; Tỉnh Thành)</h2>
-      </div>
-      <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>baocaotuan</b>
+        Nguồn: Sheet <b>baocaotuan</b> · Thống kê Gian hàng ký mới, Inactive &amp; Tỷ lệ SC Chăm sóc
       </div>
     </div>
 
     <!-- CÁC THẺ KPI TÓM TẮT MỤC 8 -->
-    <div class="grid kpis" id="bscHeadcountSummaryCards" style="margin-bottom:16px"></div>
+    <div class="grid kpis" id="bscMonthlyInactiveSummaryCards" style="margin-bottom:16px"></div>
 
-    <!-- BẢNG 1: PHÂN BỔ QUÂN SỐ THEO MIỀN & VỊ TRÍ -->
+    <!-- BẢNG CHI TIẾT TỶ LỆ INACTIVE THEO THÁNG -->
     <div class="card" style="padding:14px 16px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
         <div>
           <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>👥 Bảng 1: Phân Bổ Quân Số Theo Miền &amp; Vị Trí</span>
-            <span class="mut sm" style="font-weight:400">(Online · Offline · Sale Phần Cứng · Quản Lý · Thử Việc)</span>
-          </h3>
-        </div>
-        <div>
-          <button onclick="exportHeadcountRegionCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
-        </div>
-      </div>
-      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-        <table id="bscHeadcountRegionTable" class="kpi-table"></table>
-      </div>
-    </div>
-
-    <!-- BẢNG 2: PHÂN BỔ QUÂN SỐ THEO TỈNH THÀNH / KHU VỰC -->
-    <div class="card" style="padding:14px 16px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>📍 Bảng 2: Phân Bổ Quân Số Theo Khu Vực / Tỉnh Thành</span>
+            <span>📊 Bảng Chi Tiết Tỷ Lệ Inactive &amp; Chăm Sóc Theo Tháng (Tháng 1 – Tháng 10/2026)</span>
             <span class="mut sm" style="font-weight:400">(Bấm tiêu đề cột bất kỳ để sắp xếp ⇅)</span>
           </h3>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <input type="text" id="bscHeadcountProvinceSearch" placeholder="🔍 Tìm khu vực..." oninput="onHeadcountProvinceSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
-          <div class="mut sm" id="bscHeadcountProvinceCount">...</div>
-          <button onclick="toggleAllHeadcountClusters()" id="btnToggleHeadcountClusters" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600" title="Thu gọn hoặc mở rộng tất cả các cụm">⮀ Thu/Mở Cụm</button>
-          <button onclick="exportHeadcountProvinceCsv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
+          <input type="text" id="bscMonthlyInactiveSearch" placeholder="🔍 Lọc theo tháng..." oninput="onMonthlyInactiveSearch(this.value)" style="width:180px;font-size:12px;padding:5px 10px">
+          <button onclick="exportMonthlyInactiveCsv()" style="background:#e11d48;color:#fff;border-color:#f43f5e;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
         </div>
       </div>
-      <div class="wrap" style="max-height:600px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-        <table id="bscHeadcountProvinceTable" class="kpi-table"></table>
+      <div class="wrap" style="max-height:650px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
+        <table id="bscMonthlyInactiveTable" class="kpi-table"></table>
       </div>
     </div>
   </div>
 
-  <!-- ==================== MỤC 9: HIỆU SUẤT KPI TEAM & TƯ VẤN CHUYỂN ADDON ==================== -->
-  <div id="bscSecKpiAddon" class="bsc-centered-block" style="margin-top:24px">
-    <!-- TIÊU ĐỀ PHÂN ĐOẠN MỤC 9 -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#ec4899;color:#ffffff;letter-spacing:0.5px">MỤC 9</span>
-        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Hiệu Suất KPI Team &amp; Tư Vấn Chuyển Addon (Tháng 10 &amp; Tháng 11)</h2>
-      </div>
-      <div class="mut sm" style="font-weight:600">
-        Nguồn: Sheet <b>baocaotuan</b>
-      </div>
-    </div>
-
-    <!-- CÁC THẺ KPI TÓM TẮT MỤC 9 -->
-    <div class="grid kpis" id="bscKpiAddonSummaryCards" style="margin-bottom:16px"></div>
-
-    <!-- BẢNG 1: KPI TEAM ONLINE THÁNG 9 -->
-    <div class="card" style="padding:14px 16px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>🌐 9.1: KPI Team Online Tháng 10</span>
-            <span class="mut sm" style="font-weight:400">(Miền Bắc · Miền Nam · Toàn Quốc)</span>
-          </h3>
-        </div>
-        <div>
-          <button onclick="exportKpiOnlineT9Csv()" style="background:#0284c7;color:#fff;border-color:#0ea5e9;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
-        </div>
-      </div>
-      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-        <table id="bscKpiOnlineT9Table" class="kpi-table"></table>
-      </div>
-    </div>
-
-    <!-- BẢNG 2: KPI TEAM OFFLINE THÁNG 10 -->
-    <div class="card" style="padding:14px 16px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>🏢 9.2: KPI Team Offline Tháng 11</span>
-            <span class="mut sm" style="font-weight:400">(Theo từng Coacher quản lý &amp; Toàn Quốc)</span>
-          </h3>
-        </div>
-        <div>
-          <button onclick="exportKpiOfflineT10Csv()" style="background:#7c3aed;color:#fff;border-color:#8b5cf6;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
-        </div>
-      </div>
-      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-        <table id="bscKpiOfflineT10Table" class="kpi-table"></table>
-      </div>
-    </div>
-
-    <!-- BẢNG 3: TƯ VẤN CHUYỂN ADDON THÁNG 10 -->
-    <div class="card" style="padding:14px 16px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div>
-          <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
-            <span>🔄 9.3: Tư Vấn Chuyển Addon Tháng 11</span>
-            <span class="mut sm" style="font-weight:400">(So sánh Team Offline &amp; Team Online theo từng dịch vụ Addon)</span>
-          </h3>
-        </div>
-        <div>
-          <button onclick="exportAddonT10Csv()" style="background:#059669;color:#fff;border-color:#10b981;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV</button>
-        </div>
-      </div>
-      <div class="wrap" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)">
-        <table id="bscAddonT10Table" class="kpi-table"></table>
-      </div>
-    </div>
-  </div>
-
-  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 10...) -->
+  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 9...) -->
   <div class="card bsc-centered-block" style="padding:18px 20px;margin-bottom:16px;border:1.5px dashed var(--line);text-align:center;background:transparent">
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--mut)">
       <span style="font-size:16px">➕</span>
-      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 10...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
+      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 9...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
     </div>
   </div>
 </div>
@@ -1676,19 +1711,19 @@
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
 <script src="js/snapshot_tiep_trien_khai.js?v=20261109_1910"></script>
-<script src="js/config.js?v=20261109_1910"></script>
+<script src="js/config.js?v=20261110_1105"></script>
 <script src="js/utils.js?v=20261109_1910"></script>
-<script src="js/google_sheets_service.js?v=20261109_1910"></script>
+<script src="js/google_sheets_service.js?v=20261110_1105"></script>
 <script src="js/tab_overview.js?v=20261109_1701"></script>
 <script src="js/tab_pivot.js?v=20261109_1701"></script>
 <script src="js/tab_muctieu.js?v=20261109_1701"></script>
 <script src="js/tab_kpi.js?v=20261109_1701"></script>
 <script src="js/tab_phancung.js?v=20261109_1701"></script>
-<script src="js/tab_baocaosc.js?v=20261109_1910"></script>
+<script src="js/tab_baocaosc.js?v=20261110_1105"></script>
 <script src="js/tab_kpionline.js?v=20261109_1701"></script>
-<script src="js/tab_impactonline.js?v=20261109_1701"></script>
+<script src="js/tab_impactonline.js?v=20261110_1105"></script>
 <script src="js/tab_dataton.js?v=20261109_1701"></script>
 <script src="js/tab-bao-cao.js?v=20261110_1040"></script>
-<script src="js/app.js?v=20261110_1040"></script>
+<script src="js/app.js?v=20261110_1105"></script>
 </body>
 </html>

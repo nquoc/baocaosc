@@ -1446,7 +1446,7 @@ body[data-theme="light"] .dvkh-region-group-row.expanded {
 }
 
 /* ==========================================================================
-   MỤC 5: IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (2 BẢNG NẰM NGANG NHAU)
+   MỤC 4.1.2 & 4.1.3: IMPACT THEO NGUỒN DATA & NGÀNH HÀNG (2 BẢNG NẰM NGANG NHAU)
    ========================================================================== */
 .bsc-two-tables-grid {
   display: grid;

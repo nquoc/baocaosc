@@ -135,6 +135,13 @@ function switchTab(tab) {
     if (typeof loadTiepTrienKhaiData === 'function') {
       loadTiepTrienKhaiData(false, true);
     }
+    if (typeof loadImpactOnline === 'function') {
+      if (!IMPACT_ONLINE_STATE || (!IMPACT_ONLINE_STATE.muc1 && !IMPACT_ONLINE_STATE.muc2)) {
+        loadImpactOnline(false, true);
+      } else if (typeof renderImpactOnline === 'function') {
+        renderImpactOnline();
+      }
+    }
   } else if (tab === 'dataton') {
     if (!DATATON_STATE.online || !DATATON_STATE.offline) {
       loadDataTon(false);
@@ -610,6 +617,9 @@ async function reloadAllDashboardData() {
       await loadBaoCaoSc(true, false);
       if (typeof loadTiepTrienKhaiData === 'function') {
         await loadTiepTrienKhaiData(true, false);
+      }
+      if (typeof loadImpactOnline === 'function') {
+        await loadImpactOnline(true, true);
       }
     } else if (activeTab === 'kpionline') {
       await loadKpiOnline(true, false);
