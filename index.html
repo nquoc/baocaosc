@@ -1468,15 +1468,25 @@
             .wr-doc-title{text-align:center;font-size:27px;font-weight:800;color:#17365d;letter-spacing:.2px}.wr-doc-subtitle{text-align:center;color:#64748b;margin:4px 0 24px;font-size:13px}
             .wr-document section{margin:0 0 26px}.wr-document h2{font-size:19px;color:#17365d;border-bottom:2px solid #d7e5f2;padding-bottom:7px;margin:22px 0 12px;text-align:left!important}.wr-document h3{font-size:15px;color:#2f5597;margin:16px 0 8px;text-align:left!important}.wr-document h4{font-size:13px;color:#475569;margin:8px 0;text-align:left!important}
             .wr-document p{margin:7px 0}.wr-document ul,.wr-document ol{margin:7px 0 10px 22px;padding:0}.wr-document li{margin:4px 0}.wr-note{background:#eef6fb;border-left:4px solid #5b9bd5;padding:8px 10px;border-radius:6px}
-            .wr-table-wrap{overflow-x:auto;margin:10px 0 14px}.wr-table{width:100%;border-collapse:collapse;font-size:12.5px}.wr-table th,.wr-table td{border:1px solid #c9d4df;padding:7px 8px;text-align:center;vertical-align:middle}.wr-table th{background:#d9eaf7;color:#17365d;font-weight:700}.wr-table td:first-child{text-align:left}.wr-summary-table td:nth-child(odd){font-weight:700;background:#edf4fb;color:#17365d}.wr-two-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}.wr-generated-note{margin-top:30px;padding-top:10px;border-top:1px solid #e2e8f0;color:#94a3b8;text-align:center;font-size:11px}
+            .wr-table-wrap{overflow-x:auto;margin:10px 0 14px}.wr-table{width:100%;border-collapse:collapse;font-size:12.5px}.wr-table th,.wr-table td{border:1px solid #c9d4df;padding:7px 8px;text-align:center;vertical-align:middle}.wr-table th{background:#d9eaf7;color:#17365d;font-weight:700}.wr-table td:first-child{text-align:left}.wr-summary-table td:nth-child(odd),.wr-sum-table td:nth-child(odd){font-weight:700;background:#edf4fb;color:#17365d}.wr-two-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}.wr-generated-note{margin-top:30px;padding-top:10px;border-top:1px solid #e2e8f0;color:#94a3b8;text-align:center;font-size:11px}
+            .wr-highlight-box{background:#f8fafc;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;margin-bottom:20px}.wr-highlight-title{margin:0 0 8px 0;color:#1e40af;font-size:14px;text-transform:uppercase;font-weight:700}
+            .wr-proposals-box{margin-top:14px;padding:12px 14px;background:#eff6ff;border-left:4px solid #2563eb;border-radius:6px}.wr-proposals-title{margin:0 0 6px 0;color:#1e40af;font-size:13.5px;font-weight:700}
 
             /* BẢNG DASHBOARD GỐC — native HTML, tự đổi sáng/tối và KHÔNG kéo ngang trên desktop */
             .wr-document{--wr-card:#ffffff;--wr-head:#e8eef7;--wr-cell:#ffffff;--wr-border:#cbd5e1;--wr-text:#1e293b;--wr-muted:#475569;--wr-total:#e2e8f0;--wr-hover:#f8fafc}
-            html.dark-theme .wr-document{background:#1e293b;color:#e2e8f0;border-color:#334155;--wr-card:#0f172a;--wr-head:#0b0f19;--wr-cell:#0f172a;--wr-border:#334155;--wr-text:#e2e8f0;--wr-muted:#94a3b8;--wr-total:#162032;--wr-hover:#1e293b}
-            html.dark-theme .wr-doc-title{color:#93c5fd} html.dark-theme .wr-doc-subtitle{color:#94a3b8}
-            html.dark-theme .wr-document h2{color:#bfdbfe;border-bottom-color:#334155} html.dark-theme .wr-document h3{color:#93c5fd} html.dark-theme .wr-document h4{color:#cbd5e1}
-            html.dark-theme .wr-note{background:#162032;border-left-color:#3b82f6;color:#cbd5e1}
-            html.dark-theme .wr-summary-table td{border-color:#334155;color:#e2e8f0} html.dark-theme .wr-summary-table td:nth-child(odd){background:#0f172a;color:#93c5fd}
+            html.dark-theme .wr-document,body[data-theme="dark"] .wr-document{background:#1e293b;color:#e2e8f0;border-color:#334155;--wr-card:#0f172a;--wr-head:#0b0f19;--wr-cell:#1e293b;--wr-border:#334155;--wr-text:#e2e8f0;--wr-muted:#94a3b8;--wr-total:#162032;--wr-hover:#273549}
+            html.dark-theme .wr-doc-title,body[data-theme="dark"] .wr-doc-title{color:#93c5fd} html.dark-theme .wr-doc-subtitle,body[data-theme="dark"] .wr-doc-subtitle{color:#94a3b8}
+            html.dark-theme .wr-document h2,body[data-theme="dark"] .wr-document h2{color:#bfdbfe;border-bottom-color:#334155} html.dark-theme .wr-document h3,body[data-theme="dark"] .wr-document h3{color:#93c5fd} html.dark-theme .wr-document h4,body[data-theme="dark"] .wr-document h4{color:#cbd5e1}
+            html.dark-theme .wr-note,body[data-theme="dark"] .wr-note{background:#162032;border-left-color:#3b82f6;color:#cbd5e1}
+            html.dark-theme .wr-highlight-box,body[data-theme="dark"] .wr-highlight-box{background:#0f172a;border:1px solid #1e3a8a;border-left:4px solid #3b82f6;color:#e2e8f0}
+            html.dark-theme .wr-highlight-title,body[data-theme="dark"] .wr-highlight-title{color:#93c5fd}
+            html.dark-theme .wr-proposals-box,body[data-theme="dark"] .wr-proposals-box{background:#0f172a;border:1px solid #1e3a8a;border-left:4px solid #3b82f6;color:#e2e8f0}
+            html.dark-theme .wr-proposals-title,body[data-theme="dark"] .wr-proposals-title{color:#93c5fd}
+            html.dark-theme .wr-table th,body[data-theme="dark"] .wr-table th{background:#0f172a;color:#93c5fd;border-color:#334155}
+            html.dark-theme .wr-table td,body[data-theme="dark"] .wr-table td{background:#1e293b;color:#e2e8f0;border-color:#334155}
+            html.dark-theme .wr-summary-table td,html.dark-theme .wr-sum-table td,body[data-theme="dark"] .wr-summary-table td,body[data-theme="dark"] .wr-sum-table td{border-color:#334155;color:#e2e8f0}
+            html.dark-theme .wr-summary-table td:nth-child(odd),html.dark-theme .wr-sum-table td:nth-child(odd),body[data-theme="dark"] .wr-summary-table td:nth-child(odd),body[data-theme="dark"] .wr-sum-table td:nth-child(odd){background:#0f172a;color:#93c5fd}
+            html.dark-theme .wr-summary-table td:nth-child(even),html.dark-theme .wr-sum-table td:nth-child(even),body[data-theme="dark"] .wr-summary-table td:nth-child(even),body[data-theme="dark"] .wr-sum-table td:nth-child(even){background:#1e293b;color:#e2e8f0}
             .wr-native-card{margin:12px 0 18px;background:var(--wr-card);border:1px solid var(--wr-border);border-radius:9px;overflow:hidden;color:var(--wr-text);box-shadow:0 2px 8px rgba(15,23,42,.10)}
             .wr-native-title{padding:10px 13px 7px;font-weight:800;color:var(--wr-text);font-size:13px;background:var(--wr-card)}.wr-native-subtitle{padding:0 13px 8px;font-size:11px;color:var(--wr-muted)}
             .wr-native-scroll{overflow-x:auto;width:100%}.wr-native-table{width:100%;max-width:100%;border-collapse:collapse;white-space:nowrap;font-size:10px;color:var(--wr-text);background:var(--wr-card)}
@@ -1534,8 +1544,8 @@
                 <label><span>📅 Đến ngày</span><input type="date" id="wrToDate"></label>
                 <label><span>🏠 Case đổi TT/địa chỉ</span><input type="number" min="0" id="wrAddressTotal" placeholder="VD: 29"></label>
                 <label><span>✅ Đã đổi trên OTP</span><input type="number" min="0" id="wrAddressDone" placeholder="VD: 29"></label>
-                <label style="grid-column: span 2;"><span>🏢 Tiêu đề báo cáo</span><input type="text" id="wrDocTitle" value="BÁO CÁO CHẤT LƯỢNG CUSTOMER SUCCESS (SC)" placeholder="VD: Báo cáo chất lượng Customer Success..."></label>
-                <label style="grid-column: span 2;"><span>👤 Kính gửi</span><input type="text" id="wrRecipient" value="anh Nguyễn Dũng Hải - SDM DVKH (Dịch Vụ Khách Hàng)" placeholder="VD: anh Nguyễn Dũng Hải SDM DVKH"></label>
+                <label style="grid-column: span 4;"><span>🏢 Tiêu đề báo cáo</span><input type="text" id="wrDocTitle" value="BÁO CÁO ĐIỀU HÀNH CUSTOMER SUCCESS (SC)" placeholder="VD: Báo cáo điều hành Customer Success..."></label>
+                <input type="hidden" id="wrRecipient" value="">
             </div>
 
             <details class="wr-manual-details" id="wrManualDetails" open>

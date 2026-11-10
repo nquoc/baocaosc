@@ -759,8 +759,8 @@ function wrSyncProposalsToActiveDoc() {
     const val = document.getElementById('wrProposals')?.value?.trim() || '';
     if (val) {
         wrap.innerHTML = `
-            <div style="margin-top: 14px; padding: 12px 14px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 6px;">
-                <h4 style="margin: 0 0 6px 0; color: #1e40af; font-size: 13.5px;">📌 Đề xuất điều hành bổ sung:</h4>
+            <div class="wr-proposals-box">
+                <h4 class="wr-proposals-title">📌 Đề xuất điều hành bổ sung:</h4>
                 ${wrBullets(wrLinesToList(val).map(x => `<b>${wrEscapeHtml(x)}</b>`))}
             </div>`;
     } else {
@@ -1631,26 +1631,48 @@ function wrFmtVal(v, suffix = '') {
     return wrEscapeHtml(String(v));
 }
 
-// 1. Active Rate 2026 (Sheet baocaotuan A2:D14)
+// 1. Active Rate 2026
 function wrRenderActiveRateTable(active) {
-    const headers = ['Kỳ / Tháng', 'Retail', 'F&B', 'Booking', 'Trung bình', 'Chênh lệch MoM'];
+    const headers = ['Kỳ / Tháng', 'Retail (KPI 67.8%)', 'F&B (KPI 75.3%)', 'Booking (KPI 66.0%)', 'Trung bình', 'Chênh lệch MoM'];
     let rows = [];
 
     if (active && Array.isArray(active.months) && active.months.length) {
+        const latestM = active.latestMonth;
         rows = active.months.map(m => {
             const diffStr = m.diffAvg != null ? (m.diffAvg > 0 ? `+${m.diffAvg.toFixed(2)}%` : `${m.diffAvg.toFixed(2)}%`) : '-';
             const diffTone = m.diffAvg > 0 ? 'wr-kpi-good' : (m.diffAvg < 0 ? 'wr-kpi-bad' : '');
+            const isCur = latestM && (m.mNum === latestM.mNum || m.cleanLabel === latestM.cleanLabel);
+
+            let retCell = m.retail != null ? `<span class="${wrKpiTone(m.retail)}">${m.retail.toFixed(2)}%</span>` : '-';
+            let fnbCell = m.fnb != null ? `<span class="${wrKpiTone(m.fnb)}">${m.fnb.toFixed(2)}%</span>` : '-';
+            let bokCell = m.booking != null ? `<span class="${wrKpiTone(m.booking)}">${m.booking.toFixed(2)}%</span>` : '-';
+
+            if (isCur) {
+                if (m.retail != null) {
+                    const achR = ((m.retail / 67.8) * 100).toFixed(2);
+                    retCell = `<b>${m.retail.toFixed(2)}%</b><div style="font-size:10.5px;color:var(--wr-primary,#0ea5e9);font-weight:700">Đạt ${achR}%</div>`;
+                }
+                if (m.fnb != null) {
+                    const achF = ((m.fnb / 75.3) * 100).toFixed(2);
+                    fnbCell = `<b>${m.fnb.toFixed(2)}%</b><div style="font-size:10.5px;color:var(--wr-primary,#0ea5e9);font-weight:700">Đạt ${achF}%</div>`;
+                }
+                if (m.booking != null) {
+                    const achB = ((m.booking / 66.0) * 100).toFixed(2);
+                    bokCell = `<b>${m.booking.toFixed(2)}%</b><div style="font-size:10.5px;color:var(--wr-primary,#0ea5e9);font-weight:700">Đạt ${achB}%</div>`;
+                }
+            }
+
             return [
-                wrEscapeHtml(m.cleanLabel || m.label),
-                `<span class="${wrKpiTone(m.retail)}">${m.retail != null ? m.retail.toFixed(2) + '%' : '-'}</span>`,
-                `<span class="${wrKpiTone(m.fnb)}">${m.fnb != null ? m.fnb.toFixed(2) + '%' : '-'}</span>`,
-                `<span class="${wrKpiTone(m.booking)}">${m.booking != null ? m.booking.toFixed(2) + '%' : '-'}</span>`,
+                isCur ? `<b>${wrEscapeHtml(m.cleanLabel || m.label)} ⭐</b>` : wrEscapeHtml(m.cleanLabel || m.label),
+                retCell,
+                fnbCell,
+                bokCell,
                 `<b>${m.avg != null ? m.avg.toFixed(2) + '%' : '-'}</b>`,
                 `<span class="${diffTone}">${diffStr}</span>`
             ];
         });
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan A2:D14)', '-', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -1680,7 +1702,7 @@ function wrRenderCareRateTable(care) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan F2:I6)', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -1714,7 +1736,7 @@ function wrRenderMonthlyInactiveTable(inactive) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan AV2:BB15)', '-', '-', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -1749,15 +1771,15 @@ function wrRenderHeadcountRegionTable(reg) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan V2:AB5)', '-', '-', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 5. Headcount Province (2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành từ Sheet baocaotuan U7:W30)
+// 5. Headcount Province (2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành)
 function wrRenderHeadcountProvinceTable(prov) {
-    const headers = ['STT', 'Tỉnh / Thành phố (Khu Vực)', 'Số Lượng Nhân Sự', 'Tỷ Trọng Quân Số (%)'];
+    const headers = ['STT', 'Khu Vực / Tỉnh Thành', 'Số Lượng Nhân Sự', 'Tỷ Trọng Quân Số (%)'];
     let rows = [];
 
     let parsed = prov;
@@ -1765,9 +1787,47 @@ function wrRenderHeadcountProvinceTable(prov) {
         parsed = normalizeHeadcountProvinceData(prov);
     }
 
-    const list = parsed?.provinces || [];
-    if (Array.isArray(list) && list.length) {
-        rows = list.map((it, idx) => {
+    if (parsed && Array.isArray(parsed.groups) && parsed.groups.length) {
+        parsed.groups.forEach((g, idx) => {
+            const stt = idx + 1;
+            if (g.isCluster && g.items && g.items.length) {
+                // Dòng Tổng Cụm (Hub Cluster Row)
+                rows.push([
+                    `<div style="text-align:center;font-weight:700">${stt}</div>`,
+                    `<b>Cụm ${wrEscapeHtml(g.hub || g.name)}</b> <span style="font-size:11px;font-weight:normal;color:var(--wr-muted, #64748b)">(Tổng cụm ${g.items.length} tỉnh thành)</span>`,
+                    `<div style="text-align:center;font-weight:800;color:var(--wr-primary, #0ea5e9)">${wrFmtVal(g.count)}</div>`,
+                    `<div style="text-align:center;font-weight:700;color:var(--wr-primary, #0ea5e9)">${g.pct != null ? g.pct.toFixed(2) + '%' : '-'}</div>`
+                ]);
+                // Các dòng tỉnh con thuộc cụm (Sub-provinces)
+                g.items.forEach((item, itemIdx) => {
+                    rows.push([
+                        `<div style="text-align:center;color:var(--wr-muted, #64748b);font-size:11.5px">${stt}.${itemIdx + 1}</div>`,
+                        `<div style="padding-left:22px;color:var(--wr-text, inherit)"><span style="color:var(--wr-muted, #64748b);margin-right:6px">↳</span>${wrEscapeHtml(item.name)}</div>`,
+                        `<div style="text-align:center;font-weight:600">${wrFmtVal(item.count)}</div>`,
+                        `<div style="text-align:center;color:var(--wr-muted, #64748b)">${item.pct != null ? item.pct.toFixed(2) + '%' : '-'}</div>`
+                    ]);
+                });
+            } else {
+                // Tỉnh thành độc lập
+                rows.push([
+                    `<div style="text-align:center;color:var(--wr-muted, #64748b)">${stt}</div>`,
+                    `<b>${wrEscapeHtml(g.name)}</b>`,
+                    `<div style="text-align:center;font-weight:700">${wrFmtVal(g.count)}</div>`,
+                    `<div style="text-align:center;font-weight:600">${g.pct != null ? g.pct.toFixed(2) + '%' : '-'}</div>`
+                ]);
+            }
+        });
+
+        const tot = parsed.totalCount != null ? parsed.totalCount : parsed.groups.reduce((s, g) => s + (g.count || 0), 0);
+        const totalProvincesText = parsed.totalItemsCount ? `${parsed.groups.length} Cụm / Khu Vực · ${parsed.totalItemsCount} Tỉnh Thành` : '16 Tỉnh Thành';
+        rows.push([
+            '<div style="text-align:center;font-weight:800">★</div>',
+            `<b>TỔNG CỘNG (${totalProvincesText.toUpperCase()})</b>`,
+            `<div style="text-align:center;font-weight:800;color:var(--wr-primary, #0ea5e9)">${wrFmtVal(tot)}</div>`,
+            '<div style="text-align:center;font-weight:800;color:var(--wr-primary, #0ea5e9)">100.00%</div>'
+        ]);
+    } else if (Array.isArray(parsed?.provinces) && parsed.provinces.length) {
+        rows = parsed.provinces.map((it, idx) => {
             const pctStr = it.pct != null ? `${it.pct.toFixed(2)}%` : '-';
             return [
                 `<div style="text-align:center;color:var(--wr-muted, #64748b)">${it.id || (idx + 1)}</div>`,
@@ -1776,8 +1836,7 @@ function wrRenderHeadcountProvinceTable(prov) {
                 `<div style="text-align:center;font-weight:600;color:var(--wr-primary, #0ea5e9)">${pctStr}</div>`
             ];
         });
-
-        const tot = parsed.totalCount != null ? parsed.totalCount : list.reduce((s, it) => s + (it.count || 0), 0);
+        const tot = parsed.totalCount != null ? parsed.totalCount : parsed.provinces.reduce((s, it) => s + (it.count || 0), 0);
         rows.push([
             '<div style="text-align:center;font-weight:800">★</div>',
             '<b>TỔNG CỘNG (16 TỈNH THÀNH)</b>',
@@ -1785,7 +1844,7 @@ function wrRenderHeadcountProvinceTable(prov) {
             '<div style="text-align:center;font-weight:800;color:var(--wr-primary, #0ea5e9)">100.00%</div>'
         ]);
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan U7:W30) - Vui lòng bấm Tải Dữ Liệu', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets - Vui lòng bấm Tải Dữ Liệu', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -1827,7 +1886,7 @@ function wrRenderMuctieuTable(rawArray, isOnline = false) {
             ]);
         }
     } else {
-        rows = [['-', `Chưa có dữ liệu từ Google Sheets (${isOnline ? 'muctieu A16:I28' : 'muctieu A2:I13'})`, '-', '-', '-']];
+        rows = [['-', `Chưa có dữ liệu từ Google Sheets`, '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -1870,7 +1929,7 @@ function wrRenderProvinceImpactTable(provinceImpact) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan K2:Q19)', '-', '-', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -1905,7 +1964,7 @@ function wrRenderKpiOfflineT10Table(kpiOff) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan AJ13:AP17)', '-', '-', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -1943,7 +2002,7 @@ function wrRenderAddonT10Table(addon) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan AJ22:AO30)', '-', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -1976,7 +2035,7 @@ function wrRenderFnbIssueTable(fnbIssue) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan AR2:AS9)', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -2010,7 +2069,7 @@ function wrRenderKpiOnlineT9Table(kpiOn) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan AJ2:AP5)', '-', '-', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -2057,7 +2116,7 @@ function wrRenderImpactDataSourceTable(dataSource) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan AD1:AG11)', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -2092,7 +2151,7 @@ function wrRenderImpactIndustryTable(industry) {
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets (baocaotuan AD14:AG20)', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -2182,7 +2241,7 @@ function wrRenderTiepFnbTable(fnbData) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 16. Tệp Triển Khai: Nhóm Booking 3 Hotel sao (Sheet 'Các tiệp triển khai' Cột D:H)
+// 16. Tệp Triển Khai: Nhóm Booking 3 Hotel sao
 function wrRenderTiepBookingTable(bookingData) {
     let p = bookingData || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.booking : null);
     if (!p) {
@@ -2215,37 +2274,95 @@ function wrRenderTiepBookingTable(bookingData) {
         html += wrTable(headers, rows, 'wr-report-table');
     }
 
-    // Bảng 2: Chi tiết nhóm vấn đề & nội dung lỗi
+    // Bảng 2: Chi tiết nhóm vấn đề & nội dung lỗi ghi nhận (Không lặp lại tên nhóm vấn đề)
     if (p.tbl2 && Array.isArray(p.tbl2.rows) && p.tbl2.rows.length) {
         html += `<h4 style="margin-top:14px;">2.2 Chi tiết nhóm vấn đề &amp; nội dung lỗi ghi nhận</h4>`;
-        const headers = ['STT', 'Nhóm Vấn Đề', 'Nội Dung Lỗi / Hạn Chế', 'Số Lượng'];
-        const rows = p.tbl2.rows.map((r, i) => [
-            wrInt(i + 1),
-            `<b>${wrEscapeHtml(r.group || '')}</b>`,
-            wrEscapeHtml(r.content || ''),
-            `<b class="wr-kpi-bad">${wrEscapeHtml(r.count || '')}</b>`
-        ]);
+        
+        // Gôm các dòng liên tiếp có cùng Nhóm Vấn Đề để hiển thị rowspan
+        const rowGroups = [];
+        let cur = null;
+        p.tbl2.rows.forEach((r, idx) => {
+            const grpName = String(r.group || '').trim() || 'Khác';
+            if (!cur || cur.name !== grpName) {
+                cur = { name: grpName, items: [] };
+                rowGroups.push(cur);
+            }
+            cur.items.push({ r, globalIdx: idx + 1 });
+        });
+
+        let tbody = '<tbody>';
+        rowGroups.forEach(grp => {
+            grp.items.forEach((item, itemIdx) => {
+                tbody += '<tr>';
+                tbody += `<td style="text-align:center;color:var(--wr-muted, #64748b)">${item.globalIdx}</td>`;
+                if (itemIdx === 0) {
+                    const rowSpanAttr = grp.items.length > 1 ? ` rowspan="${grp.items.length}"` : '';
+                    tbody += `<td${rowSpanAttr} style="text-align:left;font-weight:700;vertical-align:middle;background:var(--wr-cell, inherit)"><b>${wrEscapeHtml(grp.name)}</b></td>`;
+                }
+                tbody += `<td style="text-align:left">${wrEscapeHtml(item.r.content || '')}</td>`;
+                tbody += `<td style="text-align:center"><b class="wr-kpi-bad">${wrEscapeHtml(item.r.count || '')}</b></td>`;
+                tbody += '</tr>';
+            });
+        });
+
         if (p.tbl2.total) {
-            rows.push([
-                '∑',
-                `<b>${wrEscapeHtml(p.tbl2.total.name || 'TỔNG LƯỢT GHI NHẬN')}</b>`,
-                '',
-                `<b>${wrEscapeHtml(p.tbl2.total.count || '')}</b>`
-            ]);
+            tbody += `<tr style="font-weight:800;background:var(--wr-total, #edf4fb)">
+                <td style="text-align:center">∑</td>
+                <td colspan="2" style="text-align:left"><b>${wrEscapeHtml(p.tbl2.total.name || 'TỔNG LƯỢT GHI NHẬN')}</b></td>
+                <td style="text-align:center"><b class="wr-kpi-bad">${wrEscapeHtml(p.tbl2.total.count || '')}</b></td>
+            </tr>`;
         }
-        html += wrTable(headers, rows, 'wr-report-table');
+        tbody += '</tbody>';
+
+        html += `<div class="wr-table-wrap"><table class="wr-table wr-report-table">
+            <thead><tr>
+                <th style="width:50px">STT</th>
+                <th style="width:220px">Nhóm Vấn Đề</th>
+                <th>Nội Dung Lỗi / Hạn Chế</th>
+                <th style="width:90px">Số Lượng</th>
+            </tr></thead>
+            ${tbody}
+        </table></div>`;
     }
 
-    // Bảng 3: Các nhóm vấn đề chính
+    // Bảng 3: Các nhóm vấn đề chính cần lưu ý
     if (p.tbl3 && Array.isArray(p.tbl3.rows) && p.tbl3.rows.length) {
         html += `<h4 style="margin-top:14px;">2.3 Các nhóm vấn đề chính cần lưu ý</h4>`;
-        const headers = ['STT', 'Nhóm Vấn Đề', 'Nội Dung Ghi Nhận'];
-        const rows = p.tbl3.rows.map((r, i) => [
-            wrInt(i + 1),
-            `<b>${wrEscapeHtml(r.group || '')}</b>`,
-            wrEscapeHtml(r.content || '')
-        ]);
-        html += wrTable(headers, rows, 'wr-report-table');
+        
+        const rowGroups3 = [];
+        let cur3 = null;
+        p.tbl3.rows.forEach((r, idx) => {
+            const grpName = String(r.group || '').trim() || 'Khác';
+            if (!cur3 || cur3.name !== grpName) {
+                cur3 = { name: grpName, items: [] };
+                rowGroups3.push(cur3);
+            }
+            cur3.items.push({ r, globalIdx: idx + 1 });
+        });
+
+        let tbody3 = '<tbody>';
+        rowGroups3.forEach(grp => {
+            grp.items.forEach((item, itemIdx) => {
+                tbody3 += '<tr>';
+                tbody3 += `<td style="text-align:center;color:var(--wr-muted, #64748b)">${item.globalIdx}</td>`;
+                if (itemIdx === 0) {
+                    const rowSpanAttr = grp.items.length > 1 ? ` rowspan="${grp.items.length}"` : '';
+                    tbody3 += `<td${rowSpanAttr} style="text-align:left;font-weight:700;vertical-align:middle;background:var(--wr-cell, inherit)"><b>${wrEscapeHtml(grp.name)}</b></td>`;
+                }
+                tbody3 += `<td style="text-align:left">${wrEscapeHtml(item.r.content || '')}</td>`;
+                tbody3 += '</tr>';
+            });
+        });
+        tbody3 += '</tbody>';
+
+        html += `<div class="wr-table-wrap"><table class="wr-table wr-report-table">
+            <thead><tr>
+                <th style="width:50px">STT</th>
+                <th style="width:220px">Nhóm Vấn Đề</th>
+                <th>Nội Dung Ghi Nhận</th>
+            </tr></thead>
+            ${tbody3}
+        </table></div>`;
     }
 
     return html || `<div class="wr-report-table-empty">Không có dữ liệu chi tiết</div>`;
@@ -2403,7 +2520,6 @@ function wrUpdateVersionUI() {
 function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual) {
     const bsc = metrics.bsc || {};
     const docTitle = document.getElementById('wrDocTitle')?.value?.trim() || 'BÁO CÁO ĐIỀU HÀNH CUSTOMER SUCCESS (SC)';
-    const recipient = document.getElementById('wrRecipient')?.value?.trim() || 'anh Nguyễn Dũng Hải - SDM DVKH (Dịch Vụ Khách Hàng)';
 
     // Điểm tin tổng hợp
     const summaryBullets = [];
@@ -2413,7 +2529,11 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
     }
     if (bsc.activeRate?.latestMonth) {
         const lm = bsc.activeRate.latestMonth;
-        summaryBullets.push(`<b>Chỉ số Active Rate (${lm.cleanLabel || lm.label}):</b> Ngành Retail đạt <b>${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b>; Ngành F&B đạt <b>${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b>; Ngành Booking đạt <b>${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b>; Bình quân 3 ngành đạt <b>${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>.`);
+        const kpiR = 67.8, kpiF = 75.3, kpiB = 66.0;
+        const achR = lm.retail != null ? ((lm.retail / kpiR) * 100).toFixed(2) + '%' : '-';
+        const achF = lm.fnb != null ? ((lm.fnb / kpiF) * 100).toFixed(2) + '%' : '-';
+        const achB = lm.booking != null ? ((lm.booking / kpiB) * 100).toFixed(2) + '%' : '-';
+        summaryBullets.push(`<b>Chỉ số Active Rate (${lm.cleanLabel || lm.label}):</b> Ngành Retail đạt <b>${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b> (KPI: <b>67.8%</b>, đạt <b>${achR}</b>); Ngành F&B đạt <b>${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b> (KPI: <b>75.3%</b>, đạt <b>${achF}</b>); Ngành Booking đạt <b>${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b> (KPI: <b>66.0%</b>, đạt <b>${achB}</b>); Bình quân 3 ngành đạt <b>${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>.`);
     }
     if (bsc.muctieuOffline && Array.isArray(bsc.muctieuOffline) && bsc.muctieuOffline.length > 1) {
         const rowKh = bsc.muctieuOffline.find(r => r && String(r[0]).includes('đi được'));
@@ -2455,8 +2575,22 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
     }
     if (bsc.activeRate?.latestMonth) {
         const lm = bsc.activeRate.latestMonth;
-        sumTableRows.push(['Active Rate F&B', `<b class="${wrKpiTone(lm.fnb)}">${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b>`, 'Active Rate Retail', `<b class="${wrKpiTone(lm.retail)}">${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b>`]);
-        sumTableRows.push(['Active Rate Booking', `<b class="${wrKpiTone(lm.booking)}">${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b>`, 'Active Rate Trung bình', `<b class="wr-kpi-good">${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>`]);
+        const kpiR = 67.8, kpiF = 75.3, kpiB = 66.0;
+        const achR = lm.retail != null ? ((lm.retail / kpiR) * 100).toFixed(2) + '%' : '-';
+        const achF = lm.fnb != null ? ((lm.fnb / kpiF) * 100).toFixed(2) + '%' : '-';
+        const achB = lm.booking != null ? ((lm.booking / kpiB) * 100).toFixed(2) + '%' : '-';
+        sumTableRows.push([
+            'Active Rate Retail (KPI 67.8%)', 
+            `<b class="${wrKpiTone(lm.retail)}">${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b> <span style="font-size:11px;font-weight:700;color:#10b981">(Đạt ${achR})</span>`, 
+            'Active Rate F&B (KPI 75.3%)', 
+            `<b class="${wrKpiTone(lm.fnb)}">${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b> <span style="font-size:11px;font-weight:700;color:#10b981">(Đạt ${achF})</span>`
+        ]);
+        sumTableRows.push([
+            'Active Rate Booking (KPI 66.0%)', 
+            `<b class="${wrKpiTone(lm.booking)}">${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b> <span style="font-size:11px;font-weight:700;color:#10b981">(Đạt ${achB})</span>`, 
+            'Active Rate Trung bình', 
+            `<b class="wr-kpi-good">${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>`
+        ]);
     }
     if (bsc.careRate) {
         const avgInact = bsc.careRate.avgInactive || bsc.careRate.totalRow?.inactive;
@@ -2469,7 +2603,6 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         <div class="wr-doc-header">
             <h1 class="wr-doc-title">${wrEscapeHtml(docTitle)}</h1>
             <div class="wr-doc-subtitle">BÁO CÁO ĐIỀU HÀNH SC (VER 2) · DỮ LIỆU TỪ ${wrFormatVNDate(fromDate).toUpperCase()} ĐẾN HẾT ${wrFormatVNDate(toDate).toUpperCase()}</div>
-            <div class="wr-doc-recipient">Kính gửi: <b class="wr-doc-recipient-val">${wrEscapeHtml(recipient)}</b></div>
         </div>
 
         <p class="wr-note">
@@ -2477,8 +2610,8 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         </p>
 
         ${summaryBullets.length ? `
-        <div style="background: #f8fafc; border-left: 4px solid #2563eb; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px;">
-            <h4 style="margin: 0 0 8px 0; color: #1e40af; font-size: 14px; text-transform: uppercase;">⭐ Điểm Tin Điều Hành Trọng Tâm:</h4>
+        <div class="wr-highlight-box">
+            <h4 class="wr-highlight-title">⭐ Điểm Tin Điều Hành Trọng Tâm:</h4>
             ${wrBullets(summaryBullets)}
         </div>` : ''}
 
@@ -2495,10 +2628,10 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
                 `Cơ cấu phân bổ nhân sự phủ rộng trên 16 tỉnh thành trọng điểm toàn quốc (Hà Nội, TP.HCM, Đà Nẵng, Hải Phòng, Cần Thơ, Bình Dương, Đồng Nai, Nha Trang, Vũng Tàu, Nghệ An, Huế...).`
             ])}
 
-            <h3>1. Cơ cấu quân số theo Vùng miền &amp; Vị trí (Sheet baocaotuan V2:AB5)</h3>
+            <h3>1. Cơ cấu quân số theo Vùng miền &amp; Vị trí</h3>
             ${wrRenderHeadcountRegionTable(bsc.headcountRegion)}
 
-            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành (Sheet baocaotuan U7:W30)</h3>
+            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành</h3>
             ${wrRenderHeadcountProvinceTable(bsc.headcountProvince)}
         </section>
 
@@ -2506,12 +2639,12 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         <section>
             <h2>II. ACTIVE RATE</h2>
             ${bsc.activeRate?.latestMonth ? wrBullets([
-                `Active Rate toàn quốc tháng gần nhất (<b>${bsc.activeRate.latestMonth.cleanLabel || bsc.activeRate.latestMonth.label}</b>): Ngành Retail đạt <b>${bsc.activeRate.latestMonth.retail != null ? bsc.activeRate.latestMonth.retail.toFixed(2) + '%' : '-'}</b>; Ngành F&B đạt <b>${bsc.activeRate.latestMonth.fnb != null ? bsc.activeRate.latestMonth.fnb.toFixed(2) + '%' : '-'}</b>; Ngành Booking đạt <b>${bsc.activeRate.latestMonth.booking != null ? bsc.activeRate.latestMonth.booking.toFixed(2) + '%' : '-'}</b>.`,
+                `Active Rate tháng gần nhất (<b>${bsc.activeRate.latestMonth.cleanLabel || bsc.activeRate.latestMonth.label}</b>): Ngành Retail đạt <b>${bsc.activeRate.latestMonth.retail != null ? bsc.activeRate.latestMonth.retail.toFixed(2) + '%' : '-'}</b> (KPI: <b>67.8%</b>, đạt <b>${(bsc.activeRate.latestMonth.retail / 67.8 * 100).toFixed(2)}%</b>); Ngành F&B đạt <b>${bsc.activeRate.latestMonth.fnb != null ? bsc.activeRate.latestMonth.fnb.toFixed(2) + '%' : '-'}</b> (KPI: <b>75.3%</b>, đạt <b>${(bsc.activeRate.latestMonth.fnb / 75.3 * 100).toFixed(2)}%</b>); Ngành Booking đạt <b>${bsc.activeRate.latestMonth.booking != null ? bsc.activeRate.latestMonth.booking.toFixed(2) + '%' : '-'}</b> (KPI: <b>66.0%</b>, đạt <b>${(bsc.activeRate.latestMonth.booking / 66.0 * 100).toFixed(2)}%</b>).`,
                 `Active Rate bình quân 3 ngành đạt <b>${bsc.activeRate.latestMonth.avg != null ? bsc.activeRate.latestMonth.avg.toFixed(2) + '%' : '-'}</b>, duy trì ổn định và bám sát hạn mức KPI đề ra.`,
                 `Diễn biến qua các tháng năm 2026 cho thấy tỷ lệ active giữ mức ổn định nhờ công tác chăm sóc trực tiếp và hỗ trợ kịp thời các gian hàng phát sinh tín hiệu inactive.`
             ]) : ''}
 
-            <h3>1. Active Rate theo ngành hàng năm 2026 (Sheet baocaotuan A2:D14)</h3>
+            <h3>1. Active Rate theo ngành hàng năm 2026</h3>
             ${wrRenderActiveRateTable(bsc.activeRate)}
         </section>
 
@@ -2520,10 +2653,10 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             <h2>III. MỤC TIÊU VẬN HÀNH</h2>
             <p>Kết quả thực hiện các chỉ tiêu vận hành cốt lõi của Khối Customer Success (SC) giữa hai lực lượng Offline và Online:</p>
 
-            <h3>1. Mục tiêu Vận hành Team Offline (Sheet muctieu A2:I13)</h3>
+            <h3>1. Mục tiêu Vận hành Team Offline</h3>
             ${wrRenderMuctieuTable(bsc.muctieuOffline, false)}
 
-            <h3>2. Mục tiêu Vận hành Team Online (Sheet muctieu A16:I28)</h3>
+            <h3>2. Mục tiêu Vận hành Team Online</h3>
             ${wrRenderMuctieuTable(bsc.muctieuOnline, true)}
         </section>
 
@@ -2533,20 +2666,20 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             <p>Chỉ số Impact phản ánh tỷ lệ khách hàng có sự chuyển biến tích cực (phát sinh giao dịch hoặc quay lại active) sau khi được SC tiếp cận chăm sóc:</p>
 
             <h3>1. Khối Offline</h3>
-            <h4>1.1 Tỷ lệ Impact theo khu vực (16 tỉnh thành qua các tháng) (Sheet baocaotuan K2:Q19)</h4>
+            <h4>1.1 Tỷ lệ Impact theo khu vực (16 tỉnh thành qua các tháng)</h4>
             ${wrRenderProvinceImpactTable(bsc.provinceImpact)}
 
-            <h4>1.2 Tỷ lệ Impact theo nguồn data (Sheet baocaotuan AD1:AG11)</h4>
+            <h4>1.2 Tỷ lệ Impact theo nguồn data</h4>
             ${wrRenderImpactDataSourceTable(bsc.impactDataSource)}
 
-            <h4>1.3 Tỷ lệ Impact theo sản phẩm / ngành hàng (Sheet baocaotuan AD14:AG20)</h4>
+            <h4>1.3 Tỷ lệ Impact theo sản phẩm / ngành hàng</h4>
             ${wrRenderImpactIndustryTable(bsc.impactIndustry)}
 
             <h3>2. Khối Online</h3>
-            <h4>2.1 Tỷ lệ Impact theo tệp khách hàng (Sheet impactonline A1:H6)</h4>
+            <h4>2.1 Tỷ lệ Impact theo tệp khách hàng</h4>
             ${wrRenderImpactOnlineTable(bsc.impactOnline?.muc1 || (typeof IMPACT_ONLINE_STATE !== 'undefined' ? IMPACT_ONLINE_STATE.muc1 : null), 'Bảng 1: Phân Tích Tỷ Lệ Impact Theo Tệp Khách Hàng')}
 
-            <h4>2.2 Diễn biến Impact theo tháng năm 2026 (Sheet impactonline A9:H23)</h4>
+            <h4>2.2 Diễn biến Impact theo tháng năm 2026</h4>
             ${wrRenderImpactOnlineTable(bsc.impactOnline?.muc2 || (typeof IMPACT_ONLINE_STATE !== 'undefined' ? IMPACT_ONLINE_STATE.muc2 : null), 'Bảng 2: Diễn Biến Impact Theo Tháng Năm 2026')}
         </section>
 
@@ -2556,14 +2689,14 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             <p>Theo dõi tiến độ hoàn thành các chỉ tiêu KPI trọng yếu của đội ngũ SC cả hai kênh Online và Offline:</p>
 
             <h3>1. Khối Online</h3>
-            <h4>1.1 Bảng theo dõi KPI Team Online (Sheet baocaotuan AJ2:AP5)</h4>
+            <h4>1.1 Bảng theo dõi KPI Team Online Tháng 10</h4>
             ${wrRenderKpiOnlineT9Table(bsc.kpiOnlineT9)}
 
             <h3>2. Khối Offline</h3>
-            <h4>2.1 Bảng theo dõi KPI Coacher Team Offline Tháng 11 (Sheet baocaotuan AJ13:AP17)</h4>
+            <h4>2.1 Bảng theo dõi KPI Coacher Team Offline Tháng 11</h4>
             ${wrRenderKpiOfflineT10Table(bsc.kpiOfflineT10)}
 
-            <h4>2.2 Tư vấn chuyển Addon &amp; Phần cứng Tháng 11 (Sheet baocaotuan AJ22:AO30)</h4>
+            <h4>2.2 Tư vấn chuyển Addon &amp; Phần cứng Tháng 11</h4>
             ${wrRenderAddonT10Table(bsc.addonT10)}
         </section>
 
@@ -2576,25 +2709,25 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
                 `Tỷ lệ khách mới được SC tiếp cận chăm sóc đạt <b>${bsc.careRate.avgScCham != null ? bsc.careRate.avgScCham.toFixed(2) + '%' : (bsc.careRate.totalRow?.scCham != null ? bsc.careRate.totalRow.scCham.toFixed(2) + '%' : '-')}</b>, đảm bảo hỗ trợ đồng hành ngay trong giai đoạn Onboarding.`
             ]) : ''}
 
-            <h3>1. Tỷ lệ Inactive New &amp; Tỷ lệ SC đã chăm sóc khách New (Sheet baocaotuan F2:I6)</h3>
+            <h3>1. Tỷ lệ Inactive New &amp; Tỷ lệ SC đã chăm sóc khách New</h3>
             ${wrRenderCareRateTable(bsc.careRate)}
 
-            <h3>2. Diễn biến Tỷ lệ Inactive New theo tháng năm 2026 (Sheet baocaotuan AV2:BB15)</h3>
+            <h3>2. Diễn biến Tỷ lệ Inactive New theo tháng năm 2026</h3>
             ${wrRenderMonthlyInactiveTable(bsc.monthlyInactive)}
         </section>
 
         <!-- 7. CÁC TỆP TRIỂN KHAI -->
         <section>
             <h2>VII. CÁC TỆP TRIỂN KHAI TRỌNG ĐIỂM</h2>
-            <p>Báo cáo chi tiết kết quả rà soát và hỗ trợ 3 tệp khách hàng chiến lược từ sheet Google Sheets <i>'Các tiệp triển khai'</i>:</p>
+            <p>Báo cáo chi tiết kết quả rà soát và hỗ trợ 3 tệp khách hàng chiến lược:</p>
 
-            <h3>1. Nhóm F&amp;B lớn / lỗi (Cột A:B)</h3>
+            <h3>1. Nhóm F&amp;B lớn / lỗi</h3>
             ${wrRenderTiepFnbTable(bsc.tiepTrienKhai?.fnb || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.fnb : null))}
 
-            <h3>2. Nhóm Booking (3 sao) (Cột D:H)</h3>
+            <h3>2. Nhóm Booking (3 sao)</h3>
             ${wrRenderTiepBookingTable(bsc.tiepTrienKhai?.booking || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.booking : null))}
 
-            <h3>3. Nhóm Retail lớn (dùng HDDT) (Cột J:N)</h3>
+            <h3>3. Nhóm Retail lớn (dùng HĐĐT)</h3>
             ${wrRenderTiepRetailTable(bsc.tiepTrienKhai?.retail || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.retail : null))}
         </section>
 
@@ -2612,8 +2745,8 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             
             <div id="wrProposalsDocWrap">
                 ${manual && manual.proposals && manual.proposals.trim() ? `
-                <div style="margin-top: 14px; padding: 12px 14px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 6px;">
-                    <h4 style="margin: 0 0 6px 0; color: #1e40af; font-size: 13.5px;">📌 Đề xuất điều hành bổ sung:</h4>
+                <div class="wr-proposals-box">
+                    <h4 class="wr-proposals-title">📌 Đề xuất điều hành bổ sung:</h4>
                     ${wrBullets(wrLinesToList(manual.proposals).map(x => `<b>${wrEscapeHtml(x)}</b>`))}
                 </div>` : ''}
             </div>
@@ -2641,11 +2774,6 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         })()}
         </div>
 
-        <!-- LỜI KẾT & CHỮ KÝ BÁO CÁO -->
-        <div id="wrDocFooterBlock" style="margin-top: 28px; padding-top: 14px; border-top: 1px dashed var(--wr-border, #cbd5e1); font-size: 13px; color: var(--wr-text, #1e293b); font-style: italic;">
-            Trên đây là báo cáo định kỳ điều hành Customer Success (SC) kính gửi <b class="wr-doc-recipient-val">${wrEscapeHtml(recipient)}</b> nắm thông tin giúp em ạ. Em cảm ơn anh!
-        </div>
-
         <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--wr-border, #cbd5e1); display: flex; justify-content: space-between; align-items: flex-start;">
             <div style="font-size: 11.5px; color: var(--wr-muted, #64748b); max-width: 340px;">
                 <div><b>Báo cáo tổng hợp tự động từ hệ thống CRM &amp; Google Sheets DVKH (Ver 2)</b></div>
@@ -2659,9 +2787,6 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
                 <div style="height: 48px;"></div>
                 <div style="font-size: 13px; font-weight: 700; color: var(--wr-text, #0f172a);">
                     Đại diện Đội ngũ Customer Success (SC)
-                </div>
-                <div class="wr-doc-recipient-val" style="font-size: 12px; color: #1d4ed8; font-weight: 600; margin-top: 4px;">
-                    Trân trọng gửi ${wrEscapeHtml(recipient)}
                 </div>
             </div>
         </div>
@@ -2696,13 +2821,16 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
     const periodLabel = `${wrFormatVNDate(fromDate)} - ${wrFormatVNDate(toDate)}`;
 
     const docTitle = document.getElementById('wrDocTitle')?.value?.trim() || 'BÁO CÁO CHẤT LƯỢNG CUSTOMER SUCCESS (SC)';
-    const recipient = document.getElementById('wrRecipient')?.value?.trim() || 'anh Nguyễn Dũng Hải - SDM DVKH (Dịch Vụ Khách Hàng)';
 
     // Điểm tin tổng hợp: TÍNH TOÁN ĐỘNG TỪ DỮ LIỆU GOOGLE SHEETS
     const summaryBullets = [];
     if (bsc.activeRate?.latestMonth) {
         const lm = bsc.activeRate.latestMonth;
-        summaryBullets.push(`<b>Chỉ số Active Rate (${lm.cleanLabel || lm.label}):</b> Ngành Retail đạt <b>${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b>; Ngành F&B đạt <b>${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b>; Ngành Booking đạt <b>${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b>; Trung bình 3 ngành đạt <b>${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>.`);
+        const kpiR = 67.8, kpiF = 75.3, kpiB = 66.0;
+        const achR = lm.retail != null ? ((lm.retail / kpiR) * 100).toFixed(2) + '%' : '-';
+        const achF = lm.fnb != null ? ((lm.fnb / kpiF) * 100).toFixed(2) + '%' : '-';
+        const achB = lm.booking != null ? ((lm.booking / kpiB) * 100).toFixed(2) + '%' : '-';
+        summaryBullets.push(`<b>Chỉ số Active Rate (${lm.cleanLabel || lm.label}):</b> Ngành Retail đạt <b>${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b> (KPI: <b>67.8%</b>, đạt <b>${achR}</b>); Ngành F&B đạt <b>${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b> (KPI: <b>75.3%</b>, đạt <b>${achF}</b>); Ngành Booking đạt <b>${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b> (KPI: <b>66.0%</b>, đạt <b>${achB}</b>); Trung bình 3 ngành đạt <b>${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>.`);
     }
     if (bsc.careRate) {
         const totKyMoi = bsc.careRate.totKyMoi || bsc.careRate.totalRow?.kyMoi;
@@ -2745,8 +2873,22 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
     const sumTableRows = [];
     if (bsc.activeRate?.latestMonth) {
         const lm = bsc.activeRate.latestMonth;
-        sumTableRows.push(['Active Rate F&B', `<b class="${wrKpiTone(lm.fnb)}">${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b>`, 'Active Rate Retail', `<b class="${wrKpiTone(lm.retail)}">${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b>`]);
-        sumTableRows.push(['Active Rate Booking', `<b class="${wrKpiTone(lm.booking)}">${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b>`, 'Active Rate Trung bình', `<b class="wr-kpi-good">${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>`]);
+        const kpiR = 67.8, kpiF = 75.3, kpiB = 66.0;
+        const achR = lm.retail != null ? ((lm.retail / kpiR) * 100).toFixed(2) + '%' : '-';
+        const achF = lm.fnb != null ? ((lm.fnb / kpiF) * 100).toFixed(2) + '%' : '-';
+        const achB = lm.booking != null ? ((lm.booking / kpiB) * 100).toFixed(2) + '%' : '-';
+        sumTableRows.push([
+            'Active Rate Retail (KPI 67.8%)', 
+            `<b class="${wrKpiTone(lm.retail)}">${lm.retail != null ? lm.retail.toFixed(2) + '%' : '-'}</b> <span style="font-size:11px;font-weight:700;color:#10b981">(Đạt ${achR})</span>`, 
+            'Active Rate F&B (KPI 75.3%)', 
+            `<b class="${wrKpiTone(lm.fnb)}">${lm.fnb != null ? lm.fnb.toFixed(2) + '%' : '-'}</b> <span style="font-size:11px;font-weight:700;color:#10b981">(Đạt ${achF})</span>`
+        ]);
+        sumTableRows.push([
+            'Active Rate Booking (KPI 66.0%)', 
+            `<b class="${wrKpiTone(lm.booking)}">${lm.booking != null ? lm.booking.toFixed(2) + '%' : '-'}</b> <span style="font-size:11px;font-weight:700;color:#10b981">(Đạt ${achB})</span>`, 
+            'Active Rate Trung bình', 
+            `<b class="wr-kpi-good">${lm.avg != null ? lm.avg.toFixed(2) + '%' : '-'}</b>`
+        ]);
     }
     if (bsc.careRate) {
         const avgInact = bsc.careRate.avgInactive || bsc.careRate.totalRow?.inactive;
@@ -2788,9 +2930,6 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
         <!-- HEADER BÁO CÁO -->
         <div class="wr-doc-title">${wrEscapeHtml(docTitle)}</div>
         <div class="wr-doc-subtitle" style="font-size: 13px; margin: 6px 0 20px; text-align: center;">
-            <div class="wr-doc-recipient" style="font-weight: 700; color: #1d4ed8; font-size: 14.5px; margin-bottom: 5px;">
-                Kính gửi: ${wrEscapeHtml(recipient)}
-            </div>
             <div style="color: #475569;">
                 <b>Kỳ báo cáo:</b> ${periodLabel} · <b>Đơn vị lập:</b> Khối Chăm Sóc Khách Hàng (Customer Success - SC)
             </div>
@@ -2800,7 +2939,7 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
         <section>
             <h2>I. TỔNG QUAN &amp; TÓM TẮT ĐIỀU HÀNH</h2>
             <p>
-                Kính gửi anh <b class="wr-doc-recipient-val">${wrEscapeHtml(recipient)}</b>, trong kỳ báo cáo từ <b>${wrFormatVNDate(fromDate)}</b> đến hết <b>${wrFormatVNDate(toDate)}</b>, 
+                Trong kỳ báo cáo từ <b>${wrFormatVNDate(fromDate)}</b> đến hết <b>${wrFormatVNDate(toDate)}</b>, 
                 đội ngũ Customer Success (SC) đã tập trung triển khai đồng bộ các hoạt động chăm sóc tại chỗ, kiểm soát tỷ lệ Active Rate và xử lý các vấn đề phát sinh của khách hàng lớn:
             </p>
             ${wrBullets(summaryBullets)}
@@ -2814,15 +2953,15 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
         <section>
             <h2>II. CHỈ SỐ ACTIVE RATE &amp; TỶ LỆ INACTIVE</h2>
             
-            <h3>1. Active Rate theo ngành hàng năm 2026 (Sheet baocaotuan A2:D14)</h3>
+            <h3>1. Active Rate theo ngành hàng năm 2026</h3>
             <p>Diễn biến tỷ lệ khách hàng hoạt động (Active Rate) qua các tháng trong năm 2026:</p>
             ${wrRenderActiveRateTable(bsc.activeRate)}
 
-            <h3>2. Tỷ lệ Inactive New &amp; Tỷ lệ SC đã chăm sóc (Sheet baocaotuan F2:I6)</h3>
+            <h3>2. Tỷ lệ Inactive New &amp; Tỷ lệ SC đã chăm sóc</h3>
             <p>Trong kỳ số khách hàng ký mới là <b>${bsc.careRate?.totKyMoi ? wrInt(bsc.careRate.totKyMoi) : '-'}</b> khách. Tỷ lệ Inactive New bình quân toàn quốc là <b>${bsc.careRate?.avgInactive != null ? bsc.careRate.avgInactive.toFixed(2) + '%' : '-'}</b>; Tỷ lệ khách mới đã được đội ngũ SC tiếp cận chăm sóc đạt <b>${bsc.careRate?.avgScCham != null ? bsc.careRate.avgScCham.toFixed(2) + '%' : '-'}</b>:</p>
             ${wrRenderCareRateTable(bsc.careRate)}
 
-            <h3>3. Tỷ lệ Inactive New theo tháng năm 2026 (Sheet baocaotuan AV2:BB15)</h3>
+            <h3>3. Tỷ lệ Inactive New theo tháng năm 2026</h3>
             <p>Theo dõi diễn biến tỷ lệ Inactive New qua các tháng trong năm 2026:</p>
             ${wrRenderMonthlyInactiveTable(bsc.monthlyInactive)}
         </section>
@@ -2831,7 +2970,7 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
         <section>
             <h2>III. TÌNH HÌNH HOẠT ĐỘNG &amp; QUÂN SỐ ĐỘI NGŨ SC</h2>
             
-            <h3>1. Cơ cấu quân số theo Vùng miền &amp; Vị trí (Sheet baocaotuan V2:AB5)</h3>
+            <h3>1. Cơ cấu quân số theo Vùng miền &amp; Vị trí</h3>
             ${wrBullets([
                 `Tính đến kỳ báo cáo, tổng quân số Customer Success toàn quốc là <b>${regTot?.total || 50} nhân sự</b> (Miền Bắc: <b>${mb?.total || 0}</b>; Miền Nam: <b>${mn?.total || 0}</b>; Khối Online: <b>${regTot?.online || 0}</b>).`,
                 `Tổng số nhân sự thử việc ghi nhận: <b>${regTot?.probation || 0} nhân sự</b>.`,
@@ -2839,7 +2978,7 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
             ])}
             ${wrRenderHeadcountRegionTable(bsc.headcountRegion)}
 
-            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành (Sheet baocaotuan U7:W30)</h3>
+            <h3>2. Cơ cấu phân bổ nhân sự tại 16 tỉnh thành</h3>
             <p>Bảng phân bổ chi tiết quân số và tỷ trọng tại 16 tỉnh thành trọng điểm theo dữ liệu thực tế từ Google Sheets:</p>
             ${wrRenderHeadcountProvinceTable(bsc.headcountProvince)}
         </section>
@@ -2849,25 +2988,25 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
             <h2>IV. KẾT QUẢ THỰC HIỆN MỤC TIÊU &amp; VẬN HÀNH (OFFLINE &amp; ONLINE)</h2>
             
             <h3>1. Kết quả hoạt động Team Offline</h3>
-            <h4>1.1 Kết quả thực hiện mục tiêu vận hành (Sheet muctieu A2:I13)</h4>
+            <h4>1.1 Kết quả thực hiện mục tiêu vận hành</h4>
             ${wrRenderMuctieuTable(bsc.muctieuOffline, false)}
 
-            <h4>1.2 Bảng theo dõi KPI Coacher Team Offline Tháng 11 (Sheet baocaotuan AJ13:AP17)</h4>
+            <h4>1.2 Bảng theo dõi KPI Coacher Team Offline Tháng 11</h4>
             ${wrRenderKpiOfflineT10Table(bsc.kpiOfflineT10)}
 
-            <h4>1.3 Tỷ lệ Impact 16 tỉnh thành qua các tháng (T7 - T12) (Sheet baocaotuan K2:Q19)</h4>
+            <h4>1.3 Tỷ lệ Impact 16 tỉnh thành qua các tháng (T7 - T12)</h4>
             <p>Số liệu tỷ lệ Impact thực tế qua các tháng từ Google Sheets:</p>
             ${wrRenderProvinceImpactTable(bsc.provinceImpact)}
 
-            <h4>1.4 Tư vấn chuyển Addon &amp; Phần cứng Tháng 11 (Sheet baocaotuan AJ22:AO30)</h4>
+            <h4>1.4 Tư vấn chuyển Addon &amp; Phần cứng Tháng 11</h4>
             <p>Kết quả tư vấn giải pháp Addon và Phần cứng giữa Team Offline và Team Online:</p>
             ${wrRenderAddonT10Table(bsc.addonT10)}
 
             <h3>2. Kết quả hoạt động Team Online</h3>
-            <h4>2.1 Kết quả thực hiện mục tiêu Team Online (Sheet muctieu A16:I28)</h4>
+            <h4>2.1 Kết quả thực hiện mục tiêu Team Online</h4>
             ${wrRenderMuctieuTable(bsc.muctieuOnline, true)}
 
-            <h4>2.2 Bảng theo dõi KPI Team Online Tháng 09 (Sheet baocaotuan AJ2:AP5)</h4>
+            <h4>2.2 Bảng theo dõi KPI Team Online Tháng 10</h4>
             ${wrRenderKpiOnlineT9Table(bsc.kpiOnlineT9)}
 
         </section>
@@ -2896,8 +3035,8 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
             
             <div id="wrProposalsDocWrap">
                 ${manual && manual.proposals && manual.proposals.trim() ? `
-                <div style="margin-top: 14px; padding: 12px 14px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 6px;">
-                    <h4 style="margin: 0 0 6px 0; color: #1e40af; font-size: 13.5px;">📌 Đề xuất điều hành bổ sung:</h4>
+                <div class="wr-proposals-box">
+                    <h4 class="wr-proposals-title">📌 Đề xuất điều hành bổ sung:</h4>
                     ${wrBullets(wrLinesToList(manual.proposals).map(x => `<b>${wrEscapeHtml(x)}</b>`))}
                 </div>` : ''}
             </div>
@@ -2925,11 +3064,6 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
         })()}
         </div>
 
-        <!-- LỜI KẾT & CHỮ KÝ BÁO CÁO -->
-        <div id="wrDocFooterBlock" style="margin-top: 28px; padding-top: 14px; border-top: 1px dashed var(--wr-border, #cbd5e1); font-size: 13px; color: var(--wr-text, #1e293b); font-style: italic;">
-            Trên đây là báo cáo định kỳ chất lượng Customer Success (SC) kính gửi <b class="wr-doc-recipient-val">${wrEscapeHtml(recipient)}</b> nắm thông tin giúp em ạ. Em cảm ơn anh!
-        </div>
-
         <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--wr-border, #cbd5e1); display: flex; justify-content: space-between; align-items: flex-start;">
             <div style="font-size: 11.5px; color: var(--wr-muted, #64748b); max-width: 340px;">
                 <div><b>Báo cáo tổng hợp tự động từ hệ thống CRM &amp; Google Sheets DVKH</b></div>
@@ -2943,9 +3077,6 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
                 <div style="height: 48px;"></div>
                 <div style="font-size: 13px; font-weight: 700; color: var(--wr-text, #0f172a);">
                     Đại diện Đội ngũ Customer Success (SC)
-                </div>
-                <div class="wr-doc-recipient-val" style="font-size: 12px; color: #1d4ed8; font-weight: 600; margin-top: 4px;">
-                    Trân trọng gửi ${wrEscapeHtml(recipient)}
                 </div>
             </div>
         </div>
@@ -3087,7 +3218,7 @@ async function generateWeeklyReport() {
             preview.innerHTML = html;
             wrInitDirectEditing();
         }
-        if (status) status.innerHTML = `✅ Đã tạo báo cáo tự động đến hết <b>${wrFormatVNDate(toDate)}</b> gửi <b>${wrEscapeHtml(document.getElementById('wrRecipient')?.value || 'anh Nguyễn Dũng Hải')}</b>. ${previousSnapshot ? `Đang so với mốc ${previousSnapshot.date.split('-').reverse().join('/')}.` : 'Chưa có mốc trước để so sánh.'}`;
+        if (status) status.innerHTML = `✅ Đã tạo báo cáo tự động đến hết <b>${wrFormatVNDate(toDate)}</b> ${previousSnapshot ? `Đang so với mốc ${previousSnapshot.date.split('-').reverse().join('/')}.` : 'Chưa có mốc trước để so sánh.'}`;
     } catch (err) {
         console.error('Weekly report error:', err);
         if (status) status.innerHTML = `<span style="color:#ef4444">❌ ${wrEscapeHtml(err.message || String(err))}</span>`;
@@ -3561,10 +3692,8 @@ function wrDocxBuildDocumentXml(state) {
     const toDate=new Date(document.getElementById('wrToDate').value+'T00:00:00');
     let body='';
     const docTitle = document.getElementById('wrDocTitle')?.value?.trim() || 'BÁO CÁO CHẤT LƯỢNG CUSTOMER SUCCESS (SC)';
-    const recipient = document.getElementById('wrRecipient')?.value?.trim() || 'anh Nguyễn Dũng Hải - SDM DVKH (Dịch Vụ Khách Hàng)';
     body += wrDocxP(docTitle,{bold:true,color:'17365D',size:38,align:'center',after:40});
-    body += wrDocxP(`Kính gửi: ${recipient}`,{bold:true,color:'1D4ED8',size:22,align:'center',after:60});
-    body += wrDocxP(`Dữ liệu từ ${wrFormatVNDate(fromDate)} đến hết ${wrFormatVNDate(toDate)}`,{color:'666666',size:18,align:'center',after:160});
+        body += wrDocxP(`Dữ liệu từ ${wrFormatVNDate(fromDate)} đến hết ${wrFormatVNDate(toDate)}`,{color:'666666',size:18,align:'center',after:160});
     body += wrDocxHeading('I. TÓM TẮT');
     body += wrDocxP(`KPI tổng team ${wrPct(k.totalTeam)}; Impact ${wrPct(k.impactTeam)}; năng suất ${wrNumber(p.avgATC)} ATC/ngày; thời gian hỗ trợ TB ${wrNumber(p.avgHours)} giờ/ngày; data treo & tồn ${wrInt(b.total)}; ATC tự tạo ${wrPct(sc.pct,1)}; hỗ trợ 0-5 phút ${wrPct(sd.shortPct)}.`,{size:19,after:100});
     body += wrDocxTable(['CHỈ SỐ','GIÁ TRỊ','CHỈ SỐ','GIÁ TRỊ'],[
@@ -3788,7 +3917,7 @@ function initWeeklyReportTab() {
         ? 'BÁO CÁO ĐIỀU HÀNH CUSTOMER SUCCESS (SC)' 
         : 'BÁO CÁO CHẤT LƯỢNG CUSTOMER SUCCESS (SC)';
     setVal('wrDocTitle', manual.docTitle || defaultTitle);
-    setVal('wrRecipient', manual.recipient || 'anh Nguyễn Dũng Hải - SDM DVKH (Dịch Vụ Khách Hàng)');
+    setVal('wrRecipient', manual.recipient || '');
     ['wrDocTitle', 'wrRecipient', 'wrAddressTotal', 'wrAddressDone', 'wrProposals'].forEach(id => {
         const el = document.getElementById(id);
         if (el && !el.dataset.wrBound) {
