@@ -7,10 +7,12 @@
 // Cấu hình Service Account & Spreadsheet
 const SA_SPREADSHEET_ID = '1Wghthkrt0A8QQ08gDVSnQO55ix8CGCZHt87qhRcpKEY';
 const SA_SHEET_NAME = 'Các tiệp triển khai';
+const SA_RETAIL_SPREADSHEET_ID = '12nWROazTrZvDR6NCVcCVhzfLr2lmrsctpavm2g_9RyQ';
+const SA_RETAIL_SHEET_NAME = 'Report';
 const SA_RANGES = [
   `'${SA_SHEET_NAME}'!A1:B50`,  // Mục 8.1: Nhóm FNB lớn / lỗi (cột A:B)
   `'${SA_SHEET_NAME}'!D1:H60`,  // Mục 8.2: Nhóm Booking 3 Hotel sao (cột D:H)
-  `'${SA_SHEET_NAME}'!J1:N60`   // Mục 8.3: Nhóm retail lớn HDDT (cột J:N)
+  `'${SA_SHEET_NAME}'!J1:P60`   // Mục 8.3: Nhóm retail lớn HDDT (cột J:P dự phòng)
 ];
 
 const SA_CREDENTIALS = {
@@ -125,23 +127,57 @@ async function getGoogleServiceAccountToken() {
 
 /**
  * Tải đồng thời cả 3 vùng dữ liệu qua batchGet
+ * - Nhóm F&B (A:B) và Booking (D:H) lấy từ spreadsheet chính SA_SPREADSHEET_ID
+ * - Nhóm Retail Lớn HDDT lấy trực tiếp từ spreadsheet chuyên biệt SA_RETAIL_SPREADSHEET_ID (sheet Report),
+ *   hoặc tự động dự phòng sang cột J:P của spreadsheet chính nếu mạng/quyền hạn có sự cố.
  */
 async function fetchTiepTrienKhaiFromGoogleSheets() {
   const token = await getGoogleServiceAccountToken();
-  const url = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${SA_SPREADSHEET_ID}/values:batchGet`);
-  SA_RANGES.forEach(r => url.searchParams.append('ranges', r));
 
-  const res = await fetch(url.toString(), {
-    headers: { 'Authorization': 'Bearer ' + token }
-  });
+  // 1. Tải FNB, Booking và cột dự phòng Retail từ spreadsheet chính
+  const urlPrimary = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${SA_SPREADSHEET_ID}/values:batchGet`);
+  SA_RANGES.forEach(r => urlPrimary.searchParams.append('ranges', r));
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Google Sheets API lỗi HTTP ${res.status}: ${errText}`);
+  // 2. Tải song song Retail HDDT từ sheet Report (gid 1856000949)
+  const urlRetailReport = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${SA_RETAIL_SPREADSHEET_ID}/values/${encodeURIComponent(`'${SA_RETAIL_SHEET_NAME}'!A1:G40`)}`);
+
+  const [resPrimary, resRetailReport] = await Promise.all([
+    fetch(urlPrimary.toString(), { headers: { 'Authorization': 'Bearer ' + token } }),
+    fetch(urlRetailReport.toString(), { headers: { 'Authorization': 'Bearer ' + token } }).catch(err => {
+      console.warn('Lỗi kết nối sheet Report Retail:', err);
+      return null;
+    })
+  ]);
+
+  if (!resPrimary.ok) {
+    const errText = await resPrimary.text();
+    throw new Error(`Google Sheets API lỗi HTTP ${resPrimary.status}: ${errText}`);
   }
 
-  const json = await res.json();
-  return json;
+  const primaryJson = await resPrimary.json();
+  let retailValueRange = primaryJson.valueRanges[2]; // Mặc định cột J:P của Các tiệp triển khai
+
+  if (resRetailReport && resRetailReport.ok) {
+    try {
+      const retailJson = await resRetailReport.json();
+      if (retailJson && Array.isArray(retailJson.values) && retailJson.values.length >= 5) {
+        retailValueRange = {
+          range: `'${SA_RETAIL_SHEET_NAME}'!A1:G40`,
+          values: retailJson.values
+        };
+      }
+    } catch (parseJsonErr) {
+      console.warn('Lỗi đọc JSON sheet Report Retail:', parseJsonErr);
+    }
+  }
+
+  return {
+    valueRanges: [
+      primaryJson.valueRanges[0],
+      primaryJson.valueRanges[1],
+      retailValueRange
+    ]
+  };
 }
 
 /* ==========================================================================
@@ -335,7 +371,7 @@ function parseTiepTrienKhaiBooking(rows) {
 }
 
 /**
- * Chuẩn hóa 8.3: Nhóm retail lớn HDDT (cột J:N)
+ * Chuẩn hóa 8.3: Nhóm retail lớn HDDT (từ sheet Report hoặc cột J:P)
  */
 function parseTiepTrienKhaiRetail(rows) {
   if (!Array.isArray(rows) || rows.length < 3) return null;
@@ -344,10 +380,15 @@ function parseTiepTrienKhaiRetail(rows) {
   const month = (rows[1] && rows[1][0]) || 'Tháng 11';
 
   // Bảng 1: Thực trạng cửa hàng & Impact
-  const tbl1Headers = rows[2] || ['Tình trạng trao đổi', 'Số lượng', 'Tỷ tiếp cận trực tiếp thành công', 'Số khách impact', 'Tỷ lệ impact'];
+  let tbl1Headers = ['Thực trạng cửa hàng / Công ty', 'Số lượng', 'Tỷ tiếp cận trực tiếp', 'Số khách impact', 'Tỷ lệ impact'];
   const tbl1Rows = [];
   let tbl1Total = null;
-  let idx = 3;
+  let idx = 2;
+
+  if (rows[idx] && rows[idx].length >= 3) {
+    tbl1Headers = rows[idx].slice(0, 5);
+    idx++;
+  }
 
   while (idx < rows.length) {
     const r = rows[idx];
@@ -357,43 +398,59 @@ function parseTiepTrienKhaiRetail(rows) {
     }
     const name = String(r[0]).trim();
     if (name.toLowerCase().includes('tổng')) {
-      tbl1Total = r;
+      tbl1Total = r.slice(0, 5);
+      idx++;
+      break;
     } else {
-      tbl1Rows.push(r);
+      tbl1Rows.push(r.slice(0, 5));
     }
     idx++;
   }
 
-  // Bỏ qua hàng trống
-  while (idx < rows.length && (!rows[idx] || !rows[idx].length || !rows[idx][1])) {
-    idx++;
-  }
-
-  // Bảng 2: Tình trạng trao đổi
-  let tbl2Headers = ['Tình trạng trao đổi', 'Số lượng', 'Tỷ tiếp cận trực tiếp thành công'];
+  // Bảng 2 & Bảng 2b (Tình trạng trao đổi & Tình trạng sử dụng phần mềm)
+  let tbl2Headers = ['Hình thức trao đổi', 'Số lượng GH', 'Tỷ lệ tiếp cận (%)'];
   const tbl2Rows = [];
   let tbl2Total = null;
 
-  if (idx < rows.length && rows[idx][0] && rows[idx][0].toLowerCase().includes('tình trạng')) {
-    tbl2Headers = rows[idx];
-    idx++;
-    while (idx < rows.length) {
-      const r = rows[idx];
-      if (!r || !r.length || !r[0]) {
-        idx++;
-        break;
-      }
-      const name = String(r[0]).trim();
-      if (name.toLowerCase().includes('tổng')) {
-        tbl2Total = r;
-      } else {
-        tbl2Rows.push(r);
-      }
+  let tblUsageHeaders = ['Tình trạng sử dụng', 'Số gian hàng', 'Tỷ trọng'];
+  const tblUsageRows = [];
+  let tblUsageTotal = null;
+
+  while (idx < rows.length) {
+    const r = rows[idx];
+    if (!r || !r.length) {
       idx++;
+      continue;
     }
+    const c0 = String(r[0] || '').trim();
+    if (c0.toLowerCase().includes('nguyên nhân khách')) {
+      break;
+    }
+
+    // Cột 0..2: Bảng 2
+    if (c0.toLowerCase().includes('tình trạng trao đổi') || c0.toLowerCase().includes('hình thức')) {
+      tbl2Headers = [r[0] || 'Hình thức trao đổi', r[1] || 'Số lượng GH', r[2] || 'Tỷ lệ tiếp cận (%)'];
+    } else if (c0.toLowerCase().includes('tổng')) {
+      tbl2Total = [r[0], r[1], r[2]];
+    } else if (c0 && c0 !== 'Tháng 11' && r[1] != null && String(r[1]).trim() !== '') {
+      tbl2Rows.push([r[0], r[1], r[2]]);
+    }
+
+    // Cột 4..6: Bảng 2b (Tình trạng sử dụng)
+    const c4 = String(r[4] || '').trim();
+    if (c4) {
+      if (c4.toLowerCase().includes('tình trạng sử dụng')) {
+        tblUsageHeaders = [r[4] || 'Tình trạng sử dụng', r[5] || 'Số gian hàng', r[6] || 'Tỷ trọng'];
+      } else if (c4.toLowerCase().includes('tổng')) {
+        tblUsageTotal = [r[4], r[5], r[6]];
+      } else if (r[5] != null && String(r[5]).trim() !== '') {
+        tblUsageRows.push([r[4], r[5], r[6]]);
+      }
+    }
+    idx++;
   }
 
-  // Bảng 3: Nguyên nhân khách sử dụng song song
+  // Bảng 3: 1. Nguyên nhân khách sử dụng song song hoặc chuyển sang nhà cung cấp khác
   let tbl3Title = '1. Nguyên nhân khách sử dụng song song hoặc chuyển sang nhà cung cấp khác';
   let tbl3Headers = ['Nhóm nguyên nhân', 'Phân tích thực tế', 'Số gian hàng'];
   const tbl3Rows = [];
@@ -405,18 +462,27 @@ function parseTiepTrienKhaiRetail(rows) {
       if (c0.toLowerCase().includes('nguyên nhân khách')) {
         tbl3Title = c0;
         idx++;
-        if (idx < rows.length) tbl3Headers = rows[idx];
-        idx++;
+        while (idx < rows.length && (!rows[idx] || !rows[idx].length || !rows[idx].some(c => c && String(c).trim() !== ''))) {
+          idx++;
+        }
+        if (idx < rows.length && rows[idx] && rows[idx].length >= 3) {
+          const checkHeader = String(rows[idx][0] || '').toLowerCase();
+          if (checkHeader.includes('nhóm') || checkHeader.includes('nguyên nhân')) {
+            tbl3Headers = rows[idx].slice(0, 3);
+            idx++;
+          }
+        }
         while (idx < rows.length) {
           const rowData = rows[idx];
           if (!rowData || !rowData.length || !rowData[0]) {
             idx++;
             break;
           }
-          if (String(rowData[0]).startsWith('2. ')) {
+          const checkEnd = String(rowData[0] || '').toLowerCase();
+          if (checkEnd.startsWith('2. ') || checkEnd.includes('các vấn đề') || checkEnd.includes('tổng')) {
             break;
           }
-          tbl3Rows.push(rowData);
+          tbl3Rows.push(rowData.slice(0, 3));
           idx++;
         }
         break;
@@ -425,19 +491,59 @@ function parseTiepTrienKhaiRetail(rows) {
     idx++;
   }
 
-  // Bảng 4: Các vấn đề phát sinh và đề xuất liên quan HDDT
-  let tbl4Title = '2. Các vấn đề phát sinh và đề xuất liên quan đến HDDT';
-  let tbl4Headers = ['Nhóm vấn đề', 'Thực tế ghi nhận', 'Số gian hàng'];
+  // Bảng 4: 2. Các vấn đề phát sinh lỗi và đề xuất về HDDT (5 cột: Nhóm, Vấn đề, Số GH, Đề xuất, KAT)
+  let tbl4Title = '2. Các vấn đề phát sinh lỗi và đề xuất về HDDT';
+  let tbl4Headers = ['Nhóm vấn đề', 'Vấn đề khách hàng phản ánh', 'Số gian hàng', 'Đề xuất', 'Ý kiến / Phản hồi KAT'];
   const tbl4Rows = [];
 
   while (idx < rows.length) {
     const r = rows[idx];
     if (r && r.length) {
       const c0 = String(r[0] || '').trim();
-      if (c0.toLowerCase().includes('các vấn đề phát sinh') || c0.toLowerCase().includes('đề xuất')) {
+      const c1 = String(r[1] || '').trim();
+      if (c0.toLowerCase().includes('các vấn đề phát sinh') || c0.toLowerCase().includes('đề xuất về hddt')) {
         tbl4Title = c0;
         idx++;
-        if (idx < rows.length) tbl4Headers = rows[idx];
+        while (idx < rows.length && (!rows[idx] || !rows[idx].length || !rows[idx].some(c => c && String(c).trim() !== ''))) {
+          idx++;
+        }
+        if (idx < rows.length && rows[idx] && rows[idx].length >= 3) {
+          const checkHeader = String(rows[idx][0] || '').toLowerCase();
+          if (checkHeader.includes('nhóm') || checkHeader.includes('vấn đề')) {
+            tbl4Headers = [
+              rows[idx][0] || 'Nhóm vấn đề',
+              rows[idx][1] || 'Vấn đề khách hàng phản ánh',
+              rows[idx][2] || 'Số gian hàng',
+              rows[idx][3] || 'Đề xuất',
+              rows[idx][4] || 'Ý kiến / Phản hồi KAT'
+            ];
+            idx++;
+          }
+        }
+        while (idx < rows.length) {
+          const rowData = rows[idx];
+          if (!rowData || !rowData.length || !rowData[0]) {
+            idx++;
+            break;
+          }
+          tbl4Rows.push([
+            rowData[0] || '',
+            rowData[1] || '',
+            rowData[2] || '',
+            rowData[3] || '',
+            rowData[4] || ''
+          ]);
+          idx++;
+        }
+        break;
+      } else if (c0.toLowerCase().includes('nhóm vấn đề') && c1.toLowerCase().includes('vấn đề')) {
+        tbl4Headers = [
+          r[0] || 'Nhóm vấn đề',
+          r[1] || 'Vấn đề khách hàng phản ánh',
+          r[2] || 'Số gian hàng',
+          r[3] || 'Đề xuất',
+          r[4] || 'Ý kiến / Phản hồi KAT'
+        ];
         idx++;
         while (idx < rows.length) {
           const rowData = rows[idx];
@@ -445,7 +551,13 @@ function parseTiepTrienKhaiRetail(rows) {
             idx++;
             break;
           }
-          tbl4Rows.push(rowData);
+          tbl4Rows.push([
+            rowData[0] || '',
+            rowData[1] || '',
+            rowData[2] || '',
+            rowData[3] || '',
+            rowData[4] || ''
+          ]);
           idx++;
         }
         break;
@@ -459,6 +571,7 @@ function parseTiepTrienKhaiRetail(rows) {
     month,
     tbl1: { headers: tbl1Headers, rows: tbl1Rows, total: tbl1Total },
     tbl2: { headers: tbl2Headers, rows: tbl2Rows, total: tbl2Total },
+    tblUsage: { headers: tblUsageHeaders, rows: tblUsageRows, total: tblUsageTotal },
     tbl3: { title: tbl3Title, headers: tbl3Headers, rows: tbl3Rows },
     tbl4: { title: tbl4Title, headers: tbl4Headers, rows: tbl4Rows }
   };
@@ -966,12 +1079,13 @@ function renderBookingGroupUI(parsed) {
 }
 
 /**
- * 8.3: Giao diện Nhóm retail lớn HDDT (cột J:N)
+ * 8.3: Giao diện Nhóm retail lớn HDDT (cột J:P hoặc sheet Report)
  */
 function renderRetailGroupUI(parsed) {
   const boxCards = $('bscTiepRetailCards');
   const boxTbl1 = $('bscTiepRetailTbl1');
   const boxTbl2 = $('bscTiepRetailTbl2');
+  const boxTblUsage = $('bscTiepRetailTblUsage');
   const boxTbl3 = $('bscTiepRetailTbl3');
   const boxTbl4 = $('bscTiepRetailTbl4');
   if (!parsed) return;
@@ -984,16 +1098,51 @@ function renderRetailGroupUI(parsed) {
     </div>`;
 
   const t1Tot = parsed.tbl1.total || [];
-  const totGH = t1Tot[1] ? n0(_parseValNumber(t1Tot[1])) : '33';
-  const totImpact = t1Tot[3] ? n0(_parseValNumber(t1Tot[3])) : '12';
-  const totImpactPct = t1Tot[4] || '36.36%';
+  const totGH = t1Tot[1] ? n0(_parseValNumber(t1Tot[1])) : '108';
+  const totImpact = t1Tot[3] ? n0(_parseValNumber(t1Tot[3])) : '20';
+  const totImpactPct = t1Tot[4] || '18.52%';
+
+  // Cửa hàng đang mở / đóng cửa từ tbl1.rows
+  let moCuaVal = '57 GH (52.8%)';
+  let dongCuaSub = 'Đóng cửa: 33 GH (30.6%) · Không có CH/KTT: 18 GH';
+  if (parsed.tbl1 && Array.isArray(parsed.tbl1.rows)) {
+    const rMo = parsed.tbl1.rows.find(r => String(r[0] || '').toLowerCase().includes('mở cửa'));
+    const rDong = parsed.tbl1.rows.find(r => String(r[0] || '').toLowerCase().includes('đóng cửa'));
+    const rKoCH = parsed.tbl1.rows.find(r => String(r[0] || '').toLowerCase().includes('không có'));
+    const rOpt = parsed.tbl1.rows.find(r => String(r[0] || '').toLowerCase().includes('không tồn tại'));
+    if (rMo) {
+      moCuaVal = `${rMo[1]} GH (${rMo[2] || ''})`;
+    }
+    const dCount = rDong ? rDong[1] : '33';
+    const dPct = rDong ? rDong[2] : '30.6%';
+    const kCount = rKoCH ? parseInt(rKoCH[1] || 0) : 16;
+    const optCount = rOpt ? parseInt(rOpt[1] || 0) : 2;
+    dongCuaSub = `Đóng cửa: ${dCount} GH (${dPct}) · Không có CH/KTT: ${kCount + optCount} GH`;
+  }
+
+  // Tình trạng dùng bên khác từ tblUsage hoặc tbl3
+  let useKhacVal = '35 GH (34.0%)';
+  let useKhacSub = 'Dùng 100% bên khác: 29 GH · Dùng song song: 6 GH';
+  if (parsed.tblUsage && Array.isArray(parsed.tblUsage.rows)) {
+    const r100 = parsed.tblUsage.rows.find(r => String(r[0] || '').toLowerCase().includes('100% bên khác'));
+    const rSongSong = parsed.tblUsage.rows.find(r => String(r[0] || '').toLowerCase().includes('song song'));
+    if (r100 && rSongSong) {
+      const c100 = _parseValNumber(r100[1]);
+      const cSS = _parseValNumber(rSongSong[1]);
+      const totU = _parseValNumber(parsed.tblUsage.total ? parsed.tblUsage.total[1] : 103);
+      const sum = c100 + cSS;
+      const pct = totU > 0 ? ((sum / totU) * 100).toFixed(1) + '%' : '34.0%';
+      useKhacVal = `${sum} GH (${pct})`;
+      useKhacSub = `Dùng 100% bên khác: ${c100} GH · Song song: ${cSS} GH`;
+    }
+  }
 
   if (boxCards) {
     boxCards.innerHTML =
       K('🛒 Tổng Gian Hàng HĐĐT', `${totGH} GH`, `Rà soát gian hàng Retail lớn (${esc(parsed.month)})`, 'color:#8b5cf6') +
-      K('🏪 Cửa Hàng Đang Mở', `19 GH (57.6%)`, `Đóng cửa: 11 GH (33.3%) · Không có CH: 3 GH`, 'color:#a78bfa') +
+      K('🏪 Cửa Hàng Đang Mở', moCuaVal, dongCuaSub, 'color:#a78bfa') +
       K('⚡ Số Lượng Khách Impact', `${totImpact} GH`, `Tỷ lệ Impact toàn tệp: <b style="color:#10b981">${totImpactPct}</b>`, 'color:#10b981') +
-      K('📑 Lý Do Dùng Song Song', `10 GH (30.3%)`, `Kế toán đã quen dùng phần mềm riêng (MISA, Viettel)`, 'color:#f59e0b');
+      K('📑 Dùng Bên Khác / Song Song', useKhacVal, useKhacSub, 'color:#f59e0b');
   }
 
   // Bảng 1: Thực trạng cửa hàng & Impact
@@ -1080,6 +1229,49 @@ function renderRetailGroupUI(parsed) {
     boxTbl2.innerHTML = html;
   }
 
+  // Bảng 2b: Tình trạng sử dụng phần mềm HĐĐT
+  if (boxTblUsage) {
+    if (parsed.tblUsage && Array.isArray(parsed.tblUsage.rows) && parsed.tblUsage.rows.length) {
+      let html = `<table class="kpi-table" style="width:100%">
+        <thead>
+          <tr>
+            <th style="width:45px;text-align:center">STT</th>
+            <th style="text-align:left">${esc(parsed.tblUsage.headers[0] || 'Tình Trạng Sử Dụng')}</th>
+            <th style="text-align:center;width:110px">${esc(parsed.tblUsage.headers[1] || 'Số Gian Hàng')}</th>
+            <th style="text-align:center;width:95px">${esc(parsed.tblUsage.headers[2] || 'Tỷ Trọng')}</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+      parsed.tblUsage.rows.forEach((r, i) => {
+        html += `<tr>
+          <td style="text-align:center;font-weight:600;color:var(--mut)">${i + 1}</td>
+          <td style="text-align:left;font-weight:600;color:var(--tx-heading)">${esc(r[0])}</td>
+          <td style="text-align:center;font-weight:700">${n0(_parseValNumber(r[1]))}</td>
+          <td style="text-align:center;font-weight:600;color:#38bdf8">${esc(r[2])}</td>
+        </tr>`;
+      });
+
+      if (parsed.tblUsage.total) {
+        html += `</tbody>
+        <tfoot>
+          <tr style="background:var(--card-sub);font-weight:800;border-top:2px solid var(--line)">
+            <td style="text-align:center">∑</td>
+            <td style="text-align:left;color:var(--tx-heading);text-transform:uppercase">${esc(parsed.tblUsage.total[0])}</td>
+            <td style="text-align:center;font-size:14px;color:#f59e0b">${n0(_parseValNumber(parsed.tblUsage.total[1]))}</td>
+            <td style="text-align:center;color:#38bdf8">${esc(parsed.tblUsage.total[2])}</td>
+          </tr>
+        </tfoot>`;
+      } else {
+        html += `</tbody>`;
+      }
+      html += `</table>`;
+      boxTblUsage.innerHTML = html;
+    } else {
+      boxTblUsage.innerHTML = `<div style="padding:14px;text-align:center;color:var(--mut)">Chưa có dữ liệu tình trạng sử dụng</div>`;
+    }
+  }
+
   // Bảng 3: Nguyên nhân khách sử dụng song song
   if (boxTbl3) {
     let html = `<table class="kpi-table" style="width:100%">
@@ -1106,25 +1298,31 @@ function renderRetailGroupUI(parsed) {
     boxTbl3.innerHTML = html;
   }
 
-  // Bảng 4: Vấn đề phát sinh và đề xuất HDDT
+  // Bảng 4: Vấn đề phát sinh và đề xuất HDDT (5 cột)
   if (boxTbl4) {
+    const hasKat = parsed.tbl4.rows.some(r => r[4] && String(r[4]).trim() !== '');
     let html = `<table class="kpi-table" style="width:100%">
       <thead>
         <tr>
-          <th style="width:50px;text-align:center">STT</th>
-          <th style="text-align:left;min-width:200px">${esc(parsed.tbl4.headers[0] || 'Nhóm Vấn Đề')}</th>
-          <th style="text-align:left">${esc(parsed.tbl4.headers[1] || 'Thực Tế Ghi Nhận')}</th>
-          <th style="width:120px;text-align:center">${esc(parsed.tbl4.headers[2] || 'Số Gian Hàng')}</th>
+          <th style="width:45px;text-align:center">STT</th>
+          <th style="text-align:left;width:170px">${esc(parsed.tbl4.headers[0] || 'Nhóm Vấn Đề')}</th>
+          <th style="text-align:left;min-width:220px">${esc(parsed.tbl4.headers[1] || 'Vấn Đề Khách Hàng Phản Ánh')}</th>
+          <th style="width:75px;text-align:center">${esc(parsed.tbl4.headers[2] || 'Số GH')}</th>
+          <th style="text-align:left;min-width:220px">${esc(parsed.tbl4.headers[3] || 'Đề Xuất')}</th>
+          ${hasKat ? `<th style="text-align:left;min-width:260px">${esc(parsed.tbl4.headers[4] || 'Ý Kiến / Phản Hồi KAT')}</th>` : ''}
         </tr>
       </thead>
       <tbody>`;
 
     parsed.tbl4.rows.forEach((r, i) => {
+      const katText = r[4] ? esc(r[4]).replace(/\n/g, '<br>') : '-';
       html += `<tr>
         <td style="text-align:center;font-weight:600;color:var(--mut)">${i + 1}</td>
         <td style="text-align:left;font-weight:700;color:#0ea5e9">${esc(r[0])}</td>
         <td style="text-align:left;color:var(--tx)">${esc(r[1])}</td>
         <td style="text-align:center;font-weight:700;font-size:14px;color:var(--tx-heading)">${esc(r[2])}</td>
+        <td style="text-align:left;color:var(--tx);font-size:12.5px">${esc(r[3] || '-')}</td>
+        ${hasKat ? `<td style="text-align:left;font-size:12px;color:var(--tx);background:rgba(14,165,233,0.04);border-left:2px solid rgba(14,165,233,0.3);line-height:1.4">${katText}</td>` : ''}
       </tr>`;
     });
 
@@ -1212,10 +1410,11 @@ function exportTiepRetailCsv() {
   if (!p) return showToast('Chưa có dữ liệu Retail để xuất CSV', false);
 
   const lines = [
-    ['BÁO CÁO CÁC TỆP TRIỂN KHAI - MỤC 8.3: NHÓM RETAIL LỚN HDDT (' + p.month + ')'],
+    ['BÁO CÁO CÁC TỆP TRIỂN KHAI - MỤC 8.3: NHÓM RETAIL LỚN HDDT (' + (p.month || 'Tháng 11') + ')'],
+    ['Thời gian xuất: ' + new Date().toLocaleString('vi-VN')],
     [],
     ['--- BẢNG 1: THỰC TRẠNG CỬA HÀNG & IMPACT ---'],
-    p.tbl1.headers
+    ['STT', ...p.tbl1.headers]
   ];
 
   p.tbl1.rows.forEach((r, i) => lines.push([i + 1, ...r]));
@@ -1223,21 +1422,29 @@ function exportTiepRetailCsv() {
 
   lines.push([]);
   lines.push(['--- BẢNG 2: TÌNH TRẠNG TRAO ĐỔI ---']);
-  lines.push(p.tbl2.headers);
+  lines.push(['STT', ...p.tbl2.headers]);
   p.tbl2.rows.forEach((r, i) => lines.push([i + 1, ...r]));
   if (p.tbl2.total) lines.push(['TỔNG CỘNG', ...p.tbl2.total.slice(1)]);
 
+  if (p.tblUsage && p.tblUsage.rows && p.tblUsage.rows.length) {
+    lines.push([]);
+    lines.push(['--- BẢNG 2b: TÌNH TRẠNG SỬ DỤNG PHẦN MỀM HĐĐT ---']);
+    lines.push(['STT', ...p.tblUsage.headers]);
+    p.tblUsage.rows.forEach((r, i) => lines.push([i + 1, ...r]));
+    if (p.tblUsage.total) lines.push(['TỔNG CỘNG', ...p.tblUsage.total.slice(1)]);
+  }
+
   lines.push([]);
   lines.push(['--- BẢNG 3: NGUYÊN NHÂN KHÁCH SỬ DỤNG SONG SONG HOẶC CHUYỂN NCC KHÁC ---']);
-  lines.push(p.tbl3.headers);
+  lines.push(['STT', ...p.tbl3.headers]);
   p.tbl3.rows.forEach((r, i) => lines.push([i + 1, ...r]));
 
   lines.push([]);
   lines.push(['--- BẢNG 4: CÁC VẤN ĐỀ PHÁT SINH VÀ ĐỀ XUẤT LIÊN QUAN HDDT ---']);
-  lines.push(p.tbl4.headers);
+  lines.push(['STT', ...p.tbl4.headers]);
   p.tbl4.rows.forEach((r, i) => lines.push([i + 1, ...r]));
 
-  const csv = lines.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const csv = lines.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
   _downloadCsvFile(`BaoCao_TiepTrienKhai_Retail_HDDT_${new Date().toISOString().slice(0, 10)}.csv`, csv);
   showToast('Đã xuất file CSV Nhóm Retail lớn HDDT thành công!', true);
 }
@@ -1279,6 +1486,14 @@ function exportAllTiepTrienKhaiCsv() {
     pret.tbl1.rows.forEach((r, i) => lines.push([i + 1, ...r]));
     if (pret.tbl1.total) lines.push(['TỔNG CỘNG', ...pret.tbl1.total.slice(1)]);
     lines.push([]);
+    lines.push(['Tình Trạng Trao Đổi']);
+    pret.tbl2.rows.forEach((r, i) => lines.push([i + 1, ...r]));
+    if (pret.tblUsage && pret.tblUsage.rows && pret.tblUsage.rows.length) {
+      lines.push([]);
+      lines.push(['Tình Trạng Sử Dụng']);
+      pret.tblUsage.rows.forEach((r, i) => lines.push([i + 1, ...r]));
+    }
+    lines.push([]);
     lines.push(['Nguyên Nhân Dùng Song Song / Chuyển NCC Khác']);
     pret.tbl3.rows.forEach((r, i) => lines.push([i + 1, ...r]));
     lines.push([]);
@@ -1286,7 +1501,7 @@ function exportAllTiepTrienKhaiCsv() {
     pret.tbl4.rows.forEach((r, i) => lines.push([i + 1, ...r]));
   }
 
-  const csv = lines.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const csv = lines.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
   _downloadCsvFile(`BaoCao_TatCa_TiepTrienKhai_${new Date().toISOString().slice(0, 10)}.csv`, csv);
   showToast('Đã xuất toàn bộ 3 tệp triển khai ra CSV thành công!', true);
 }

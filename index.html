@@ -1086,21 +1086,29 @@
         </div>
         <div class="grid kpis" id="bscTiepRetailCards" style="margin-bottom:14px"></div>
 
-        <!-- 2 BẢNG 1 VÀ 2 NẰM NGANG NHAU -->
-        <div class="bsc-two-tables-grid" style="margin-bottom:16px">
-          <div class="card" style="padding:14px 16px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-              <h3 style="margin:0;font-size:14px;color:var(--tx-heading)">🏪 Bảng 1: Thực Trạng Cửa Hàng &amp; Impact</h3>
-              <button onclick="exportTiepRetailCsv()" style="background:#8b5cf6;color:#fff;border-color:#a78bfa;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 8.3</button>
-            </div>
-            <div class="wrap" id="bscTiepRetailTbl1" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        <!-- BẢNG 1: THỰC TRẠNG CỬA HÀNG & IMPACT (FULL WIDTH) -->
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:14px;color:var(--tx-heading)">🏪 Bảng 1: Thực Trạng Cửa Hàng &amp; Tỷ Lệ Impact</h3>
+            <button onclick="exportTiepRetailCsv()" style="background:#8b5cf6;color:#fff;border-color:#a78bfa;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 8.3</button>
           </div>
+          <div class="wrap" id="bscTiepRetailTbl1" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        </div>
 
+        <!-- 2 BẢNG NẰM NGANG NHAU: BẢNG 2 (TRAO ĐỔI) & BẢNG 2b (TÌNH TRẠNG SỬ DỤNG) -->
+        <div class="bsc-two-tables-grid" style="margin-bottom:16px">
           <div class="card" style="padding:14px 16px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
               <h3 style="margin:0;font-size:14px;color:var(--tx-heading)">📞 Bảng 2: Tình Trạng Trao Đổi</h3>
             </div>
             <div class="wrap" id="bscTiepRetailTbl2" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+          </div>
+
+          <div class="card" style="padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+              <h3 style="margin:0;font-size:14px;color:var(--tx-heading)">💻 Bảng 2b: Tình Trạng Sử Dụng Phần Mềm HĐĐT</h3>
+            </div>
+            <div class="wrap" id="bscTiepRetailTblUsage" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
           </div>
         </div>
 
@@ -1692,10 +1700,10 @@
 <!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
-<script src="js/snapshot_tiep_trien_khai.js?v=20261109_1910"></script>
+<script src="js/snapshot_tiep_trien_khai.js?v=20261113_1245"></script>
 <script src="js/config.js?v=20261110_1410"></script>
 <script src="js/utils.js?v=20261109_1910"></script>
-<script src="js/google_sheets_service.js?v=20261110_1410"></script>
+<script src="js/google_sheets_service.js?v=20261113_1245"></script>
 <script src="js/tab_overview.js?v=20261109_1701"></script>
 <script src="js/tab_pivot.js?v=20261109_1701"></script>
 <script src="js/tab_muctieu.js?v=20261109_1701"></script>
@@ -1705,7 +1713,7 @@
 <script src="js/tab_kpionline.js?v=20261109_1701"></script>
 <script src="js/tab_impactonline.js?v=20261110_1410"></script>
 <script src="js/tab_dataton.js?v=20261109_1701"></script>
-<script src="js/tab-bao-cao.js?v=20261110_1410"></script>
-<script src="js/app.js?v=20261110_1410"></script>
+<script src="js/tab-bao-cao.js?v=20261113_1245"></script>
+<script src="js/app.js?v=20261113_1245"></script>
 </body>
 </html>

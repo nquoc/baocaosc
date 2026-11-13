@@ -2333,7 +2333,7 @@ function wrRenderTiepBookingTable(bookingData) {
     return html || `<div class="wr-report-table-empty">Không có dữ liệu chi tiết</div>`;
 }
 
-// 17. Tệp Triển Khai: Nhóm Retail lớn HDDT (Sheet 'Các tiệp triển khai' Cột J:N)
+// 17. Tệp Triển Khai: Nhóm Retail lớn HDDT (Sheet 'Report' hoặc Cột J:P)
 function wrRenderTiepRetailTable(retailData) {
     let p = retailData || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.retail : null);
     if (!p) {
@@ -2387,9 +2387,30 @@ function wrRenderTiepRetailTable(retailData) {
         html += wrTable(headers, rows, 'wr-report-table');
     }
 
+    // Bảng 2b: Tình trạng sử dụng phần mềm HĐĐT
+    if (p.tblUsage && Array.isArray(p.tblUsage.rows) && p.tblUsage.rows.length) {
+        html += `<h4 style="margin-top:14px;">3.3 Tình trạng sử dụng phần mềm HĐĐT</h4>`;
+        const headers = ['STT', 'Tình Trạng Sử Dụng', 'Số Gian Hàng', 'Tỷ Trọng (%)'];
+        const rows = p.tblUsage.rows.map((r, i) => [
+            wrInt(i + 1),
+            `<b>${wrEscapeHtml(r[0] || '')}</b>`,
+            wrInt(wrParseSafeNum(r[1])),
+            `<b>${wrEscapeHtml(r[2] || '-')}</b>`
+        ]);
+        if (p.tblUsage.total) {
+            rows.push([
+                '∑',
+                `<b>${wrEscapeHtml(p.tblUsage.total[0] || 'TỔNG CỘNG')}</b>`,
+                `<b>${wrInt(wrParseSafeNum(p.tblUsage.total[1]))}</b>`,
+                `<b>${wrEscapeHtml(p.tblUsage.total[2] || '-')}</b>`
+            ]);
+        }
+        html += wrTable(headers, rows, 'wr-report-table');
+    }
+
     // Bảng 3: Nguyên nhân khách sử dụng song song HDDT
     if (p.tbl3 && Array.isArray(p.tbl3.rows) && p.tbl3.rows.length) {
-        html += `<h4 style="margin-top:14px;">3.3 Phân tích nguyên nhân khách hàng sử dụng song song HDDT</h4>`;
+        html += `<h4 style="margin-top:14px;">3.4 Phân tích nguyên nhân khách hàng sử dụng song song HDDT</h4>`;
         const headers = ['STT', 'Nhóm Nguyên Nhân', 'Phân Tích Thực Tế', 'Số Gian Hàng'];
         const rows = p.tbl3.rows.map((r, i) => [
             wrInt(i + 1),
@@ -2400,16 +2421,28 @@ function wrRenderTiepRetailTable(retailData) {
         html += wrTable(headers, rows, 'wr-report-table');
     }
 
-    // Bảng 4: Vấn đề phát sinh & đề xuất HDDT
+    // Bảng 4: Vấn đề phát sinh & đề xuất HDDT (hỗ trợ cột KAT)
     if (p.tbl4 && Array.isArray(p.tbl4.rows) && p.tbl4.rows.length) {
-        html += `<h4 style="margin-top:14px;">3.4 Vấn đề phát sinh &amp; Đề xuất cải tiến HDDT</h4>`;
-        const headers = ['STT', 'Nhóm Vấn Đề', 'Thực Tế Ghi Nhận', 'Số Gian Hàng'];
-        const rows = p.tbl4.rows.map((r, i) => [
-            wrInt(i + 1),
-            `<b>${wrEscapeHtml(r[0] || '')}</b>`,
-            wrEscapeHtml(r[1] || ''),
-            `<b class="wr-kpi-medium">${wrEscapeHtml(r[2] || '')}</b>`
-        ]);
+        html += `<h4 style="margin-top:14px;">3.5 Vấn đề phát sinh &amp; Đề xuất cải tiến HDDT (kèm phản hồi KAT)</h4>`;
+        const hasKat = p.tbl4.rows.some(r => r[4] && String(r[4]).trim() !== '');
+        const headers = hasKat
+            ? ['STT', 'Nhóm Vấn Đề', 'Thực Tế Ghi Nhận', 'Số GH', 'Đề Xuất', 'Ý Kiến / Phản Hồi KAT']
+            : ['STT', 'Nhóm Vấn Đề', 'Thực Tế Ghi Nhận', 'Số Gian Hàng', 'Đề Xuất'];
+        
+        const rows = p.tbl4.rows.map((r, i) => {
+            const rowArr = [
+                wrInt(i + 1),
+                `<b>${wrEscapeHtml(r[0] || '')}</b>`,
+                wrEscapeHtml(r[1] || ''),
+                `<b class="wr-kpi-medium">${wrEscapeHtml(r[2] || '')}</b>`,
+                wrEscapeHtml(r[3] || '-')
+            ];
+            if (hasKat) {
+                const katHtml = r[4] ? wrEscapeHtml(r[4]).replace(/\n/g, '<br>') : '-';
+                rowArr.push(`<div style="font-size:12px;color:var(--tx-heading);background:rgba(14,165,233,0.06);padding:6px 8px;border-radius:6px;border-left:2px solid #0ea5e9;line-height:1.4">${katHtml}</div>`);
+            }
+            return rowArr;
+        });
         html += wrTable(headers, rows, 'wr-report-table');
     }
 
