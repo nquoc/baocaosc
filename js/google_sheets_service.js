@@ -15,20 +15,70 @@ const SA_RANGES = [
   `'${SA_SHEET_NAME}'!J1:P60`   // Mục 8.3: Nhóm retail lớn HDDT (cột J:P dự phòng)
 ];
 
-const SA_CREDENTIALS = {
-  type: "service_account",
-  project_id: "confident-slice-495215-s4",
-  private_key_id: "a91850800e57eb6767cfeed42a58707704e878ea",
-  private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDQ6aB5FBai/aNX\n9Qs5YbIO6RSZth/o6aCAzn+MN+RTiCaM5mtx/d+vp8Hta30YOiB8NmeR1APlCO90\nhAEUvSeWRltqxNIzho9QZYJKCOedr+kezYMiwMguffwbFs3V1BOUION33C4peuKO\nVqDnVoa03QwsiKlB6csLLvcbbm6w1T/I9UxHINC5x8AFJ7AjEMPKV4sMXcCY10QS\nPEMHsM5G8wL7lq6KTPjrn7/8NAQmW2aRo0wCKEVEol99Sa6Q18hShPqWrWMloHVs\nQT50FOTQ/h7VGDqhFHp9w1Yes/E5OV0HfBHB2dYqBE5KWASBKk41lNjx2gS3uQgA\n7p3F7QJpAgMBAAECggEAGUoMv1dxkY+5XiCHWC4FwVURBbX0qSvd3nXQ3hsWeE+p\nFgGfJFSOh0ucF8bdJOmFbO/ji/VBtvAk14KSxG1M7V2tO5ChnvPlJZ7yHY70JcQp\niM1pOFPkr68XzXouVtoGODZeftAQJPyPkBo3vmVcp2iCTKJK9fQMnJkV9/O/cceY\nshT0kGDhbIF6LArPNvq2knEwb58BgD7k50F6bcHeDumop6wcO1UhA37OBstKrTvY\nexRdHxCnwcsbAxtdyHGKhyxKeiA0pO2EvHLk3Xhl4oAXMnRfgI9/HNYT5XjzySO5\n+6U+XARoYFrPhWp4it6gkPgm72yIG52n/DiwpHb6EQKBgQDzSxXLFi/US33nZbih\nbmWYfvXqyP4ABJx2IM/AT+6bvsEdhMPsnFKg3DWN9M2fG05sfraE+EmrrTmVt332\nMj710+px0agXj1TJjAFL2CVav/CmYjvFZWH9lq/+w0gULujvLmBfSuyghvB1RdNb\nZyTvbysMwUZH7SRPMEmXyLP8WQKBgQDb0twqBs3gQHQzg991EalQ6B9SXU/ZEBi9\ncNpX6e5SoV+nv2EIk2ZnpFpe9b4kdNrpvYO7c8yC0cablMaCILxDJl/pytPDGR6y\nEY9vhZGqilG/slPVYEH7PHHFsLyYdEOfXVN5Nh5KJ88XUTaTWX8FeezfTXBC0JUd\nLLvj42E0kQKBgQDMfCBuGFDNA0JoOePrsukrOhKhapuqEjYbR0q2Hbi0KKkRkWRH\nO8BrOYq9rLMidoX8xKfNrQ3mgGr0/kudoO+wGJRlY8z/OFYQLF9uitYip06x2cDZ\nEXRB+uQjoai0ZhUb6wPPNB8ccS4rsyuJGHE/2VT6nHvgul2ZPUGtlGBKyQKBgFXE\nRYZYNUdDnpLi5vKkO22Hw4C9S4QjVaPEPkyCxyuSLuIiN1fDOvdBFslqFA/hT/BW\nsukWWzrHYjgdqf3ni8yfUljDfC/owyMy2sXmVVk2soKarz7XWacOhE1fkZXh9uhc\n306xoMvKEHDGjQacqoSWd6cAbcaD30oMxBo8AxchAoGAAYmAbwBC+biiJtVb8DqG\nJ1MYRX9QRd8rePDUdf57NHHAHTl0HnHv0xaH1y4IBUkhpIeL0ADHwSm41PIeqP1W\nSbfAbY7d8povK1L/nEubRA24eTLs9VxMvVwY14xd/Ghg3bdxrdII32vjo14EGc5B\ne8DF5V/VQsbYewYXkYfw8oU=\n-----END PRIVATE KEY-----\n",
-  client_email: "bot-sheet@confident-slice-495215-s4.iam.gserviceaccount.com",
-  token_uri: "https://oauth2.googleapis.com/token"
-};
+const BOT_API_URL = 'https://script.google.com/macros/s/AKfycbwHmR0xSG4uZrBdyPrv-lypX5qjP1bOC2Ca1_8vY1oRfIAe_LeFnJa7wAWrGzCmPrU/exec?apiKey=my_secret_token_2026';
 
-const CACHE_KEY_TIEPTRIENKHAI = 'tiep_trien_khai_data_v1';
+const CACHE_KEY_TIEPTRIENKHAI = 'tiep_trien_khai_data_v3';
 
-// Bộ nhớ đệm token trong phiên (tránh sinh token liên tục)
+// Bộ nhớ đệm token & cấu hình bot trong phiên (tránh sinh token liên tục)
+let _gSaConfig = null;
 let _gSaToken = '';
 let _gSaTokenExp = 0;
+
+function _clearGoogleBotSessionCache() {
+  _gSaConfig = null;
+  _gSaToken = '';
+  _gSaTokenExp = 0;
+  try {
+    sessionStorage.removeItem('tc_g_sa_cfg_v3');
+    sessionStorage.removeItem('tc_g_sa_token_v3');
+    sessionStorage.removeItem('tc_g_sa_token_exp_v3');
+    // Xóa luôn cache cũ nếu còn sót
+    sessionStorage.removeItem('tc_g_sa_token');
+    sessionStorage.removeItem('tc_g_sa_token_exp');
+    sessionStorage.removeItem('tc_g_sa_token_v2');
+    sessionStorage.removeItem('tc_g_sa_token_exp_v2');
+    sessionStorage.removeItem('tc_g_sa_creds_v2');
+  } catch (e) {}
+}
+
+/**
+ * Lấy cấu hình bot động từ Apps Script Web App
+ */
+async function getGoogleBotConfig(forceRefresh = false) {
+  if (!forceRefresh && _gSaConfig && _gSaConfig.private_key) {
+    return _gSaConfig;
+  }
+
+  if (!forceRefresh) {
+    try {
+      const cached = sessionStorage.getItem('tc_g_sa_cfg_v3');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.private_key) {
+          _gSaConfig = parsed;
+          return _gSaConfig;
+        }
+      }
+    } catch (e) {}
+  }
+
+  const res = await fetch(BOT_API_URL, { cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error(`Không thể kết nối Apps Script API (HTTP ${res.status})`);
+  }
+
+  const data = await res.json();
+  const cfg = data && (data.credentials || data.data || data);
+  if (cfg && cfg.private_key && cfg.client_email) {
+    _gSaConfig = cfg;
+    try {
+      sessionStorage.setItem('tc_g_sa_cfg_v3', JSON.stringify(_gSaConfig));
+    } catch (e) {}
+    return _gSaConfig;
+  }
+
+  throw new Error((data && data.message) || 'Phản hồi từ Apps Script API không hợp lệ');
+}
 
 /* ==========================================================================
    1. WEBCRYPTO TOKEN GENERATOR (RS256 JWT -> GOOGLE OAUTH2 TOKEN)
@@ -65,20 +115,23 @@ function _pemToBinary(pem) {
 /**
  * Lấy Access Token từ Service Account thông qua WebCrypto native
  */
-async function getGoogleServiceAccountToken() {
+async function getGoogleServiceAccountToken(forceRefresh = false) {
   const now = Math.floor(Date.now() / 1000);
   // Kiểm tra token trong cache RAM hoặc sessionStorage
-  if (!_gSaToken) {
-    _gSaToken = sessionStorage.getItem('tc_g_sa_token') || '';
-    _gSaTokenExp = parseInt(sessionStorage.getItem('tc_g_sa_token_exp') || '0', 10);
+  if (!forceRefresh && !_gSaToken) {
+    _gSaToken = sessionStorage.getItem('tc_g_sa_token_v3') || '';
+    _gSaTokenExp = parseInt(sessionStorage.getItem('tc_g_sa_token_exp_v3') || '0', 10);
   }
 
-  if (_gSaToken && _gSaTokenExp > now + 180) {
+  if (!forceRefresh && _gSaToken && _gSaTokenExp > now + 180) {
     return _gSaToken;
   }
 
+  const cfg = await getGoogleBotConfig(forceRefresh);
+  const tokenUri = cfg.token_uri || 'https://oauth2.googleapis.com/token';
+
   // Tạo JWT assertion
-  const binaryDer = _pemToBinary(SA_CREDENTIALS.private_key);
+  const binaryDer = _pemToBinary(cfg.private_key);
   const cryptoObj = window.crypto || window.msCrypto;
   if (!cryptoObj || !cryptoObj.subtle) {
     throw new Error('Trình duyệt hiện tại không hỗ trợ WebCrypto API. Vui lòng mở bằng Chrome hoặc Edge mới!');
@@ -94,9 +147,9 @@ async function getGoogleServiceAccountToken() {
 
   const header = _base64UrlEncodeStr(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const payload = _base64UrlEncodeStr(JSON.stringify({
-    iss: SA_CREDENTIALS.client_email,
+    iss: cfg.client_email,
     scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
-    aud: SA_CREDENTIALS.token_uri,
+    aud: tokenUri,
     exp: now + 3600,
     iat: now
   }));
@@ -106,7 +159,7 @@ async function getGoogleServiceAccountToken() {
   const sigB64 = _arrayBufferToBase64Url(signature);
   const jwtAssertion = header + '.' + payload + '.' + sigB64;
 
-  const res = await fetch(SA_CREDENTIALS.token_uri, {
+  const res = await fetch(tokenUri, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'grant_type=' + encodeURIComponent('urn:ietf:params:oauth:grant-type:jwt-bearer') + '&assertion=' + encodeURIComponent(jwtAssertion)
@@ -114,13 +167,20 @@ async function getGoogleServiceAccountToken() {
 
   const data = await res.json();
   if (!data.access_token) {
+    // Nếu bị lỗi JWT do cache key cũ, tự động xóa cache và thử tải key mới từ Apps Script 1 lần
+    if (!forceRefresh) {
+      _clearGoogleBotSessionCache();
+      return getGoogleServiceAccountToken(true);
+    }
     throw new Error(data.error_description || data.error || 'Không thể lấy Access Token từ Google Service Account');
   }
 
   _gSaToken = data.access_token;
   _gSaTokenExp = now + (data.expires_in || 3600);
-  sessionStorage.setItem('tc_g_sa_token', _gSaToken);
-  sessionStorage.setItem('tc_g_sa_token_exp', String(_gSaTokenExp));
+  try {
+    sessionStorage.setItem('tc_g_sa_token_v3', _gSaToken);
+    sessionStorage.setItem('tc_g_sa_token_exp_v3', String(_gSaTokenExp));
+  } catch (e) {}
 
   return _gSaToken;
 }
@@ -131,8 +191,8 @@ async function getGoogleServiceAccountToken() {
  * - Nhóm Retail Lớn HDDT lấy trực tiếp từ spreadsheet chuyên biệt SA_RETAIL_SPREADSHEET_ID (sheet Report),
  *   hoặc tự động dự phòng sang cột J:P của spreadsheet chính nếu mạng/quyền hạn có sự cố.
  */
-async function fetchTiepTrienKhaiFromGoogleSheets() {
-  const token = await getGoogleServiceAccountToken();
+async function fetchTiepTrienKhaiFromGoogleSheets(isRetry = false) {
+  const token = await getGoogleServiceAccountToken(isRetry);
 
   // 1. Tải FNB, Booking và cột dự phòng Retail từ spreadsheet chính
   const urlPrimary = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${SA_SPREADSHEET_ID}/values:batchGet`);
@@ -150,6 +210,10 @@ async function fetchTiepTrienKhaiFromGoogleSheets() {
   ]);
 
   if (!resPrimary.ok) {
+    if ((resPrimary.status === 401 || resPrimary.status === 403) && !isRetry) {
+      _clearGoogleBotSessionCache();
+      return fetchTiepTrienKhaiFromGoogleSheets(true);
+    }
     const errText = await resPrimary.text();
     throw new Error(`Google Sheets API lỗi HTTP ${resPrimary.status}: ${errText}`);
   }

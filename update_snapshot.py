@@ -12,16 +12,22 @@ from datetime import datetime
 API = ('https://script.google.com/macros/s/AKfycbwfHAYA6-39-yn_HDHHvbYxkBu_HXP29j7lG3vK3XRN6txlJ36kH0EsBCILeqXH2Z1kBw/exec'
        '?sheet=baocaotong')
 
-SERVICE_ACCOUNT_INFO = {
-  "type": "service_account",
-  "project_id": "confident-slice-495215-s4",
-  "private_key_id": "a91850800e57eb6767cfeed42a58707704e878ea",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDQ6aB5FBai/aNX\n9Qs5YbIO6RSZth/o6aCAzn+MN+RTiCaM5mtx/d+vp8Hta30YOiB8NmeR1APlCO90\nhAEUvSeWRltqxNIzho9QZYJKCOedr+kezYMiwMguffwbFs3V1BOUION33C4peuKO\nVqDnVoa03QwsiKlB6csLLvcbbm6w1T/I9UxHINC5x8AFJ7AjEMPKV4sMXcCY10QS\nPEMHsM5G8wL7lq6KTPjrn7/8NAQmW2aRo0wCKEVEol99Sa6Q18hShPqWrWMloHVs\nQT50FOTQ/h7VGDqhFHp9w1Yes/E5OV0HfBHB2dYqBE5KWASBKk41lNjx2gS3uQgA\n7p3F7QJpAgMBAAECggEAGUoMv1dxkY+5XiCHWC4FwVURBbX0qSvd3nXQ3hsWeE+p\nFgGfJFSOh0ucF8bdJOmFbO/ji/VBtvAk14KSxG1M7V2tO5ChnvPlJZ7yHY70JcQp\niM1pOFPkr68XzXouVtoGODZeftAQJPyPkBo3vmVcp2iCTKJK9fQMnJkV9/O/cceY\nshT0kGDhbIF6LArPNvq2knEwb58BgD7k50F6bcHeDumop6wcO1UhA37OBstKrTvY\nexRdHxCnwcsbAxtdyHGKhyxKeiA0pO2EvHLk3Xhl4oAXMnRfgI9/HNYT5XjzySO5\n+6U+XARoYFrPhWp4it6gkPgm72yIG52n/DiwpHb6EQKBgQDzSxXLFi/US33nZbih\nbmWYfvXqyP4ABJx2IM/AT+6bvsEdhMPsnFKg3DWN9M2fG05sfraE+EmrrTmVt332\nMj710+px0agXj1TJjAFL2CVav/CmYjvFZWH9lq/+w0gULujvLmBfSuyghvB1RdNb\nZyTvbysMwUZH7SRPMEmXyLP8WQKBgQDb0twqBs3gQHQzg991EalQ6B9SXU/ZEBi9\ncNpX6e5SoV+nv2EIk2ZnpFpe9b4kdNrpvYO7c8yC0cablMaCILxDJl/pytPDGR6y\nEY9vhZGqilG/slPVYEH7PHHFsLyYdEOfXVN5Nh5KJ88XUTaTWX8FeezfTXBC0JUd\nLLvj42E0kQKBgQDMfCBuGFDNA0JoOePrsukrOhKhapuqEjYbR0q2Hbi0KKkRkWRH\nO8BrOYq9rLMidoX8xKfNrQ3mgGr0/kudoO+wGJRlY8z/OFYQLF9uitYip06x2cDZ\nEXRB+uQjoai0ZhUb6wPPNB8ccS4rsyuJGHE/2VT6nHvgul2ZPUGtlGBKyQKBgFXE\nRYZYNUdDnpLi5vKkO22Hw4C9S4QjVaPEPkyCxyuSLuIiN1fDOvdBFslqFA/hT/BW\nsukWWzrHYjgdqf3ni8yfUljDfC/owyMy2sXmVVk2soKarz7XWacOhE1fkZXh9uhc\n306xoMvKEHDGjQacqoSWd6cAbcaD30oMxBo8AxchAoGAAYmAbwBC+biiJtVb8DqG\nJ1MYRX9QRd8rePDUdf57NHHAHTl0HnHv0xaH1y4IBUkhpIeL0ADHwSm41PIeqP1W\nSbfAbY7d8povK1L/nEubRA24eTLs9VxMvVwY14xd/Ghg3bdxrdII32vjo14EGc5B\ne8DF5V/VQsbYewYXkYfw8oU=\n-----END PRIVATE KEY-----\n",
-  "client_email": "bot-sheet@confident-slice-495215-s4.iam.gserviceaccount.com",
-  "token_uri": "https://oauth2.googleapis.com/token"
-}
+BOT_API_URL = (
+    'https://script.google.com/macros/s/AKfycbwHmR0xSG4uZrBdyPrv-lypX5qjP1bOC2Ca1_8vY1oRfIAe_LeFnJa7wAWrGzCmPrU/exec'
+    '?apiKey=my_secret_token_2026'
+)
+
+def get_bot_config():
+    req = urllib.request.urlopen(BOT_API_URL, timeout=30)
+    data = json.loads(req.read().decode('utf-8'))
+    cfg = data.get('credentials') or data.get('data') or data
+    if isinstance(cfg, dict) and 'private_key' in cfg and 'client_email' in cfg:
+        cfg.setdefault('token_uri', 'https://oauth2.googleapis.com/token')
+        return cfg
+    raise ValueError('Khong the lay cau hinh bot tu Apps Script API: ' + str(data))
 
 SPREADSHEET_ID = "1Wghthkrt0A8QQ08gDVSnQO55ix8CGCZHt87qhRcpKEY"
+RETAIL_SPREADSHEET_ID = "12nWROazTrZvDR6NCVcCVhzfLr2lmrsctpavm2g_9RyQ"
 
 
 def update_baocaotong(here):
@@ -70,20 +76,39 @@ def update_tiep_trien_khai(here):
     try:
         from google.oauth2 import service_account
         from googleapiclient.discovery import build
+        bot_cfg = get_bot_config()
         creds = service_account.Credentials.from_service_account_info(
-            SERVICE_ACCOUNT_INFO,
+            bot_cfg,
             scopes=['https://www.googleapis.com/auth/spreadsheets.readonly']
         )
         service = build('sheets', 'v4', credentials=creds)
         ranges = [
             "'Các tiệp triển khai'!A1:B50",
             "'Các tiệp triển khai'!D1:H60",
-            "'Các tiệp triển khai'!J1:N60"
+            "'Các tiệp triển khai'!J1:P60"
         ]
         res = service.spreadsheets().values().batchGet(
             spreadsheetId=SPREADSHEET_ID,
             ranges=ranges
         ).execute()
+
+        # Lay truc tiep Nhom Retail Lon HDDT tu sheet Report rieng (gid 1856000949)
+        try:
+            retail_res = service.spreadsheets().values().get(
+                spreadsheetId=RETAIL_SPREADSHEET_ID,
+                range="'Report'!A1:G40"
+            ).execute()
+            if retail_res and isinstance(retail_res.get('values'), list) and len(retail_res['values']) >= 5:
+                res['retailSpreadsheetId'] = RETAIL_SPREADSHEET_ID
+                res['valueRanges'][2] = {
+                    'range': "'Report'!A1:G40",
+                    'majorDimension': 'ROWS',
+                    'values': retail_res['values']
+                }
+        except Exception as retail_err:
+            print('Canh bao: khong doc duoc sheet Report Retail rieng, dung du phong J:P:', retail_err)
+
+        res['updatedAt'] = datetime.now().isoformat()
         
         target_file = os.path.join(here, 'js', 'snapshot_tiep_trien_khai.js')
         with open(target_file, 'w', encoding='utf-8') as f:
