@@ -999,10 +999,11 @@
             <span>📁 Các tệp triển khai:</span>
           </label>
           <select id="bscSelectTiepTrienKhai" onchange="onBscTiepTrienKhaiChange(this.value)" style="font-size:13px;font-weight:700;color:#38bdf8;background:var(--card-sub);border:1px solid var(--line);border-radius:6px;padding:6px 14px;cursor:pointer">
-            <option value="all">📂 Tất cả các tệp triển khai (F&amp;B · Booking · Retail HĐĐT)</option>
+            <option value="all">📂 Tất cả các tệp triển khai (F&amp;B · Booking · Retail HĐĐT · Tái Ký)</option>
             <option value="fnb">🍔 8.1: Nhóm FNB lớn / lỗi (Tháng 11)</option>
             <option value="booking">🏨 8.2: Nhóm Booking 3 Hotel sao (Tháng 10)</option>
             <option value="retail">🛒 8.3: Nhóm retail lớn HDDT (Tháng 11)</option>
+            <option value="taiky">🔄 8.4: Nhóm Hỗ Trợ Tái Ký (Tháng 11)</option>
           </select>
 
           <!-- Quick Pill Tabs -->
@@ -1011,6 +1012,7 @@
             <button type="button" class="pill" id="pillTiepFnb" onclick="selectBscTiepTab('fnb')">🍔 FNB lớn / lỗi</button>
             <button type="button" class="pill" id="pillTiepBooking" onclick="selectBscTiepTab('booking')">🏨 Booking 3 Hotel sao</button>
             <button type="button" class="pill" id="pillTiepRetail" onclick="selectBscTiepTab('retail')">🛒 Retail lớn HDDT</button>
+            <button type="button" class="pill" id="pillTiepTaiKy" onclick="selectBscTiepTab('taiky')">🔄 Tái Ký</button>
           </div>
         </div>
 
@@ -1126,6 +1128,28 @@
             <h3 style="margin:0;font-size:14.5px;color:var(--tx-heading)">💡 Bảng 4: Các Vấn Đề Phát Sinh &amp; Đề Xuất Liên Quan Đến HĐĐT</h3>
           </div>
           <div class="wrap" id="bscTiepRetailTbl4" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        </div>
+      </div>
+
+      <!-- 8.4: TỆP HỖ TRỢ TÁI KÝ -->
+      <div id="bscSecTiepTaiKy" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:14px;font-weight:800;color:#10b981">🔄 8.4: Nhóm Hỗ Trợ Tái Ký (Tháng 11)</span>
+        </div>
+        <div class="grid kpis" id="bscTiepTaiKyCards" style="margin-bottom:14px"></div>
+
+        <!-- BẢNG KẾT QUẢ SC HỖ TRỢ TÁI KÝ -->
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div>
+              <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+                <span>📋 Thống Kê Kết Quả SC Hỗ Trợ Tái Ký</span>
+              </h3>
+              <p style="margin:2px 0 0 0;font-size:12px;color:var(--mut)">Chi tiết theo tình trạng gian hàng trước khi SC đến hỗ trợ (cột Q:T)</p>
+            </div>
+            <button onclick="exportTiepTaiKyCsv()" style="background:#10b981;color:#fff;border-color:#34d399;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV 8.4</button>
+          </div>
+          <div class="wrap" id="bscTiepTaiKyTbl" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
         </div>
       </div>
     </div>
@@ -1700,10 +1724,10 @@
 <!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
-<script src="js/snapshot_tiep_trien_khai.js?v=20261118_2135"></script>
+<script src="js/snapshot_tiep_trien_khai.js?v=20261120_1425"></script>
 <script src="js/config.js?v=20261110_1410"></script>
 <script src="js/utils.js?v=20261109_1910"></script>
-<script src="js/google_sheets_service.js?v=20261118_2135"></script>
+<script src="js/google_sheets_service.js?v=20261120_1425"></script>
 <script src="js/tab_overview.js?v=20261109_1701"></script>
 <script src="js/tab_pivot.js?v=20261109_1701"></script>
 <script src="js/tab_muctieu.js?v=20261109_1701"></script>
@@ -1713,7 +1737,7 @@
 <script src="js/tab_kpionline.js?v=20261109_1701"></script>
 <script src="js/tab_impactonline.js?v=20261110_1410"></script>
 <script src="js/tab_dataton.js?v=20261109_1701"></script>
-<script src="js/tab-bao-cao.js?v=20261113_1245"></script>
-<script src="js/app.js?v=20261113_1245"></script>
+<script src="js/tab-bao-cao.js?v=20261120_1425"></script>
+<script src="js/app.js?v=20261120_1425"></script>
 </body>
 </html>

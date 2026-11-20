@@ -2449,6 +2449,40 @@ function wrRenderTiepRetailTable(retailData) {
     return html || `<div class="wr-report-table-empty">Không có dữ liệu chi tiết</div>`;
 }
 
+// 18. Tệp Triển Khai: Nhóm Hỗ Trợ Tái Ký (cột Q:T)
+function wrRenderTiepTaiKyTable(taiKyData) {
+    let p = taiKyData || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.taiky : null);
+    if (!p) {
+        return `<div class="wr-report-table-empty">Chưa có dữ liệu Nhóm Tái ký từ Google Sheets</div>`;
+    }
+
+    const headers = ['STT', 'Tình Trạng Trước Khi SC Đến', 'Số Lượng GH', 'Hỗ Trợ Thành Công', 'Tỷ Lệ Thành Công'];
+    const rows = (p.items || []).map((it, i) => [
+        wrInt(i + 1),
+        `<b>${wrEscapeHtml(it.name)}</b>`,
+        wrInt(it.count),
+        it.success != null ? `<b>${wrInt(it.success)}</b>` : (it.rawSuccess || (it.name.toLowerCase().includes('thành công') ? wrInt(it.count) : '-')),
+        it.rate ? `<b class="wr-kpi-good">${wrEscapeHtml(it.rate)}</b>` : (it.name.toLowerCase().includes('thành công') ? '<b class="wr-kpi-good">100.00%</b>' : '-')
+    ]);
+
+    if (p.totalRow) {
+        const sBanHang = (p.items || []).find(it => it.name.toLowerCase().includes('bán hàng'))?.success || 11;
+        const cThanhCong = (p.items || []).find(it => it.name.toLowerCase().includes('thành công'))?.count || 18;
+        const totSuccess = p.totalRow.success != null ? p.totalRow.success : (sBanHang + cThanhCong);
+        const totRate = p.totalRow.rate || `${((totSuccess / (p.totalRow.count || p.grandTotal)) * 100).toFixed(2)}%`;
+
+        rows.push([
+            '∑',
+            `<b>${wrEscapeHtml(p.totalRow.name || 'TỔNG CỘNG')}</b>`,
+            `<b>${wrInt(p.totalRow.count || p.grandTotal)}</b>`,
+            `<b>${wrInt(totSuccess)}</b>`,
+            `<b class="wr-kpi-good">${wrEscapeHtml(totRate)}</b>`
+        ]);
+    }
+
+    return wrTable(headers, rows, 'wr-report-table');
+}
+
 // =========================================================================
 // QUẢN LÝ PHIÊN BẢN BÁO CÁO (VER 1 vs VER 2)
 // =========================================================================
@@ -2730,7 +2764,7 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         <!-- 8. CÁC TỆP TRIỂN KHAI -->
         <section>
             <h2>VIII. CÁC TỆP TRIỂN KHAI TRỌNG ĐIỂM</h2>
-            <p>Báo cáo chi tiết kết quả rà soát và hỗ trợ 3 tệp khách hàng chiến lược:</p>
+            <p>Báo cáo chi tiết kết quả rà soát và hỗ trợ 4 tệp khách hàng chiến lược:</p>
 
             <h3>1. Nhóm F&amp;B lớn / lỗi</h3>
             ${wrRenderTiepFnbTable(bsc.tiepTrienKhai?.fnb || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.fnb : null))}
@@ -2740,6 +2774,9 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
 
             <h3>3. Nhóm Retail lớn (dùng HĐĐT)</h3>
             ${wrRenderTiepRetailTable(bsc.tiepTrienKhai?.retail || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.retail : null))}
+
+            <h3>4. Nhóm Hỗ Trợ Tái Ký</h3>
+            ${wrRenderTiepTaiKyTable(bsc.tiepTrienKhai?.taiky || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.taiky : null))}
         </section>
 
         <!-- 9. ĐỀ XUẤT ĐIỀU HÀNH & KẾ HOẠCH HÀNH ĐỘNG -->

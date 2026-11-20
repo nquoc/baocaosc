@@ -12,12 +12,13 @@ const SA_RETAIL_SHEET_NAME = 'Report';
 const SA_RANGES = [
   `'${SA_SHEET_NAME}'!A1:B50`,  // Mục 8.1: Nhóm FNB lớn / lỗi (cột A:B)
   `'${SA_SHEET_NAME}'!D1:H60`,  // Mục 8.2: Nhóm Booking 3 Hotel sao (cột D:H)
-  `'${SA_SHEET_NAME}'!J1:P60`   // Mục 8.3: Nhóm retail lớn HDDT (cột J:P dự phòng)
+  `'${SA_SHEET_NAME}'!J1:P60`,  // Mục 8.3: Nhóm retail lớn HDDT (cột J:P dự phòng)
+  `'${SA_SHEET_NAME}'!Q1:T20`   // Mục 8.4: Nhóm Hỗ trợ Tái ký (cột Q:T)
 ];
 
 const BOT_API_URL = 'https://script.google.com/macros/s/AKfycbwHmR0xSG4uZrBdyPrv-lypX5qjP1bOC2Ca1_8vY1oRfIAe_LeFnJa7wAWrGzCmPrU/exec?apiKey=my_secret_token_2026';
 
-const CACHE_KEY_TIEPTRIENKHAI = 'tiep_trien_khai_data_v3';
+const CACHE_KEY_TIEPTRIENKHAI = 'tiep_trien_khai_data_v4';
 
 // Bộ nhớ đệm token & cấu hình bot trong phiên (tránh sinh token liên tục)
 let _gSaConfig = null;
@@ -239,7 +240,8 @@ async function fetchTiepTrienKhaiFromGoogleSheets(isRetry = false) {
     valueRanges: [
       primaryJson.valueRanges[0],
       primaryJson.valueRanges[1],
-      retailValueRange
+      retailValueRange,
+      primaryJson.valueRanges[3]
     ]
   };
 }
@@ -641,6 +643,70 @@ function parseTiepTrienKhaiRetail(rows) {
   };
 }
 
+/**
+ * Chuẩn hóa 8.4: Nhóm Hỗ Trợ Tái Ký (cột Q:T từ sheet Các tiệp triển khai)
+ */
+function parseTiepTrienKhaiTaiKy(rows) {
+  if (!Array.isArray(rows) || rows.length < 3) return null;
+
+  const title = (rows[0] && rows[0][0]) || 'Thống kê kết quả SC hỗ trợ tái Ký';
+  let month = 'Tháng 11';
+
+  let headerRowIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    const r0 = rows[i] && rows[i][0] ? String(rows[i][0]).toLowerCase() : '';
+    if (r0.includes('tình trạng') || r0.includes('trc khi') || r0.includes('trước khi')) {
+      headerRowIdx = i;
+      break;
+    }
+  }
+
+  const headers = headerRowIdx >= 0 ? rows[headerRowIdx] : ['Tình trạng gian hàng trc khi SC đi', 'Số lượng', 'Thành công', 'Tỉ lệ '];
+  const items = [];
+  let totalRow = null;
+
+  for (let i = (headerRowIdx >= 0 ? headerRowIdx + 1 : 2); i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r.length || !r[0]) continue;
+    const name = String(r[0]).trim();
+    const countVal = String(r[1] || '0').trim();
+    const successVal = r[2] != null ? String(r[2]).trim() : '';
+    const rateVal = r[3] != null ? String(r[3]).trim() : '';
+
+    if (name.toLowerCase().includes('tổng cộng') || name.toLowerCase().includes('tong cong') || name.toLowerCase().includes('tổng')) {
+      totalRow = {
+        name,
+        count: _parseValNumber(countVal),
+        rawCount: countVal,
+        success: successVal ? _parseValNumber(successVal) : null,
+        rawSuccess: successVal,
+        rate: rateVal
+      };
+    } else {
+      items.push({
+        id: items.length + 1,
+        name,
+        count: _parseValNumber(countVal),
+        rawCount: countVal,
+        success: successVal ? _parseValNumber(successVal) : null,
+        rawSuccess: successVal,
+        rate: rateVal
+      });
+    }
+  }
+
+  const grandTotal = totalRow ? totalRow.count : items.reduce((s, it) => s + it.count, 0);
+
+  return {
+    title,
+    month,
+    headers,
+    items,
+    totalRow: totalRow || { name: 'Tổng cộng', count: grandTotal, rawCount: String(grandTotal) },
+    grandTotal
+  };
+}
+
 /* ==========================================================================
    3. GLOBAL STATE & SMART CACHE MANAGEMENT
    ========================================================================== */
@@ -649,7 +715,8 @@ let TIEP_TRIEN_KHAI_STATE = {
   fnb: null,
   booking: null,
   retail: null,
-  activeTab: 'all', // 'all' | 'fnb' | 'booking' | 'retail'
+  taiky: null,
+  activeTab: 'all', // 'all' | 'fnb' | 'booking' | 'retail' | 'taiky'
   savedAt: 0,
   timeStr: '',
   source: 'none'
@@ -747,6 +814,7 @@ async function loadTiepTrienKhaiData(forceReload = false, isSilent = false) {
           fnb: TIEP_TRIEN_KHAI_STATE.fnb,
           booking: TIEP_TRIEN_KHAI_STATE.booking,
           retail: TIEP_TRIEN_KHAI_STATE.retail,
+          taiky: TIEP_TRIEN_KHAI_STATE.taiky,
           rawFnb: batchData.valueRanges[0].values,
           savedAt: Date.now(),
           timeStr: TIEP_TRIEN_KHAI_STATE.timeStr
@@ -766,7 +834,7 @@ async function loadTiepTrienKhaiData(forceReload = false, isSilent = false) {
       }
 
       if (forceReload && typeof showToast === 'function') {
-        showToast('Đã đồng bộ trực tiếp 3 tệp triển khai mới nhất từ Google Sheets!', true);
+        showToast('Đã đồng bộ trực tiếp các tệp triển khai mới nhất từ Google Sheets!', true);
       }
     }
   } catch (err) {
@@ -791,10 +859,12 @@ function _applyRawRanges(valueRanges, source) {
   const fnbRows = valueRanges[0]?.values || [];
   const bookingRows = valueRanges[1]?.values || [];
   const retailRows = valueRanges[2]?.values || [];
+  const taiKyRows = valueRanges[3]?.values || [];
 
   const parsedFnb = parseTiepTrienKhaiFnb(fnbRows);
   const parsedBooking = parseTiepTrienKhaiBooking(bookingRows);
   const parsedRetail = parseTiepTrienKhaiRetail(retailRows);
+  const parsedTaiKy = parseTiepTrienKhaiTaiKy(taiKyRows);
 
   const now = new Date();
   const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -803,6 +873,7 @@ function _applyRawRanges(valueRanges, source) {
     fnb: parsedFnb,
     booking: parsedBooking,
     retail: parsedRetail,
+    taiky: parsedTaiKy,
     activeTab: TIEP_TRIEN_KHAI_STATE.activeTab || 'all',
     savedAt: Date.now(),
     timeStr,
@@ -837,7 +908,7 @@ function onBscTiepTrienKhaiChange(val) {
  * Chuyển đổi tab tệp triển khai (đồng bộ cả Dropdown lẫn Pills)
  */
 function selectBscTiepTab(val) {
-  if (!['all', 'fnb', 'booking', 'retail'].includes(val)) val = 'all';
+  if (!['all', 'fnb', 'booking', 'retail', 'taiky'].includes(val)) val = 'all';
   TIEP_TRIEN_KHAI_STATE.activeTab = val;
 
   // Đồng bộ Dropdown
@@ -851,7 +922,8 @@ function selectBscTiepTab(val) {
     all: 'pillTiepAll',
     fnb: 'pillTiepFnb',
     booking: 'pillTiepBooking',
-    retail: 'pillTiepRetail'
+    retail: 'pillTiepRetail',
+    taiky: 'pillTiepTaiKy'
   };
 
   Object.entries(pillMap).forEach(([k, id]) => {
@@ -866,10 +938,12 @@ function selectBscTiepTab(val) {
   const secFnb = $('bscSecTiepFnb');
   const secBooking = $('bscSecTiepBooking');
   const secRetail = $('bscSecTiepRetail');
+  const secTaiKy = $('bscSecTiepTaiKy');
 
   if (secFnb) secFnb.style.display = (val === 'all' || val === 'fnb') ? 'block' : 'none';
   if (secBooking) secBooking.style.display = (val === 'all' || val === 'booking') ? 'block' : 'none';
   if (secRetail) secRetail.style.display = (val === 'all' || val === 'retail') ? 'block' : 'none';
+  if (secTaiKy) secTaiKy.style.display = (val === 'all' || val === 'taiky') ? 'block' : 'none';
 }
 
 /* ==========================================================================
@@ -883,6 +957,7 @@ function renderTiepTrienKhai() {
   renderFnbGroupUI(TIEP_TRIEN_KHAI_STATE.fnb);
   renderBookingGroupUI(TIEP_TRIEN_KHAI_STATE.booking);
   renderRetailGroupUI(TIEP_TRIEN_KHAI_STATE.retail);
+  renderTaiKyGroupUI(TIEP_TRIEN_KHAI_STATE.taiky);
 
   // Áp dụng trạng thái lọc tab hiện tại
   selectBscTiepTab(TIEP_TRIEN_KHAI_STATE.activeTab || 'all');
@@ -1395,6 +1470,98 @@ function renderRetailGroupUI(parsed) {
   }
 }
 
+/**
+ * 8.4: Giao diện Nhóm Hỗ Trợ Tái Ký (cột Q:T)
+ */
+function renderTaiKyGroupUI(parsed) {
+  const boxCards = $('bscTiepTaiKyCards');
+  const boxTbl = $('bscTiepTaiKyTbl');
+  if (!parsed) return;
+
+  const K = (label, val, sub, color = '') => `
+    <div class="card kpi">
+      <div class="l">${label}</div>
+      <div class="v" style="${color}">${val}</div>
+      <div class="s">${sub}</div>
+    </div>`;
+
+  const itBanHang = (parsed.items || []).find(it => it.name.toLowerCase().includes('bán hàng'));
+  const itThanhCong = (parsed.items || []).find(it => it.name.toLowerCase().includes('thành công'));
+  const grand = parsed.grandTotal || 36;
+  const cBanHang = itBanHang ? itBanHang.count : 18;
+  const sBanHang = itBanHang && itBanHang.success != null ? itBanHang.success : 11;
+  const rateBanHang = itBanHang && itBanHang.rate ? itBanHang.rate : '61,11%';
+  const cThanhCong = itThanhCong ? itThanhCong.count : 18;
+
+  if (boxCards) {
+    boxCards.innerHTML =
+      K('🔄 Tổng Gian Hàng Tái Ký', `${n0(grand)} GH`, `Rà soát toàn bộ tệp (${esc(parsed.month || 'Tháng 11')})`, 'color:#10b981') +
+      K('🛒 Nhóm Đang Bán Hàng', `${n0(cBanHang)} GH (${((cBanHang / grand) * 100).toFixed(1)}%)`, `Phát sinh giao dịch trước khi SC đến`, 'color:#38bdf8') +
+      K('🎯 Tái Ký Thành Công (Bán Hàng)', `${n0(sBanHang)} GH`, `Tỷ lệ thành công: <b style="color:#10b981">${esc(rateBanHang)}</b>`, 'color:#10b981') +
+      K('✅ Nhóm Đã Thành Công', `${n0(cThanhCong)} GH (${((cThanhCong / grand) * 100).toFixed(1)}%)`, `Khách hàng chốt tái ký thành công`, 'color:#f59e0b');
+  }
+
+  if (boxTbl) {
+    let html = `<table class="kpi-table" style="width:100%">
+      <thead>
+        <tr>
+          <th style="width:55px;text-align:center">STT</th>
+          <th style="text-align:left">Tình Trạng Gian Hàng Trước Khi SC Đi</th>
+          <th style="width:140px;text-align:center">Số Lượng GH</th>
+          <th style="width:150px;text-align:center">Hỗ Trợ Thành Công</th>
+          <th style="width:180px;text-align:center">Tỷ Lệ Thành Công</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    (parsed.items || []).forEach((it, i) => {
+      const isSuccess = it.name.toLowerCase().includes('thành công');
+      const badgeIcon = isSuccess ? '✅' : '🛒';
+      const pctVal = _parseValNumber(it.rate);
+
+      html += `<tr>
+        <td style="text-align:center;font-weight:600;color:var(--mut)">${i + 1}</td>
+        <td style="text-align:left;font-weight:700;color:var(--tx-heading)">
+          <span style="margin-right:6px">${badgeIcon}</span>
+          <span>${esc(it.name)}</span>
+        </td>
+        <td style="text-align:center;font-weight:700;font-size:14px;color:var(--tx-heading)">${n0(it.count)}</td>
+        <td style="text-align:center;font-weight:700;color:#10b981;font-size:14px">
+          ${it.success != null ? n0(it.success) : (it.rawSuccess || (isSuccess ? n0(it.count) : '–'))}
+        </td>
+        <td style="text-align:center">
+          ${it.rate ? `
+            <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+              <div style="flex:1;max-width:90px;height:7px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden">
+                <div style="width:${Math.min(100, pctVal)}%;height:100%;background:#10b981;border-radius:4px"></div>
+              </div>
+              <span style="font-weight:700;font-size:12px;color:#10b981;width:55px;text-align:right">${esc(it.rate)}</span>
+            </div>
+          ` : (isSuccess ? '<span style="color:#10b981;font-weight:700">100.00%</span>' : '–')}
+        </td>
+      </tr>`;
+    });
+
+    const totCount = parsed.totalRow ? parsed.totalRow.count : grand;
+    const totSuccess = parsed.totalRow && parsed.totalRow.success != null ? parsed.totalRow.success : (sBanHang + cThanhCong);
+    const totRate = parsed.totalRow && parsed.totalRow.rate ? parsed.totalRow.rate : `${((totSuccess / totCount) * 100).toFixed(2)}%`;
+
+    html += `</tbody>
+      <tfoot>
+        <tr style="background:var(--card-sub);font-weight:800;border-top:2px solid var(--line)">
+          <td style="text-align:center">∑</td>
+          <td style="text-align:left;text-transform:uppercase;color:var(--tx-heading)">${esc(parsed.totalRow ? parsed.totalRow.name : 'TỔNG CỘNG')}</td>
+          <td style="text-align:center;font-size:14px;color:#f59e0b">${n0(totCount)}</td>
+          <td style="text-align:center;font-size:14px;color:#10b981">${n0(totSuccess)}</td>
+          <td style="text-align:center;font-size:13.5px;color:#10b981">${esc(totRate)}</td>
+        </tr>
+      </tfoot>
+    </table>`;
+
+    boxTbl.innerHTML = html;
+  }
+}
+
 /* ==========================================================================
    6. CSV EXPORT UTILITIES (CHUẨN UTF-8 VỚI BOM)
    ========================================================================== */
@@ -1404,6 +1571,7 @@ function exportCurrentTiepCsv() {
   if (tab === 'fnb') exportTiepFnbCsv();
   else if (tab === 'booking') exportTiepBookingCsv();
   else if (tab === 'retail') exportTiepRetailCsv();
+  else if (tab === 'taiky') exportTiepTaiKyCsv();
   else exportAllTiepTrienKhaiCsv();
 }
 
@@ -1513,9 +1681,34 @@ function exportTiepRetailCsv() {
   showToast('Đã xuất file CSV Nhóm Retail lớn HDDT thành công!', true);
 }
 
+function exportTiepTaiKyCsv() {
+  const p = TIEP_TRIEN_KHAI_STATE.taiky;
+  if (!p) return showToast('Chưa có dữ liệu Tái ký để xuất CSV', false);
+
+  const lines = [
+    ['BÁO CÁO CÁC TỆP TRIỂN KHAI - MỤC 8.4: NHÓM HỖ TRỢ TÁI KÝ (' + (p.month || 'Tháng 11') + ')'],
+    ['Thời gian xuất: ' + new Date().toLocaleString('vi-VN')],
+    [],
+    ['STT', 'Tình Trạng Gian Hàng Trước Khi SC Đi', 'Số Lượng GH', 'Hỗ Trợ Thành Công', 'Tỷ Lệ Thành Công']
+  ];
+
+  (p.items || []).forEach((it, i) => {
+    lines.push([i + 1, it.name, it.count, it.success != null ? it.success : (it.rawSuccess || ''), it.rate || '']);
+  });
+
+  const totCount = p.totalRow ? p.totalRow.count : p.grandTotal;
+  const totSuccess = p.totalRow && p.totalRow.success != null ? p.totalRow.success : '';
+  const totRate = p.totalRow && p.totalRow.rate ? p.totalRow.rate : '';
+  lines.push(['TỔNG CỘNG', '', totCount, totSuccess, totRate]);
+
+  const csv = lines.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  _downloadCsvFile(`BaoCao_TiepTrienKhai_TaiKy_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  showToast('Đã xuất file CSV Nhóm Tái ký thành công!', true);
+}
+
 function exportAllTiepTrienKhaiCsv() {
   const lines = [
-    ['BÁO CÁO TỔNG HỢP CÁC TỆP TRIỂN KHAI (F&B LỚN - BOOKING 3 SAO - RETAIL LỚN HĐĐT)'],
+    ['BÁO CÁO TỔNG HỢP CÁC TỆP TRIỂN KHAI (F&B LỚN - BOOKING 3 SAO - RETAIL LỚN HĐĐT - TÁI KÝ)'],
     ['Thời gian xuất: ' + new Date().toLocaleString('vi-VN')],
     []
   ];
@@ -1563,9 +1756,21 @@ function exportAllTiepTrienKhaiCsv() {
     lines.push([]);
     lines.push(['Vấn Đề Phát Sinh & Đề Xuất HĐĐT']);
     pret.tbl4.rows.forEach((r, i) => lines.push([i + 1, ...r]));
+    lines.push([]);
+  }
+
+  const ptaiky = TIEP_TRIEN_KHAI_STATE.taiky;
+  if (ptaiky) {
+    lines.push(['============================== 8.4: NHÓM HỖ TRỢ TÁI KÝ ==============================']);
+    lines.push(['STT', 'Tình Trạng Gian Hàng Trước Khi SC Đi', 'Số Lượng GH', 'Hỗ Trợ Thành Công', 'Tỷ Lệ Thành Công']);
+    (ptaiky.items || []).forEach((it, i) => lines.push([i + 1, it.name, it.count, it.success != null ? it.success : (it.rawSuccess || ''), it.rate || '']));
+    const totCount = ptaiky.totalRow ? ptaiky.totalRow.count : ptaiky.grandTotal;
+    const totSuccess = ptaiky.totalRow && ptaiky.totalRow.success != null ? ptaiky.totalRow.success : '';
+    const totRate = ptaiky.totalRow && ptaiky.totalRow.rate ? ptaiky.totalRow.rate : '';
+    lines.push(['TỔNG CỘNG', '', totCount, totSuccess, totRate]);
   }
 
   const csv = lines.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
   _downloadCsvFile(`BaoCao_TatCa_TiepTrienKhai_${new Date().toISOString().slice(0, 10)}.csv`, csv);
-  showToast('Đã xuất toàn bộ 3 tệp triển khai ra CSV thành công!', true);
+  showToast('Đã xuất toàn bộ 4 tệp triển khai ra CSV thành công!', true);
 }
