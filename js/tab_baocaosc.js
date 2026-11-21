@@ -870,16 +870,38 @@ function onActiveRateSearch(val) {
    ========================================================================== */
 
 /**
- * Chuẩn hóa dữ liệu thô từ sheet 'baocaotuan' (range F2:I6)
+ * Chuẩn hóa dữ liệu thô từ sheet 'Khách ký mới' (range A1:E6) hoặc 'baocaotuan' (F2:I6)
  */
 function normalizeCareRateData(rawData) {
   if (!Array.isArray(rawData) || rawData.length < 2) return null;
 
-  const header = rawData[0] || [];
+  // Tìm dòng tiêu đề (chứa 'ngành', 'ký mới', hoặc 'inactive')
+  let headerRowIdx = 0;
+  for (let i = 0; i < Math.min(3, rawData.length); i++) {
+    const rowStr = (rawData[i] || []).join(' ').toLowerCase();
+    if (rowStr.includes('ký mới') || rowStr.includes('ky moi') || rowStr.includes('inactive')) {
+      headerRowIdx = i;
+      break;
+    }
+  }
+
+  // Lấy tên tháng từ dòng đầu nếu có (VD: Tỷ lệ chăm khách New T11 -> Tháng 11)
+  let month = 'Tháng 11';
+  if (rawData[0] && rawData[0][0]) {
+    const t = String(rawData[0][0]).trim();
+    const mMatch = t.match(/T\d+|tháng\s*\d+/i);
+    if (mMatch) {
+      const mStr = mMatch[0].toUpperCase();
+      month = mStr.startsWith('T') && !mStr.startsWith('TH') ? `Tháng ${mStr.slice(1)}` : mStr;
+    }
+  }
+
+  const header = rawData[headerRowIdx] || [];
   let colName = 0;
   let colKyMoi = 1;
   let colInactive = 2;
   let colScCham = 3;
+  let colSoLuong = -1;
 
   for (let c = 0; c < header.length; c++) {
     const h = String(header[c] || '').trim().toLowerCase();
@@ -887,12 +909,13 @@ function normalizeCareRateData(rawData) {
     else if (h.includes('ký mới') || h.includes('ky moi')) colKyMoi = c;
     else if (h.includes('inactive')) colInactive = c;
     else if (h.includes('sc chăm') || h.includes('sc cham')) colScCham = c;
+    else if (h.includes('số lượng') || h.includes('so luong') || h.includes('sl chăm')) colSoLuong = c;
   }
 
   const items = [];
   let totalRow = null;
 
-  for (let r = 1; r < rawData.length; r++) {
+  for (let r = headerRowIdx + 1; r < rawData.length; r++) {
     const row = rawData[r];
     if (!row || !row.length) continue;
     const rawName = String(row[colName] || '').trim();
@@ -905,6 +928,9 @@ function normalizeCareRateData(rawData) {
     const kyMoi = parseInt(String(row[colKyMoi] || '0').replace(/\D/g, ''), 10) || 0;
     const inactive = parseActiveRateVal(row[colInactive]);
     const scCham = parseActiveRateVal(row[colScCham]);
+    const soLuong = colSoLuong >= 0 && row[colSoLuong] != null
+      ? parseInt(String(row[colSoLuong] || '0').replace(/\D/g, ''), 10) || 0
+      : null;
 
     const isTotal = name.toLowerCase().includes('tổng');
     const item = {
@@ -912,6 +938,7 @@ function normalizeCareRateData(rawData) {
       kyMoi,
       inactive,
       scCham,
+      soLuong,
       share: 0,
       activeRate: inactive != null ? Math.max(0, 100 - inactive) : null,
       isTotal
@@ -934,17 +961,23 @@ function normalizeCareRateData(rawData) {
     totalRow.share = 100;
   }
 
+  const totSoLuong = totalRow && totalRow.soLuong != null
+    ? totalRow.soLuong
+    : items.reduce((s, it) => s + (it.soLuong || 0), 0);
+
   return {
+    month,
     items,
     totalRow,
     totKyMoi,
+    totSoLuong,
     avgInactive: totalRow ? (totalRow.inactive || 0) : 0,
     avgScCham: totalRow ? (totalRow.scCham || 0) : 0
   };
 }
 
 /**
- * Hiển thị 3 thẻ KPI tóm tắt cho Mục 7
+ * Hiển thị các thẻ KPI tóm tắt cho Mục 7
  */
 function renderBaoCaoScCareSummaryCards(parsedCare) {
   const box = $('bscCareSummaryCards');
@@ -958,11 +991,13 @@ function renderBaoCaoScCareSummaryCards(parsedCare) {
     </div>`;
 
   const itemsSummary = parsedCare.items.map(it => `${esc(it.name)}: ${n0(it.kyMoi)}`).join(' · ');
+  const mLabel = parsedCare.month || 'Tháng 11';
 
   box.innerHTML =
-    K('Tổng Ký Mới (Tháng 10)', `${n0(parsedCare.totKyMoi)} gian hàng`, itemsSummary, 'color:#38bdf8') +
-    K('Tỷ Lệ Inactive Chung', `${parsedCare.avgInactive.toFixed(2)}%`, `Khách hàng ký mới chưa active (T10)`, 'color:#f59e0b') +
-    K('Tỷ Lệ SC Chăm Chung', `${parsedCare.avgScCham.toFixed(2)}%`, `Gian hàng mới đã được SC hỗ trợ chăm sóc`, 'color:#c084fc');
+    K(`Tổng Ký Mới (${mLabel})`, `${n0(parsedCare.totKyMoi)} gian hàng`, itemsSummary, 'color:#38bdf8') +
+    K('Tỷ Lệ Inactive Chung', `${parsedCare.avgInactive.toFixed(2)}%`, `Khách hàng ký mới chưa active (${mLabel})`, 'color:#f59e0b') +
+    K('Tỷ Lệ SC Chăm Chung', `${parsedCare.avgScCham.toFixed(2)}%`, `Đạt ${n0(parsedCare.totSoLuong)} / ${n0(parsedCare.totKyMoi)} gian hàng mới`, 'color:#c084fc') +
+    K('SL Khách Mới SC Đã Chăm', `${n0(parsedCare.totSoLuong)} gian hàng`, `Retail: ${n0(parsedCare.items.find(x => x.name === 'Retail')?.soLuong || 0)} · F&B: ${n0(parsedCare.items.find(x => x.name.includes('F&B'))?.soLuong || 0)} · Booking: ${n0(parsedCare.items.find(x => x.name === 'Booking')?.soLuong || 0)}`, 'color:#10b981');
 }
 
 /**
@@ -982,6 +1017,7 @@ function renderBaoCaoScCareTable(parsedCare) {
     if (k === 'share') return dir * (a.share - b.share);
     if (k === 'inactive') return dir * ((a.inactive || 0) - (b.inactive || 0));
     if (k === 'scCham') return dir * ((a.scCham || 0) - (b.scCham || 0));
+    if (k === 'soLuong') return dir * ((a.soLuong || 0) - (b.soLuong || 0));
     return 0;
   });
 
@@ -991,14 +1027,16 @@ function renderBaoCaoScCareTable(parsedCare) {
   thead += `<th onclick="sortCareRate('name')" style="min-width:140px;cursor:pointer;text-align:center">Ngành Hàng${sortArrow('name')}</th>`;
   thead += `<th onclick="sortCareRate('kyMoi')" style="min-width:140px;cursor:pointer;text-align:center">Ký Mới (Gian Hàng)${sortArrow('kyMoi')}</th>`;
   thead += `<th onclick="sortCareRate('share')" style="min-width:120px;cursor:pointer;text-align:center">Tỷ Trọng Ký Mới${sortArrow('share')}</th>`;
-  thead += `<th onclick="sortCareRate('inactive')" style="min-width:140px;cursor:pointer;text-align:center">Tỷ Lệ Inactive${sortArrow('inactive')}</th>`;
-  thead += `<th onclick="sortCareRate('scCham')" style="min-width:140px;cursor:pointer;text-align:center">Tỷ Lệ SC Chăm${sortArrow('scCham')}</th>`;
+  thead += `<th onclick="sortCareRate('inactive')" style="min-width:130px;cursor:pointer;text-align:center">Tỷ Lệ Inactive${sortArrow('inactive')}</th>`;
+  thead += `<th onclick="sortCareRate('scCham')" style="min-width:130px;cursor:pointer;text-align:center">Tỷ Lệ SC Chăm${sortArrow('scCham')}</th>`;
+  thead += `<th onclick="sortCareRate('soLuong')" style="min-width:140px;cursor:pointer;text-align:center">SL SC Đã Chăm${sortArrow('soLuong')}</th>`;
   thead += '</tr></thead>';
 
   let tbody = '<tbody>';
   list.forEach(it => {
     const badgeInactive = it.inactive != null ? `<span class="ar-badge" style="background:rgba(245,158,11,0.16);color:#f59e0b">${it.inactive.toFixed(2)}%</span>` : '–';
     const badgeScCham = it.scCham != null ? `<span class="ar-badge" style="background:rgba(192,132,252,0.16);color:#c084fc">${it.scCham.toFixed(2)}%</span>` : '–';
+    const soLuongTxt = it.soLuong != null ? `<span style="font-weight:700;color:#10b981;font-size:13.5px">${n0(it.soLuong)}</span>` : '–';
 
     tbody += '<tr>';
     tbody += `<td class="sc-name" style="text-align:center;font-weight:700">${esc(it.name)}</td>`;
@@ -1006,6 +1044,7 @@ function renderBaoCaoScCareTable(parsedCare) {
     tbody += `<td style="text-align:center;font-weight:600">${it.share.toFixed(2)}%</td>`;
     tbody += `<td style="text-align:center">${badgeInactive}</td>`;
     tbody += `<td style="text-align:center">${badgeScCham}</td>`;
+    tbody += `<td style="text-align:center">${soLuongTxt}</td>`;
     tbody += '</tr>';
   });
   tbody += '</tbody>';
@@ -1019,6 +1058,7 @@ function renderBaoCaoScCareTable(parsedCare) {
     tfoot += `<td style="text-align:center;color:var(--acc);font-weight:800">100%</td>`;
     tfoot += `<td style="text-align:center;color:#f59e0b;font-weight:800">${tot.inactive ? tot.inactive.toFixed(2) + '%' : '–'}</td>`;
     tfoot += `<td style="text-align:center;color:#c084fc;font-weight:800">${tot.scCham ? tot.scCham.toFixed(2) + '%' : '–'}</td>`;
+    tfoot += `<td style="text-align:center;color:#10b981;font-weight:800;font-size:14.5px">${tot.soLuong != null ? n0(tot.soLuong) : n0(parsedCare.totSoLuong)}</td>`;
     tfoot += '</tr></tfoot>';
   }
 
@@ -1185,6 +1225,10 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
           badge.className = 'badge b-load';
           badge.textContent = `Bộ nhớ đệm (${timeLabel}) · Đang đồng bộ…`;
         }
+        // Nạp careRate từ SNAPSHOT_TIEP_TRIEN_KHAI nếu chưa có
+        if (!BAOCAOSC_STATE.careRate && typeof SNAPSHOT_TIEP_TRIEN_KHAI !== 'undefined' && Array.isArray(SNAPSHOT_TIEP_TRIEN_KHAI.valueRanges) && SNAPSHOT_TIEP_TRIEN_KHAI.valueRanges[5]?.values) {
+          BAOCAOSC_STATE.careRate = SNAPSHOT_TIEP_TRIEN_KHAI.valueRanges[5].values;
+        }
         // Không return! Tự động tiếp tục gọi API Google Sheets để kéo số mới nhất
       }
     } catch (e) {
@@ -1253,7 +1297,11 @@ async function loadBaoCaoSc(forceReload = false, isSilent = false) {
       muctieuOnline: resMuctieuOnline && resMuctieuOnline.data ? resMuctieuOnline.data : null,
       monthlyInactive: resMonthlyInactive && resMonthlyInactive.data ? resMonthlyInactive.data : null,
       activeRate: resActive.data,
-      careRate: resCare && resCare.data ? resCare.data : null,
+      careRate: (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' && TIEP_TRIEN_KHAI_STATE.careRate && TIEP_TRIEN_KHAI_STATE.careRate.length)
+        ? TIEP_TRIEN_KHAI_STATE.careRate
+        : (BAOCAOSC_STATE.careRate && BAOCAOSC_STATE.careRate.length
+            ? BAOCAOSC_STATE.careRate
+            : (resCare && resCare.data ? resCare.data : null)),
       fnbIssue: resFnbIssue && resFnbIssue.data ? resFnbIssue.data : null,
       provinceImpact: resProvince && resProvince.data ? resProvince.data : null,
       impactDataSource: resImpactDataSource && resImpactDataSource.data ? resImpactDataSource.data : null,
@@ -1399,18 +1447,19 @@ function exportCareRateCsv() {
   const lines = [];
 
   // Tiêu đề
-  lines.push(['BÁO CÁO SC - MỤC 7: TỶ LỆ CHĂM KHÁCH NEW T10']);
+  lines.push([`BÁO CÁO SC - MỤC 7: TỶ LỆ CHĂM KHÁCH NEW (${parsed.month || 'THÁNG 11'})`]);
   lines.push(['Xuất ngày: ' + new Date().toLocaleString('vi-VN')]);
   lines.push([]);
 
-  lines.push(['Ngành Hàng', 'Ký Mới (Gian Hàng)', 'Tỷ Trọng Ký Mới (%)', 'Tỷ Lệ Inactive (%)', 'Tỷ Lệ SC Chăm (%)']);
+  lines.push(['Ngành Hàng', 'Ký Mới (Gian Hàng)', 'Tỷ Trọng Ký Mới (%)', 'Tỷ Lệ Inactive (%)', 'Tỷ Lệ SC Chăm (%)', 'SL SC Đã Chăm (GH)']);
   parsed.items.forEach(it => {
     lines.push([
       it.name,
       it.kyMoi,
       it.share.toFixed(2) + '%',
       it.inactive != null ? it.inactive.toFixed(2) + '%' : '–',
-      it.scCham != null ? it.scCham.toFixed(2) + '%' : '–'
+      it.scCham != null ? it.scCham.toFixed(2) + '%' : '–',
+      it.soLuong != null ? it.soLuong : '–'
     ]);
   });
 
@@ -1421,7 +1470,8 @@ function exportCareRateCsv() {
       tot.kyMoi,
       '100%',
       tot.inactive != null ? tot.inactive.toFixed(2) + '%' : '–',
-      tot.scCham != null ? tot.scCham.toFixed(2) + '%' : '–'
+      tot.scCham != null ? tot.scCham.toFixed(2) + '%' : '–',
+      tot.soLuong != null ? tot.soLuong : parsed.totSoLuong
     ]);
   }
 

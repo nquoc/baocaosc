@@ -1679,9 +1679,9 @@ function wrRenderActiveRateTable(active) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
-// 2. Care Rate (Chăm khách New Tháng 10 / Sheet baocaotuan F2:I6)
+// 2. Care Rate (Chăm khách New Tháng 11 / Sheet Khách ký mới A1:E6)
 function wrRenderCareRateTable(care) {
-    const headers = ['Ngành hàng', 'Khách ký mới', 'Tỷ trọng ký mới', 'Tỷ lệ Inactive', 'Tỷ lệ SC chăm'];
+    const headers = ['Ngành hàng', 'Khách ký mới', 'Tỷ trọng ký mới', 'Tỷ lệ Inactive', 'Tỷ lệ SC chăm', 'SL SC đã chăm'];
     let rows = [];
 
     if (care && Array.isArray(care.items) && care.items.length) {
@@ -1690,7 +1690,8 @@ function wrRenderCareRateTable(care) {
             wrInt(it.kyMoi),
             `${it.share != null ? it.share.toFixed(2) + '%' : '-'}`,
             `<span class="${it.inactive > 35 ? 'wr-kpi-bad' : 'wr-kpi-medium'}">${it.inactive != null ? it.inactive.toFixed(2) + '%' : '-'}</span>`,
-            `<b class="wr-kpi-good">${it.scCham != null ? it.scCham.toFixed(2) + '%' : '-'}</b>`
+            `<b class="wr-kpi-good">${it.scCham != null ? it.scCham.toFixed(2) + '%' : '-'}</b>`,
+            `<b>${it.soLuong != null ? wrInt(it.soLuong) : '-'}</b>`
         ]);
         const tot = care.totalRow || care.total;
         if (tot) {
@@ -1699,11 +1700,12 @@ function wrRenderCareRateTable(care) {
                 `<b>${wrInt(tot.kyMoi || care.totKyMoi)}</b>`,
                 `<b>100.00%</b>`,
                 `<b>${(tot.inactive != null ? tot.inactive : care.avgInactive).toFixed(2)}%</b>`,
-                `<b>${(tot.scCham != null ? tot.scCham : care.avgScCham).toFixed(2)}%</b>`
+                `<b>${(tot.scCham != null ? tot.scCham : care.avgScCham).toFixed(2)}%</b>`,
+                `<b>${wrInt(tot.soLuong != null ? tot.soLuong : (care.totSoLuong != null ? care.totSoLuong : '-'))}</b>`
             ]);
         }
     } else {
-        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-']];
+        rows = [['-', 'Chưa có dữ liệu từ Google Sheets', '-', '-', '-', '-']];
     }
 
     return wrTable(headers, rows, 'wr-report-table');
@@ -2824,7 +2826,7 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             ${bsc.careRate ? wrBullets([
                 `Toàn quốc ghi nhận tổng cộng <b>${bsc.careRate.totKyMoi ? wrInt(bsc.careRate.totKyMoi) : (bsc.careRate.totalRow?.kyMoi ? wrInt(bsc.careRate.totalRow.kyMoi) : '-')} khách ký mới</b>.`,
                 `Tỷ lệ Inactive New ghi nhận ở mức <b>${bsc.careRate.avgInactive != null ? bsc.careRate.avgInactive.toFixed(2) + '%' : (bsc.careRate.totalRow?.inactive != null ? bsc.careRate.totalRow.inactive.toFixed(2) + '%' : '-')}</b>.`,
-                `Tỷ lệ khách mới được SC tiếp cận chăm sóc đạt <b>${bsc.careRate.avgScCham != null ? bsc.careRate.avgScCham.toFixed(2) + '%' : (bsc.careRate.totalRow?.scCham != null ? bsc.careRate.totalRow.scCham.toFixed(2) + '%' : '-')}</b>, đảm bảo hỗ trợ đồng hành ngay trong giai đoạn Onboarding.`
+                `Tỷ lệ khách mới được SC tiếp cận chăm sóc đạt <b>${bsc.careRate.avgScCham != null ? bsc.careRate.avgScCham.toFixed(2) + '%' : (bsc.careRate.totalRow?.scCham != null ? bsc.careRate.totalRow.scCham.toFixed(2) + '%' : '-')}</b> (tương ứng <b>${bsc.careRate.totSoLuong != null ? wrInt(bsc.careRate.totSoLuong) : (bsc.careRate.totalRow?.soLuong != null ? wrInt(bsc.careRate.totalRow.soLuong) : '-')} gian hàng</b> đã được hỗ trợ trực tiếp), đảm bảo hỗ trợ đồng hành ngay trong giai đoạn Onboarding.`
             ]) : ''}
 
             <h3>1. Tỷ lệ Inactive New &amp; Tỷ lệ SC đã chăm sóc khách New</h3>
@@ -3081,7 +3083,7 @@ function wrBuildReportHtmlV1(metrics, fromDate, toDate, previousSnapshot, manual
             ${wrRenderActiveRateTable(bsc.activeRate)}
 
             <h3>2. Tỷ lệ Inactive New &amp; Tỷ lệ SC đã chăm sóc</h3>
-            <p>Trong kỳ số khách hàng ký mới là <b>${bsc.careRate?.totKyMoi ? wrInt(bsc.careRate.totKyMoi) : '-'}</b> khách. Tỷ lệ Inactive New bình quân toàn quốc là <b>${bsc.careRate?.avgInactive != null ? bsc.careRate.avgInactive.toFixed(2) + '%' : '-'}</b>; Tỷ lệ khách mới đã được đội ngũ SC tiếp cận chăm sóc đạt <b>${bsc.careRate?.avgScCham != null ? bsc.careRate.avgScCham.toFixed(2) + '%' : '-'}</b>:</p>
+            <p>Trong kỳ số khách hàng ký mới là <b>${bsc.careRate?.totKyMoi ? wrInt(bsc.careRate.totKyMoi) : '-'}</b> khách. Tỷ lệ Inactive New bình quân toàn quốc là <b>${bsc.careRate?.avgInactive != null ? bsc.careRate.avgInactive.toFixed(2) + '%' : '-'}</b>; Tỷ lệ khách mới đã được đội ngũ SC tiếp cận chăm sóc đạt <b>${bsc.careRate?.avgScCham != null ? bsc.careRate.avgScCham.toFixed(2) + '%' : '-'}</b> (tương ứng <b>${bsc.careRate?.totSoLuong != null ? wrInt(bsc.careRate.totSoLuong) : (bsc.careRate?.totalRow?.soLuong != null ? wrInt(bsc.careRate.totalRow.soLuong) : '-')}</b> gian hàng):</p>
             ${wrRenderCareRateTable(bsc.careRate)}
 
             <h3>3. Tỷ lệ Inactive New theo tháng năm 2026</h3>

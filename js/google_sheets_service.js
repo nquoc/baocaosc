@@ -14,12 +14,13 @@ const SA_RANGES = [
   `'${SA_SHEET_NAME}'!D1:H60`,  // Mục 8.2: Nhóm Booking 3 Hotel sao (cột D:H)
   `'${SA_SHEET_NAME}'!J1:P60`,  // Mục 8.3: Nhóm retail lớn HDDT (cột J:P dự phòng)
   `'${SA_SHEET_NAME}'!Q1:T20`,  // Mục 8.4: Nhóm Hỗ trợ Tái ký (cột Q:T)
-  `'Data tồn'!A1:K15`           // Mục 9: Data tồn Tháng 11 (Offline & Online)
+  `'Data tồn'!A1:K15`,          // Mục 9: Data tồn Tháng 11 (Offline & Online)
+  `'Khách ký mới'!A1:E6`        // Mục 7: Tỷ Lệ Chăm Khách New T11
 ];
 
 const BOT_API_URL = 'https://script.google.com/macros/s/AKfycbwHmR0xSG4uZrBdyPrv-lypX5qjP1bOC2Ca1_8vY1oRfIAe_LeFnJa7wAWrGzCmPrU/exec?apiKey=my_secret_token_2026';
 
-const CACHE_KEY_TIEPTRIENKHAI = 'tiep_trien_khai_data_v5';
+const CACHE_KEY_TIEPTRIENKHAI = 'tiep_trien_khai_data_v6';
 
 // Bộ nhớ đệm token & cấu hình bot trong phiên (tránh sinh token liên tục)
 let _gSaConfig = null;
@@ -243,7 +244,8 @@ async function fetchTiepTrienKhaiFromGoogleSheets(isRetry = false) {
       primaryJson.valueRanges[1],
       retailValueRange,
       primaryJson.valueRanges[3],
-      primaryJson.valueRanges[4]
+      primaryJson.valueRanges[4],
+      primaryJson.valueRanges[5]
     ]
   };
 }
@@ -851,6 +853,7 @@ let TIEP_TRIEN_KHAI_STATE = {
   retail: null,
   taiky: null,
   dataTon: null,
+  careRate: null,
   activeTab: 'all', // 'all' | 'fnb' | 'booking' | 'retail' | 'taiky'
   activeDataTonTab: 'all', // 'all' | 'offline' | 'online'
   savedAt: 0,
@@ -911,6 +914,16 @@ async function loadTiepTrienKhaiData(forceReload = false, isSilent = false) {
         if (typeof BAOCAOSC_STATE !== 'undefined') {
           if (cached.rawFnb) BAOCAOSC_STATE.fnbIssue = cached.rawFnb;
           if (cached.dataTon) BAOCAOSC_STATE.dataTon = cached.dataTon;
+          if (cached.careRate) {
+            BAOCAOSC_STATE.careRate = cached.careRate;
+            if (typeof normalizeCareRateData === 'function') {
+              const parsedCare = normalizeCareRateData(cached.careRate);
+              if (parsedCare) {
+                if (typeof renderBaoCaoScCareSummaryCards === 'function') renderBaoCaoScCareSummaryCards(parsedCare);
+                if (typeof renderBaoCaoScCareTable === 'function') renderBaoCaoScCareTable(parsedCare);
+              }
+            }
+          }
         }
 
         renderTiepTrienKhai();
@@ -954,6 +967,7 @@ async function loadTiepTrienKhaiData(forceReload = false, isSilent = false) {
           retail: TIEP_TRIEN_KHAI_STATE.retail,
           taiky: TIEP_TRIEN_KHAI_STATE.taiky,
           dataTon: TIEP_TRIEN_KHAI_STATE.dataTon,
+          careRate: TIEP_TRIEN_KHAI_STATE.careRate,
           rawFnb: batchData.valueRanges[0].values,
           savedAt: Date.now(),
           timeStr: TIEP_TRIEN_KHAI_STATE.timeStr
@@ -1000,6 +1014,7 @@ function _applyRawRanges(valueRanges, source) {
   const retailRows = valueRanges[2]?.values || [];
   const taiKyRows = valueRanges[3]?.values || [];
   const dataTonRows = valueRanges[4]?.values || [];
+  const careRows = valueRanges[5]?.values || [];
 
   const parsedFnb = parseTiepTrienKhaiFnb(fnbRows);
   const parsedBooking = parseTiepTrienKhaiBooking(bookingRows);
@@ -1016,6 +1031,7 @@ function _applyRawRanges(valueRanges, source) {
     retail: parsedRetail,
     taiky: parsedTaiKy,
     dataTon: parsedDataTon,
+    careRate: careRows.length ? careRows : (TIEP_TRIEN_KHAI_STATE?.careRate || null),
     activeTab: TIEP_TRIEN_KHAI_STATE.activeTab || 'all',
     activeDataTonTab: TIEP_TRIEN_KHAI_STATE.activeDataTonTab || 'all',
     savedAt: Date.now(),
@@ -1027,6 +1043,16 @@ function _applyRawRanges(valueRanges, source) {
   if (typeof BAOCAOSC_STATE !== 'undefined') {
     BAOCAOSC_STATE.fnbIssue = fnbRows;
     BAOCAOSC_STATE.dataTon = parsedDataTon;
+    if (careRows.length) {
+      BAOCAOSC_STATE.careRate = careRows;
+      if (typeof normalizeCareRateData === 'function') {
+        const parsedCare = normalizeCareRateData(careRows);
+        if (parsedCare) {
+          if (typeof renderBaoCaoScCareSummaryCards === 'function') renderBaoCaoScCareSummaryCards(parsedCare);
+          if (typeof renderBaoCaoScCareTable === 'function') renderBaoCaoScCareTable(parsedCare);
+        }
+      }
+    }
   }
 }
 
