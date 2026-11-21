@@ -13,12 +13,13 @@ const SA_RANGES = [
   `'${SA_SHEET_NAME}'!A1:B50`,  // Mục 8.1: Nhóm FNB lớn / lỗi (cột A:B)
   `'${SA_SHEET_NAME}'!D1:H60`,  // Mục 8.2: Nhóm Booking 3 Hotel sao (cột D:H)
   `'${SA_SHEET_NAME}'!J1:P60`,  // Mục 8.3: Nhóm retail lớn HDDT (cột J:P dự phòng)
-  `'${SA_SHEET_NAME}'!Q1:T20`   // Mục 8.4: Nhóm Hỗ trợ Tái ký (cột Q:T)
+  `'${SA_SHEET_NAME}'!Q1:T20`,  // Mục 8.4: Nhóm Hỗ trợ Tái ký (cột Q:T)
+  `'Data tồn'!A1:K15`           // Mục 9: Data tồn Tháng 11 (Offline & Online)
 ];
 
 const BOT_API_URL = 'https://script.google.com/macros/s/AKfycbwHmR0xSG4uZrBdyPrv-lypX5qjP1bOC2Ca1_8vY1oRfIAe_LeFnJa7wAWrGzCmPrU/exec?apiKey=my_secret_token_2026';
 
-const CACHE_KEY_TIEPTRIENKHAI = 'tiep_trien_khai_data_v4';
+const CACHE_KEY_TIEPTRIENKHAI = 'tiep_trien_khai_data_v5';
 
 // Bộ nhớ đệm token & cấu hình bot trong phiên (tránh sinh token liên tục)
 let _gSaConfig = null;
@@ -241,7 +242,8 @@ async function fetchTiepTrienKhaiFromGoogleSheets(isRetry = false) {
       primaryJson.valueRanges[0],
       primaryJson.valueRanges[1],
       retailValueRange,
-      primaryJson.valueRanges[3]
+      primaryJson.valueRanges[3],
+      primaryJson.valueRanges[4]
     ]
   };
 }
@@ -707,6 +709,138 @@ function parseTiepTrienKhaiTaiKy(rows) {
   };
 }
 
+/**
+ * Chuẩn hóa Mục 9: Data tồn Tháng 11 (Offline & Online) từ sheet 'Data tồn' (cột A:E offline & G:K online)
+ */
+function parseDataTonSheet(rows) {
+  if (!Array.isArray(rows) || rows.length < 2) return null;
+
+  // 1. OFFLINE (Cột 0..4: A:E)
+  const offlineRows = [];
+  let offlineTotal = null;
+
+  // 2. ONLINE (Cột 6..10: G:K)
+  const onlineRows = [];
+  let onlineTotal = null;
+
+  const headers = ['Tệp', 'Retail', 'F&B', 'Booking', 'Tổng'];
+  let month = 'Tháng 11';
+
+  // Lấy tên tháng từ dòng tiêu đề nếu có
+  if (rows[0] && rows[0][0]) {
+    const t = String(rows[0][0]).trim();
+    const mMatch = t.match(/tháng\s*\d+/i);
+    if (mMatch) month = mMatch[0].charAt(0).toUpperCase() + mMatch[0].slice(1);
+  }
+
+  for (let i = 2; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r.length) continue;
+
+    // Phân tích bảng Offline (Cột 0..4)
+    const nameOff = String(r[0] || '').trim();
+    if (nameOff) {
+      const ret = _parseValNumber(r[1]);
+      const fnb = _parseValNumber(r[2]);
+      const book = _parseValNumber(r[3]);
+      const tot = _parseValNumber(r[4]) || (ret + fnb + book);
+
+      const item = {
+        name: nameOff,
+        retail: ret,
+        fnb: fnb,
+        booking: book,
+        total: tot
+      };
+
+      if (nameOff.toLowerCase().includes('tổng')) {
+        offlineTotal = item;
+      } else {
+        offlineRows.push(item);
+      }
+    }
+
+    // Phân tích bảng Online (Cột 6..10)
+    const nameOnl = String(r[6] || '').trim();
+    if (nameOnl) {
+      const ret = _parseValNumber(r[7]);
+      const fnb = _parseValNumber(r[8]);
+      const book = _parseValNumber(r[9]);
+      const tot = _parseValNumber(r[10]) || (ret + fnb + book);
+
+      const item = {
+        name: nameOnl,
+        retail: ret,
+        fnb: fnb,
+        booking: book,
+        total: tot
+      };
+
+      if (nameOnl.toLowerCase().includes('tổng')) {
+        onlineTotal = item;
+      } else {
+        onlineRows.push(item);
+      }
+    }
+  }
+
+  // Nếu chưa có dòng tổng thì tự tính
+  if (!offlineTotal) {
+    offlineTotal = {
+      name: 'Tổng',
+      retail: offlineRows.reduce((s, it) => s + it.retail, 0),
+      fnb: offlineRows.reduce((s, it) => s + it.fnb, 0),
+      booking: offlineRows.reduce((s, it) => s + it.booking, 0),
+      total: offlineRows.reduce((s, it) => s + it.total, 0)
+    };
+  }
+
+  if (!onlineTotal) {
+    onlineTotal = {
+      name: 'Tổng',
+      retail: onlineRows.reduce((s, it) => s + it.retail, 0),
+      fnb: onlineRows.reduce((s, it) => s + it.fnb, 0),
+      booking: onlineRows.reduce((s, it) => s + it.booking, 0),
+      total: onlineRows.reduce((s, it) => s + it.total, 0)
+    };
+  }
+
+  // Tính tỷ trọng % cho từng dòng
+  offlineRows.forEach(it => {
+    it.pct = offlineTotal.total > 0 ? (it.total / offlineTotal.total) * 100 : 0;
+  });
+  onlineRows.forEach(it => {
+    it.pct = onlineTotal.total > 0 ? (it.total / onlineTotal.total) * 100 : 0;
+  });
+
+  // Tổng hợp toàn bộ (Offline + Online)
+  const combined = {
+    total: offlineTotal.total + onlineTotal.total,
+    retail: offlineTotal.retail + onlineTotal.retail,
+    fnb: offlineTotal.fnb + onlineTotal.fnb,
+    booking: offlineTotal.booking + onlineTotal.booking
+  };
+  combined.retailPct = combined.total > 0 ? (combined.retail / combined.total) * 100 : 0;
+  combined.fnbPct = combined.total > 0 ? (combined.fnb / combined.total) * 100 : 0;
+  combined.bookingPct = combined.total > 0 ? (combined.booking / combined.total) * 100 : 0;
+
+  return {
+    month,
+    headers,
+    offline: {
+      title: `Data tồn ${month} offline`,
+      items: offlineRows,
+      total: offlineTotal
+    },
+    online: {
+      title: `Data tồn ${month} online`,
+      items: onlineRows,
+      total: onlineTotal
+    },
+    combined
+  };
+}
+
 /* ==========================================================================
    3. GLOBAL STATE & SMART CACHE MANAGEMENT
    ========================================================================== */
@@ -716,7 +850,9 @@ let TIEP_TRIEN_KHAI_STATE = {
   booking: null,
   retail: null,
   taiky: null,
+  dataTon: null,
   activeTab: 'all', // 'all' | 'fnb' | 'booking' | 'retail' | 'taiky'
+  activeDataTonTab: 'all', // 'all' | 'offline' | 'online'
   savedAt: 0,
   timeStr: '',
   source: 'none'
@@ -767,12 +903,14 @@ async function loadTiepTrienKhaiData(forceReload = false, isSilent = false) {
         TIEP_TRIEN_KHAI_STATE = {
           ...cached,
           activeTab: TIEP_TRIEN_KHAI_STATE.activeTab || 'all',
+          activeDataTonTab: TIEP_TRIEN_KHAI_STATE.activeDataTonTab || 'all',
           source: 'cache'
         };
 
-        // Đồng bộ ngược cho BAOCAOSC_STATE.fnbIssue để các phần khác nếu dùng vẫn có data
-        if (typeof BAOCAOSC_STATE !== 'undefined' && cached.rawFnb) {
-          BAOCAOSC_STATE.fnbIssue = cached.rawFnb;
+        // Đồng bộ ngược cho BAOCAOSC_STATE để các phần khác nếu dùng vẫn có data
+        if (typeof BAOCAOSC_STATE !== 'undefined') {
+          if (cached.rawFnb) BAOCAOSC_STATE.fnbIssue = cached.rawFnb;
+          if (cached.dataTon) BAOCAOSC_STATE.dataTon = cached.dataTon;
         }
 
         renderTiepTrienKhai();
@@ -815,6 +953,7 @@ async function loadTiepTrienKhaiData(forceReload = false, isSilent = false) {
           booking: TIEP_TRIEN_KHAI_STATE.booking,
           retail: TIEP_TRIEN_KHAI_STATE.retail,
           taiky: TIEP_TRIEN_KHAI_STATE.taiky,
+          dataTon: TIEP_TRIEN_KHAI_STATE.dataTon,
           rawFnb: batchData.valueRanges[0].values,
           savedAt: Date.now(),
           timeStr: TIEP_TRIEN_KHAI_STATE.timeStr
@@ -860,11 +999,13 @@ function _applyRawRanges(valueRanges, source) {
   const bookingRows = valueRanges[1]?.values || [];
   const retailRows = valueRanges[2]?.values || [];
   const taiKyRows = valueRanges[3]?.values || [];
+  const dataTonRows = valueRanges[4]?.values || [];
 
   const parsedFnb = parseTiepTrienKhaiFnb(fnbRows);
   const parsedBooking = parseTiepTrienKhaiBooking(bookingRows);
   const parsedRetail = parseTiepTrienKhaiRetail(retailRows);
   const parsedTaiKy = parseTiepTrienKhaiTaiKy(taiKyRows);
+  const parsedDataTon = parseDataTonSheet(dataTonRows);
 
   const now = new Date();
   const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -874,15 +1015,18 @@ function _applyRawRanges(valueRanges, source) {
     booking: parsedBooking,
     retail: parsedRetail,
     taiky: parsedTaiKy,
+    dataTon: parsedDataTon,
     activeTab: TIEP_TRIEN_KHAI_STATE.activeTab || 'all',
+    activeDataTonTab: TIEP_TRIEN_KHAI_STATE.activeDataTonTab || 'all',
     savedAt: Date.now(),
     timeStr,
     source
   };
 
-  // Đồng bộ sang BAOCAOSC_STATE.fnbIssue
+  // Đồng bộ sang BAOCAOSC_STATE
   if (typeof BAOCAOSC_STATE !== 'undefined') {
     BAOCAOSC_STATE.fnbIssue = fnbRows;
+    BAOCAOSC_STATE.dataTon = parsedDataTon;
   }
 }
 
@@ -952,15 +1096,20 @@ function selectBscTiepTab(val) {
 
 function renderTiepTrienKhai() {
   const container = $('bscTiepContainer');
-  if (!container) return;
+  if (container) {
+    renderFnbGroupUI(TIEP_TRIEN_KHAI_STATE.fnb);
+    renderBookingGroupUI(TIEP_TRIEN_KHAI_STATE.booking);
+    renderRetailGroupUI(TIEP_TRIEN_KHAI_STATE.retail);
+    renderTaiKyGroupUI(TIEP_TRIEN_KHAI_STATE.taiky);
 
-  renderFnbGroupUI(TIEP_TRIEN_KHAI_STATE.fnb);
-  renderBookingGroupUI(TIEP_TRIEN_KHAI_STATE.booking);
-  renderRetailGroupUI(TIEP_TRIEN_KHAI_STATE.retail);
-  renderTaiKyGroupUI(TIEP_TRIEN_KHAI_STATE.taiky);
+    // Áp dụng trạng thái lọc tab hiện tại
+    selectBscTiepTab(TIEP_TRIEN_KHAI_STATE.activeTab || 'all');
+  }
 
-  // Áp dụng trạng thái lọc tab hiện tại
-  selectBscTiepTab(TIEP_TRIEN_KHAI_STATE.activeTab || 'all');
+  // Render Mục 9: Báo Cáo Data Tồn
+  if (typeof renderDataTonMuc9UI === 'function') {
+    renderDataTonMuc9UI(TIEP_TRIEN_KHAI_STATE.dataTon);
+  }
 }
 
 /**
@@ -1768,9 +1917,242 @@ function exportAllTiepTrienKhaiCsv() {
     const totSuccess = ptaiky.totalRow && ptaiky.totalRow.success != null ? ptaiky.totalRow.success : '';
     const totRate = ptaiky.totalRow && ptaiky.totalRow.rate ? ptaiky.totalRow.rate : '';
     lines.push(['TỔNG CỘNG', '', totCount, totSuccess, totRate]);
+    lines.push([]);
+  }
+
+  const pdataton = TIEP_TRIEN_KHAI_STATE.dataTon;
+  if (pdataton) {
+    lines.push(['============================== MỤC 9: DATA TỒN (THÁNG 11 OFFLINE & ONLINE) ==============================']);
+    lines.push(['--- 9.1 Data tồn offline ---']);
+    lines.push(['STT', 'Tệp Data Tồn', 'Retail', 'F&B', 'Booking', 'Tổng']);
+    (pdataton.offline.items || []).forEach((it, i) => lines.push([i + 1, it.name, it.retail, it.fnb, it.booking, it.total]));
+    if (pdataton.offline.total) lines.push(['TỔNG OFFLINE', '', pdataton.offline.total.retail, pdataton.offline.total.fnb, pdataton.offline.total.booking, pdataton.offline.total.total]);
+    lines.push([]);
+    lines.push(['--- 9.2 Data tồn online ---']);
+    lines.push(['STT', 'Tệp Data Tồn', 'Retail', 'F&B', 'Booking', 'Tổng']);
+    (pdataton.online.items || []).forEach((it, i) => lines.push([i + 1, it.name, it.retail, it.fnb, it.booking, it.total]));
+    if (pdataton.online.total) lines.push(['TỔNG ONLINE', '', pdataton.online.total.retail, pdataton.online.total.fnb, pdataton.online.total.booking, pdataton.online.total.total]);
+    lines.push([]);
   }
 
   const csv = lines.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
   _downloadCsvFile(`BaoCao_TatCa_TiepTrienKhai_${new Date().toISOString().slice(0, 10)}.csv`, csv);
-  showToast('Đã xuất toàn bộ 4 tệp triển khai ra CSV thành công!', true);
+  showToast('Đã xuất toàn bộ báo cáo tệp triển khai và data tồn ra CSV thành công!', true);
+}
+
+/* ==========================================================================
+   7. UI RENDERING & CSV CHO MỤC 9: BÁO CÁO DATA TỒN (THÁNG 11 OFFLINE & ONLINE)
+   ========================================================================== */
+
+function onBscDataTonChange(val) {
+  selectBscDataTonTab(val);
+}
+
+function selectBscDataTonTab(val) {
+  if (!['all', 'offline', 'online'].includes(val)) val = 'all';
+  if (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined') {
+    TIEP_TRIEN_KHAI_STATE.activeDataTonTab = val;
+  }
+
+  // Đồng bộ Dropdown
+  const select = $('bscSelectDataTon');
+  if (select && select.value !== val) {
+    select.value = val;
+  }
+
+  // Đồng bộ Pill Buttons
+  const pillMap = {
+    all: 'pillDataTonAll',
+    offline: 'pillDataTonOffline',
+    online: 'pillDataTonOnline'
+  };
+
+  Object.entries(pillMap).forEach(([k, id]) => {
+    const el = $(id);
+    if (el) {
+      if (k === val) el.classList.add('on');
+      else el.classList.remove('on');
+    }
+  });
+
+  // Hiển thị / Ẩn khối tương ứng
+  const secOffline = $('bscSecDataTonOffline');
+  const secOnline = $('bscSecDataTonOnline');
+
+  if (secOffline) secOffline.style.display = (val === 'all' || val === 'offline') ? 'block' : 'none';
+  if (secOnline) secOnline.style.display = (val === 'all' || val === 'online') ? 'block' : 'none';
+}
+
+function renderDataTonMuc9UI(parsed) {
+  const boxCards = $('bscDataTonCards');
+  const boxOffline = $('bscDataTonOfflineTbl');
+  const boxOnline = $('bscDataTonOnlineTbl');
+  const badge = $('bscDataTonStatusBadge');
+
+  if (!parsed) return;
+
+  if (badge) {
+    badge.className = 'badge b-live';
+    badge.style.background = 'rgba(14,165,233,0.15)';
+    badge.style.color = '#0ea5e9';
+    badge.style.border = '1px solid rgba(14,165,233,0.3)';
+    badge.textContent = `Google Sheets API (${TIEP_TRIEN_KHAI_STATE?.timeStr || 'live'})`;
+  }
+
+  const K = (label, val, sub, color = '') => `
+    <div class="card kpi">
+      <div class="l">${label}</div>
+      <div class="v" style="${color}">${val}</div>
+      <div class="s">${sub}</div>
+    </div>`;
+
+  const offTot = parsed.offline.total.total;
+  const onlTot = parsed.online.total.total;
+  const combTot = parsed.combined.total;
+
+  const itLargeFnb = (parsed.offline.items || []).find(it => it.name.toLowerCase().includes('large'));
+  const itT15Off = (parsed.offline.items || []).find(it => it.name.toLowerCase().includes('t15'));
+  const itT15Onl = (parsed.online.items || []).find(it => it.name.toLowerCase().includes('t15'));
+  const itOi = (parsed.online.items || []).find(it => it.name.toLowerCase().includes('oi'));
+
+  if (boxCards) {
+    boxCards.innerHTML =
+      K('📦 Tổng Data Tồn Toàn Khối', `${n0(combTot)} GH`, `Toàn bộ tệp tồn chuyển tiếp (${esc(parsed.month || 'Tháng 11')})`, 'color:#0ea5e9') +
+      K('🏢 Data Tồn Offline', `${n0(offTot)} GH (${combTot > 0 ? ((offTot / combTot) * 100).toFixed(1) : 0}%)`, `Large FnB (${itLargeFnb ? n0(itLargeFnb.total) : 640}), T15 (${itT15Off ? n0(itT15Off.total) : 373})`, 'color:#38bdf8') +
+      K('🌐 Data Tồn Online', `${n0(onlTot)} GH (${combTot > 0 ? ((onlTot / combTot) * 100).toFixed(1) : 0}%)`, `CSKH T15 (${itT15Onl ? n0(itT15Onl.total) : 1495}), CSKH OI (${itOi ? n0(itOi.total) : 694})`, 'color:#10b981') +
+      K('🛒 Cơ Cấu Ngành Hàng', `Retail: ${parsed.combined.retailPct.toFixed(1)}% · FnB: ${parsed.combined.fnbPct.toFixed(1)}%`, `Retail (${n0(parsed.combined.retail)}) · FnB (${n0(parsed.combined.fnb)}) · Booking (${n0(parsed.combined.booking)})`, 'color:#f59e0b');
+  }
+
+  // Helper render bảng Data tồn
+  const renderTable = (groupData, isOnline) => {
+    const total = groupData.total || {};
+    const items = groupData.items || [];
+    const colorBar = isOnline ? '#10b981' : '#38bdf8';
+    const icon = isOnline ? '🌐' : '🏢';
+
+    let html = `<table class="kpi-table" style="width:100%">
+      <thead>
+        <tr>
+          <th style="width:50px;text-align:center">STT</th>
+          <th style="text-align:left">Tệp Data Tồn</th>
+          <th style="width:110px;text-align:center">Retail</th>
+          <th style="width:110px;text-align:center">F&amp;B</th>
+          <th style="width:110px;text-align:center">Booking</th>
+          <th style="width:130px;text-align:center">Tổng Gian Hàng</th>
+          <th style="width:160px;text-align:center">Tỷ Trọng (%)</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    if (!items.length) {
+      html += `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--mut)">Không có dữ liệu data tồn</td></tr>`;
+    } else {
+      items.forEach((it, i) => {
+        html += `<tr>
+          <td style="text-align:center;font-weight:600;color:var(--mut)">${i + 1}</td>
+          <td style="text-align:left;font-weight:700;color:var(--tx-heading)">
+            <span style="display:inline-block;margin-right:6px">${icon}</span>
+            <span>${esc(it.name)}</span>
+          </td>
+          <td style="text-align:center;font-weight:600;color:#38bdf8">${it.retail > 0 ? n0(it.retail) : '–'}</td>
+          <td style="text-align:center;font-weight:600;color:#ea580c">${it.fnb > 0 ? n0(it.fnb) : '–'}</td>
+          <td style="text-align:center;font-weight:600;color:#a855f7">${it.booking > 0 ? n0(it.booking) : '–'}</td>
+          <td style="text-align:center;font-weight:800;color:var(--tx-heading);font-size:14px">${n0(it.total)}</td>
+          <td style="text-align:center">
+            <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+              <div style="flex:1;max-width:85px;height:7px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden">
+                <div style="width:${Math.min(100, it.pct)}%;height:100%;background:${colorBar};border-radius:4px"></div>
+              </div>
+              <span style="font-weight:700;font-size:12px;color:var(--tx-heading);width:48px;text-align:right">${it.pct.toFixed(2)}%</span>
+            </div>
+          </td>
+        </tr>`;
+      });
+    }
+
+    html += `</tbody>
+      <tfoot>
+        <tr style="background:var(--card-sub);font-weight:800;border-top:2px solid var(--line)">
+          <td style="text-align:center">∑</td>
+          <td style="text-align:left;text-transform:uppercase;color:var(--tx-heading)">${esc(total.name || 'TỔNG CỘNG')}</td>
+          <td style="text-align:center;font-size:14px;color:#38bdf8">${n0(total.retail)}</td>
+          <td style="text-align:center;font-size:14px;color:#ea580c">${n0(total.fnb)}</td>
+          <td style="text-align:center;font-size:14px;color:#a855f7">${n0(total.booking)}</td>
+          <td style="text-align:center;font-size:15px;color:#10b981">${n0(total.total)}</td>
+          <td style="text-align:center;font-size:13px;color:#10b981">100.00%</td>
+        </tr>
+      </tfoot>
+    </table>`;
+
+    return html;
+  };
+
+  if (boxOffline) {
+    boxOffline.innerHTML = renderTable(parsed.offline, false);
+  }
+
+  if (boxOnline) {
+    boxOnline.innerHTML = renderTable(parsed.online, true);
+  }
+
+  // Giữ trạng thái tab lọc hiện tại
+  selectBscDataTonTab(TIEP_TRIEN_KHAI_STATE?.activeDataTonTab || 'all');
+}
+
+function exportDataTonMuc9Csv(mode = 'all') {
+  const p = TIEP_TRIEN_KHAI_STATE?.dataTon;
+  if (!p) return showToast('Chưa có dữ liệu Data Tồn để xuất CSV', false);
+
+  const lines = [];
+
+  const addGroupCsv = (groupData, title) => {
+    lines.push([`============================== ${title} ==============================`]);
+    lines.push(['STT', 'Tệp Data Tồn', 'Retail', 'F&B', 'Booking', 'Tổng Gian Hàng', 'Tỷ Trọng (%)']);
+    (groupData.items || []).forEach((it, i) => {
+      lines.push([i + 1, it.name, it.retail, it.fnb, it.booking, it.total, it.pct.toFixed(2) + '%']);
+    });
+    if (groupData.total) {
+      lines.push(['TỔNG CỘNG', groupData.total.name || 'Tổng', groupData.total.retail, groupData.total.fnb, groupData.total.booking, groupData.total.total, '100.00%']);
+    }
+    lines.push([]);
+  };
+
+  if (mode === 'offline') {
+    lines.push([`BÁO CÁO MỤC 9.1: DATA TỒN ${p.month || 'THÁNG 11'} OFFLINE`]);
+    lines.push(['Thời gian xuất: ' + new Date().toLocaleString('vi-VN')]);
+    lines.push([]);
+    addGroupCsv(p.offline, `DATA TỒN ${p.month || 'THÁNG 11'} OFFLINE`);
+    const csv = lines.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    _downloadCsvFile(`BaoCao_DataTon_Offline_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    return showToast('Đã xuất file CSV Data tồn Offline thành công!', true);
+  }
+
+  if (mode === 'online') {
+    lines.push([`BÁO CÁO MỤC 9.2: DATA TỒN ${p.month || 'THÁNG 11'} ONLINE`]);
+    lines.push(['Thời gian xuất: ' + new Date().toLocaleString('vi-VN')]);
+    lines.push([]);
+    addGroupCsv(p.online, `DATA TỒN ${p.month || 'THÁNG 11'} ONLINE`);
+    const csv = lines.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    _downloadCsvFile(`BaoCao_DataTon_Online_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    return showToast('Đã xuất file CSV Data tồn Online thành công!', true);
+  }
+
+  // Toàn bộ Mục 9 (Offline & Online)
+  lines.push([`BÁO CÁO MỤC 9: BÁO CÁO DATA TỒN (${p.month || 'THÁNG 11'} OFFLINE & ONLINE)`]);
+  lines.push(['Thời gian xuất: ' + new Date().toLocaleString('vi-VN')]);
+  lines.push(['Tổng gian hàng toàn khối: ' + p.combined.total + ' (Retail: ' + p.combined.retail + ', FnB: ' + p.combined.fnb + ', Booking: ' + p.combined.booking + ')']);
+  lines.push([]);
+  addGroupCsv(p.offline, `9.1 DATA TỒN ${p.month || 'THÁNG 11'} OFFLINE`);
+  addGroupCsv(p.online, `9.2 DATA TỒN ${p.month || 'THÁNG 11'} ONLINE`);
+
+  lines.push(['============================== TỔNG HỢP TOÀN KHỐI (OFFLINE + ONLINE) ==============================']);
+  lines.push(['Ngành Hàng', 'Số Lượng Gian Hàng', 'Tỷ Trọng (%)']);
+  lines.push(['Retail', p.combined.retail, p.combined.retailPct.toFixed(2) + '%']);
+  lines.push(['F&B', p.combined.fnb, p.combined.fnbPct.toFixed(2) + '%']);
+  lines.push(['Booking', p.combined.booking, p.combined.bookingPct.toFixed(2) + '%']);
+  lines.push(['TỔNG CỘNG TOÀN KHỐI', p.combined.total, '100.00%']);
+
+  const csv = lines.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  _downloadCsvFile(`BaoCao_DataTon_TatCa_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  showToast('Đã xuất file CSV Data tồn toàn khối thành công!', true);
 }

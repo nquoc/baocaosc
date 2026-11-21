@@ -1155,11 +1155,90 @@
     </div>
   </div>
 
-  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 9...) -->
+  <!-- ==================== MỤC 9: BÁO CÁO DATA TỒN (THÁNG 11 OFFLINE & ONLINE) ==================== -->
+  <div id="bscSecDataTon" class="bsc-centered-block" style="margin-top:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-block;padding:4px 10px;border-radius:6px;font-weight:800;font-size:12px;background:#0ea5e9;color:#ffffff;letter-spacing:0.5px">MỤC 9</span>
+        <h2 style="margin:0;font-size:17px;color:var(--tx-heading)">Báo Cáo Data Tồn (Data Tồn Tháng 11 Offline &amp; Online)</h2>
+      </div>
+      <div class="mut sm" style="font-weight:600;display:flex;align-items:center;gap:8px">
+        <span>Nguồn: Sheet <b>Data tồn</b></span>
+        <span id="bscDataTonStatusBadge" class="badge" style="font-size:11px;background:rgba(14,165,233,0.15);color:#0ea5e9;border:1px solid rgba(14,165,233,0.3)">Google Sheets API</span>
+      </div>
+    </div>
+
+    <!-- THANH ĐIỀU KHIỂN & BỘ LỌC DROPDOWN "DATA TỒN" -->
+    <div class="card" style="padding:12px 16px;margin-bottom:16px;background:var(--card);border:1px solid var(--line)">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <label for="bscSelectDataTon" style="font-weight:700;font-size:13.5px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+            <span>📦 Nhóm Data Tồn:</span>
+          </label>
+          <select id="bscSelectDataTon" onchange="onBscDataTonChange(this.value)" style="font-size:13px;font-weight:700;color:#38bdf8;background:var(--card-sub);border:1px solid var(--line);border-radius:6px;padding:6px 14px;cursor:pointer">
+            <option value="all">📦 Tất cả Data Tồn (Offline &amp; Online)</option>
+            <option value="offline">🏢 9.1: Data tồn Tháng 11 offline</option>
+            <option value="online">🌐 9.2: Data tồn Tháng 11 online</option>
+          </select>
+
+          <!-- Quick Pill Tabs -->
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" class="pill on" id="pillDataTonAll" onclick="selectBscDataTonTab('all')">Tất cả Data tồn</button>
+            <button type="button" class="pill" id="pillDataTonOffline" onclick="selectBscDataTonTab('offline')">🏢 9.1 Offline</button>
+            <button type="button" class="pill" id="pillDataTonOnline" onclick="selectBscDataTonTab('online')">🌐 9.2 Online</button>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="btnExportDataTonCsv" onclick="exportDataTonMuc9Csv('all')" style="background:#0ea5e9;color:#fff;border-color:#38bdf8;font-size:11.5px;padding:5px 12px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV Mục 9</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 KPI SUMMARY CARDS -->
+    <div class="grid kpis" id="bscDataTonCards" style="margin-bottom:16px"></div>
+
+    <!-- CONTAINER HIỂN THỊ 2 BẢNG (OFFLINE & ONLINE) -->
+    <div id="bscDataTonContainer">
+      <!-- 9.1: DATA TỒN THÁNG 11 OFFLINE -->
+      <div id="bscSecDataTonOffline" style="margin-bottom:20px">
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div>
+              <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+                <span style="font-weight:800;color:#0ea5e9">🏢 9.1: Data Tồn Tháng 11 Offline</span>
+              </h3>
+              <p style="margin:2px 0 0 0;font-size:12px;color:var(--mut)">Phân bổ theo các tệp rà soát (T15, Large FnB, FnB kitchen print fail, DVKH, Trống...) và ngành hàng</p>
+            </div>
+            <button onclick="exportDataTonMuc9Csv('offline')" style="background:#0ea5e9;color:#fff;border-color:#38bdf8;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV Offline</button>
+          </div>
+          <div class="wrap" id="bscDataTonOfflineTbl" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        </div>
+      </div>
+
+      <!-- 9.2: DATA TỒN THÁNG 11 ONLINE -->
+      <div id="bscSecDataTonOnline" style="margin-bottom:20px">
+        <div class="card" style="padding:14px 16px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div>
+              <h3 style="margin:0;font-size:15px;color:var(--tx-heading);display:flex;align-items:center;gap:6px">
+                <span style="font-weight:800;color:#10b981">🌐 9.2: Data Tồn Tháng 11 Online</span>
+              </h3>
+              <p style="margin:2px 0 0 0;font-size:12px;color:var(--mut)">Phân bổ theo các tệp CSKH (CSKH T15 - DVKH, CSKH NA - DVKH, CSKH OI - DVKH...) và ngành hàng</p>
+            </div>
+            <button onclick="exportDataTonMuc9Csv('online')" style="background:#10b981;color:#fff;border-color:#34d399;font-size:11.5px;padding:4px 10px;border-radius:6px;cursor:pointer;font-weight:600">⬇ Xuất CSV Online</button>
+          </div>
+          <div class="wrap" id="bscDataTonOnlineTbl" style="overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KHUNG DỰ PHÒNG CHO CÁC MỤC TIẾP THEO (MỤC 10...) -->
   <div class="card bsc-centered-block" style="padding:18px 20px;margin-bottom:16px;border:1.5px dashed var(--line);text-align:center;background:transparent">
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--mut)">
       <span style="font-size:16px">➕</span>
-      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 9...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
+      <span style="font-weight:600;font-size:13px">Các mục báo cáo tiếp theo (Mục 10...) sẽ hiển thị tại đây khi cập nhật thêm dữ liệu.</span>
     </div>
   </div>
 </div>
@@ -1724,20 +1803,20 @@
 <!-- Scripts (Thứ tự nạp phụ thuộc chặt chẽ - Không dùng ES module để chạy offline file://) -->
 <script src="chart.umd.min.js"></script>
 <script src="snapshot.js"></script>
-<script src="js/snapshot_tiep_trien_khai.js?v=20261120_1425"></script>
+<script src="js/snapshot_tiep_trien_khai.js?v=20261121_1030"></script>
 <script src="js/config.js?v=20261110_1410"></script>
 <script src="js/utils.js?v=20261109_1910"></script>
-<script src="js/google_sheets_service.js?v=20261120_1425"></script>
+<script src="js/google_sheets_service.js?v=20261121_1030"></script>
 <script src="js/tab_overview.js?v=20261109_1701"></script>
 <script src="js/tab_pivot.js?v=20261109_1701"></script>
 <script src="js/tab_muctieu.js?v=20261109_1701"></script>
 <script src="js/tab_kpi.js?v=20261109_1701"></script>
 <script src="js/tab_phancung.js?v=20261109_1701"></script>
-<script src="js/tab_baocaosc.js?v=20261110_1410"></script>
+<script src="js/tab_baocaosc.js?v=20261121_1030"></script>
 <script src="js/tab_kpionline.js?v=20261109_1701"></script>
 <script src="js/tab_impactonline.js?v=20261110_1410"></script>
 <script src="js/tab_dataton.js?v=20261109_1701"></script>
-<script src="js/tab-bao-cao.js?v=20261120_1425"></script>
-<script src="js/app.js?v=20261120_1425"></script>
+<script src="js/tab-bao-cao.js?v=20261121_1030"></script>
+<script src="js/app.js?v=20261121_1030"></script>
 </body>
 </html>

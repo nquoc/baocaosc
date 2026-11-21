@@ -1077,7 +1077,7 @@ function renderBaoCaoSc() {
     }
   }
 
-  // Mục 8: Báo Cáo Các Tệp Triển Khai (8.1 F&B Lớn, 8.2 Booking 3 Hotel Sao, 8.3 Retail Lớn HĐĐT)
+  // Mục 8: Báo Cáo Các Tệp Triển Khai (8.1 F&B Lớn, 8.2 Booking 3 Hotel Sao, 8.3 Retail Lớn HĐĐT, 8.4 Tái Ký)
   if (typeof renderTiepTrienKhai === 'function') {
     renderTiepTrienKhai();
   } else if (BAOCAOSC_STATE.fnbIssue) {
@@ -1086,6 +1086,11 @@ function renderBaoCaoSc() {
       renderBaoCaoScFnbIssueSummaryCards(parsedFnb);
       renderFnbIssueTable(parsedFnb);
     }
+  }
+
+  // Mục 9: Báo Cáo Data Tồn (9.1 Offline & 9.2 Online)
+  if (typeof renderDataTonMuc9UI === 'function' && typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' && TIEP_TRIEN_KHAI_STATE.dataTon) {
+    renderDataTonMuc9UI(TIEP_TRIEN_KHAI_STATE.dataTon);
   }
 
   // Mục 5.2: Impact Team Online (lấy từ Tab Impact Online - sheet impactonline)

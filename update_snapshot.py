@@ -86,7 +86,8 @@ def update_tiep_trien_khai(here):
             "'Các tiệp triển khai'!A1:B50",
             "'Các tiệp triển khai'!D1:H60",
             "'Các tiệp triển khai'!J1:P60",
-            "'Các tiệp triển khai'!Q1:T20"
+            "'Các tiệp triển khai'!Q1:T20",
+            "'Data tồn'!A1:K15"
         ]
         res = service.spreadsheets().values().batchGet(
             spreadsheetId=SPREADSHEET_ID,

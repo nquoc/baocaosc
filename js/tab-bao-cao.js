@@ -2483,6 +2483,73 @@ function wrRenderTiepTaiKyTable(taiKyData) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
+// 19. Báo Cáo Data Tồn: Mục 9 (Sheet 'Data tồn')
+function wrRenderDataTonMuc9Table(dataTonData) {
+    let p = dataTonData || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.dataTon : null);
+    if (!p) {
+        return `<div class="wr-report-table-empty">Chưa có dữ liệu Data Tồn từ Google Sheets</div>`;
+    }
+
+    let html = '';
+    const headers = ['STT', 'Tệp Data Tồn', 'Retail', 'F&B', 'Booking', 'Tổng Gian Hàng', 'Tỷ Trọng (%)'];
+
+    // 1. Data tồn Offline
+    if (p.offline && Array.isArray(p.offline.items) && p.offline.items.length) {
+        html += `<h4>1. ${wrEscapeHtml(p.offline.title || 'Data tồn Tháng 11 offline')}</h4>`;
+        const rowsOff = p.offline.items.map((it, i) => [
+            wrInt(i + 1),
+            `<b>${wrEscapeHtml(it.name)}</b>`,
+            wrInt(it.retail),
+            wrInt(it.fnb),
+            wrInt(it.booking),
+            `<b>${wrInt(it.total)}</b>`,
+            `<b>${it.pct != null ? it.pct.toFixed(2) + '%' : '-'}</b>`
+        ]);
+
+        if (p.offline.total) {
+            rowsOff.push([
+                '∑',
+                `<b>${wrEscapeHtml(p.offline.total.name || 'TỔNG CỘNG')}</b>`,
+                `<b>${wrInt(p.offline.total.retail)}</b>`,
+                `<b>${wrInt(p.offline.total.fnb)}</b>`,
+                `<b>${wrInt(p.offline.total.booking)}</b>`,
+                `<b class="wr-kpi-good">${wrInt(p.offline.total.total)}</b>`,
+                `<b class="wr-kpi-good">100.00%</b>`
+            ]);
+        }
+        html += wrTable(headers, rowsOff, 'wr-report-table');
+    }
+
+    // 2. Data tồn Online
+    if (p.online && Array.isArray(p.online.items) && p.online.items.length) {
+        html += `<h4 style="margin-top:16px;">2. ${wrEscapeHtml(p.online.title || 'Data tồn Tháng 11 online')}</h4>`;
+        const rowsOnl = p.online.items.map((it, i) => [
+            wrInt(i + 1),
+            `<b>${wrEscapeHtml(it.name)}</b>`,
+            wrInt(it.retail),
+            wrInt(it.fnb),
+            wrInt(it.booking),
+            `<b>${wrInt(it.total)}</b>`,
+            `<b>${it.pct != null ? it.pct.toFixed(2) + '%' : '-'}</b>`
+        ]);
+
+        if (p.online.total) {
+            rowsOnl.push([
+                '∑',
+                `<b>${wrEscapeHtml(p.online.total.name || 'TỔNG CỘNG')}</b>`,
+                `<b>${wrInt(p.online.total.retail)}</b>`,
+                `<b>${wrInt(p.online.total.fnb)}</b>`,
+                `<b>${wrInt(p.online.total.booking)}</b>`,
+                `<b class="wr-kpi-good">${wrInt(p.online.total.total)}</b>`,
+                `<b class="wr-kpi-good">100.00%</b>`
+            ]);
+        }
+        html += wrTable(headers, rowsOnl, 'wr-report-table');
+    }
+
+    return html;
+}
+
 // =========================================================================
 // QUẢN LÝ PHIÊN BẢN BÁO CÁO (VER 1 vs VER 2)
 // =========================================================================
@@ -2538,7 +2605,7 @@ function wrUpdateVersionUI() {
     }
     if (desc) {
         if (isV2) {
-            desc.innerHTML = `<b>Ver 2 (Chuẩn):</b> 1. Quân số · 2. Active Rate · 3. Tỷ lệ Inactive 2026 · 4. Mục tiêu · 5. Impact (Off/On) · 6. KPI · 7. Ký mới + SC chăm · 8. Các tệp triển khai`;
+            desc.innerHTML = `<b>Ver 2 (Chuẩn):</b> 1. Quân số · 2. Active Rate · 3. Tỷ lệ Inactive 2026 · 4. Mục tiêu · 5. Impact (Off/On) · 6. KPI · 7. Ký mới + SC chăm · 8. Các tệp triển khai · 9. Data tồn (Off/On)`;
         } else {
             desc.innerHTML = `<b>Ver 1 (Tổng hợp):</b> I. Tổng quan CRM · II. Quân số · III. Active Rate &amp; Inactive · IV. Vận hành &amp; KPI · V. F&amp;B · VI. Đề xuất`;
         }
@@ -2603,7 +2670,10 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         summaryBullets.push(`<b>Khách ký mới &amp; SC chăm sóc:</b> Toàn quốc có <b>${totKyMoi ? wrInt(totKyMoi) : '-'}</b> khách ký mới. Tỷ lệ Inactive New: <b>${avgInact != null ? avgInact.toFixed(2) + '%' : '-'}</b>; Tỷ lệ SC tiếp cận chăm sóc: <b>${avgCham != null ? avgCham.toFixed(2) + '%' : '-'}</b>.`);
     }
     if (bsc.tiepTrienKhai?.fnb) {
-        summaryBullets.push(`<b>Các tệp triển khai trọng điểm:</b> Đang kiểm soát chặt chẽ 3 tệp lớn (F&B lớn / lỗi, Booking 3 sao, Retail lớn dùng HĐĐT) để hạn chế rủi ro ngưng sử dụng.`);
+        summaryBullets.push(`<b>Các tệp triển khai trọng điểm:</b> Đang kiểm soát chặt chẽ 4 tệp lớn (F&B lớn / lỗi, Booking 3 sao, Retail lớn dùng HĐĐT, SC hỗ trợ tái ký) để hạn chế rủi ro ngưng sử dụng.`);
+    }
+    if (bsc.tiepTrienKhai?.dataTon) {
+        summaryBullets.push(`<b>Báo cáo Data tồn:</b> Toàn quốc ghi nhận <b>${wrInt(bsc.tiepTrienKhai.dataTon.combined.total)} gian hàng tồn</b> (Offline: <b>${wrInt(bsc.tiepTrienKhai.dataTon.offline.total.total)}</b>, Online: <b>${wrInt(bsc.tiepTrienKhai.dataTon.online.total.total)}</b>), trong đó Retail chiếm <b>${bsc.tiepTrienKhai.dataTon.combined.retailPct.toFixed(1)}%</b> và F&amp;B chiếm <b>${bsc.tiepTrienKhai.dataTon.combined.fnbPct.toFixed(1)}%</b>.`);
     }
 
     // Bảng tóm tắt chỉ số điều hành
@@ -2645,7 +2715,7 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         </div>
 
         <p class="wr-note">
-            Báo cáo điều hành tổng hợp chuẩn 8 mục trọng yếu của Khối Customer Success (SC): Quân số, Active Rate, Tỷ lệ Inactive 2026, Mục tiêu, Tỷ lệ Impact (Offline &amp; Online), KPI (Online &amp; Offline), Khách ký mới + SC chăm sóc và Các tệp triển khai chiến lược. Dữ liệu đồng bộ trực tiếp từ hệ thống Google Sheets Quản trị &amp; Điều hành.
+            Báo cáo điều hành tổng hợp chuẩn 9 mục trọng yếu của Khối Customer Success (SC): Quân số, Active Rate, Tỷ lệ Inactive 2026, Mục tiêu, Tỷ lệ Impact (Offline &amp; Online), KPI (Online &amp; Offline), Khách ký mới + SC chăm sóc, Các tệp triển khai chiến lược và Data tồn chuyển tiếp. Dữ liệu đồng bộ trực tiếp từ hệ thống Google Sheets Quản trị &amp; Điều hành.
         </p>
 
         ${summaryBullets.length ? `
@@ -2779,9 +2849,22 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             ${wrRenderTiepTaiKyTable(bsc.tiepTrienKhai?.taiky || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.taiky : null))}
         </section>
 
-        <!-- 9. ĐỀ XUẤT ĐIỀU HÀNH & KẾ HOẠCH HÀNH ĐỘNG -->
+        <!-- 9. DATA TỒN -->
+        <section>
+            <h2>IX. BÁO CÁO DATA TỒN (THÁNG 11 OFFLINE &amp; ONLINE)</h2>
+            <p>Báo cáo chi tiết số lượng gian hàng tồn chuyển tiếp giữa hai khối Offline và Online theo từng tệp phân loại và ngành hàng:</p>
+            ${bsc.tiepTrienKhai?.dataTon ? wrBullets([
+                `Toàn quốc ghi nhận tổng cộng <b>${wrInt(bsc.tiepTrienKhai.dataTon.combined.total)} gian hàng tồn</b> cần rà soát trong ${wrEscapeHtml(bsc.tiepTrienKhai.dataTon.month || 'Tháng 11')}.`,
+                `Khối <b>Offline</b> ghi nhận <b>${wrInt(bsc.tiepTrienKhai.dataTon.offline.total.total)} gian hàng</b> (Retail: ${wrInt(bsc.tiepTrienKhai.dataTon.offline.total.retail)}, F&amp;B: ${wrInt(bsc.tiepTrienKhai.dataTon.offline.total.fnb)}, Booking: ${wrInt(bsc.tiepTrienKhai.dataTon.offline.total.booking)}), tập trung lớn nhất tại tệp Large F&amp;B (${wrInt((bsc.tiepTrienKhai.dataTon.offline.items || []).find(x => x.name.toLowerCase().includes('large'))?.total || 640)} GH) và T15 (${wrInt((bsc.tiepTrienKhai.dataTon.offline.items || []).find(x => x.name.toLowerCase().includes('t15'))?.total || 373)} GH).`,
+                `Khối <b>Online</b> ghi nhận <b>${wrInt(bsc.tiepTrienKhai.dataTon.online.total.total)} gian hàng</b> (Retail: ${wrInt(bsc.tiepTrienKhai.dataTon.online.total.retail)}, F&amp;B: ${wrInt(bsc.tiepTrienKhai.dataTon.online.total.fnb)}, Booking: ${wrInt(bsc.tiepTrienKhai.dataTon.online.total.booking)}), phân bổ chủ yếu ở tệp CSKH T15 - DVKH (${wrInt((bsc.tiepTrienKhai.dataTon.online.items || []).find(x => x.name.toLowerCase().includes('t15'))?.total || 1495)} GH) và CSKH OI - DVKH (${wrInt((bsc.tiepTrienKhai.dataTon.online.items || []).find(x => x.name.toLowerCase().includes('oi'))?.total || 694)} GH).`,
+                `Cơ cấu ngành hàng toàn khối: <b>Retail chiếm ${bsc.tiepTrienKhai.dataTon.combined.retailPct.toFixed(1)}%</b> (${wrInt(bsc.tiepTrienKhai.dataTon.combined.retail)} GH), <b>F&amp;B chiếm ${bsc.tiepTrienKhai.dataTon.combined.fnbPct.toFixed(1)}%</b> (${wrInt(bsc.tiepTrienKhai.dataTon.combined.fnb)} GH) và <b>Booking chiếm ${bsc.tiepTrienKhai.dataTon.combined.bookingPct.toFixed(1)}%</b> (${wrInt(bsc.tiepTrienKhai.dataTon.combined.booking)} GH).`
+            ]) : ''}
+            ${wrRenderDataTonMuc9Table(bsc.tiepTrienKhai?.dataTon || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.dataTon : null))}
+        </section>
+
+        <!-- 10. ĐỀ XUẤT ĐIỀU HÀNH & KẾ HOẠCH HÀNH ĐỘNG -->
         <section id="wrSectionProposals">
-            <h2>IX. ĐỀ XUẤT ĐIỀU HÀNH &amp; KẾ HOẠCH HÀNH ĐỘNG</h2>
+            <h2>X. ĐỀ XUẤT ĐIỀU HÀNH &amp; KẾ HOẠCH HÀNH ĐỘNG</h2>
             <p>Để đảm bảo hoàn thành vượt mức các mục tiêu kinh doanh và kiểm soát chất lượng khách hàng trong các kỳ tiếp theo, khối CS đề xuất các trọng tâm điều hành sau:</p>
             ${wrBullets([
                 `<b>1. Tuyển dụng &amp; Ổn định quân số:</b> Đẩy nhanh tiến độ tuyển bù định biên còn thiếu cho khu vực miền Trung và miền Nam; phân công kèm cặp 1-1 cho các nhân sự thử việc mới để sớm độc lập phụ trách địa bàn.`,
@@ -2800,11 +2883,11 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
             </div>
         </section>
 
-        <!-- 10. CÁC MỤC TÙY CHỈNH (CUSTOM SECTIONS) -->
+        <!-- 11. CÁC MỤC TÙY CHỈNH (CUSTOM SECTIONS) -->
         <div id="wrCustomSectionsDocWrap">
         ${(() => {
             let extra = '';
-            let secIdx = 10;
+            let secIdx = 11;
             if (Array.isArray(manual.customSections) && manual.customSections.length) {
                 manual.customSections.forEach(sec => {
                     const secTitle = sec.title ? sec.title.toUpperCase() : 'MỤC TÙY CHỈNH';
