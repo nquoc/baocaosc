@@ -2485,6 +2485,33 @@ function wrRenderTiepTaiKyTable(taiKyData) {
     return wrTable(headers, rows, 'wr-report-table');
 }
 
+// 18b. Tệp Triển Khai: Nhóm Gọi Data Máy POS Lock (cột V:X)
+function wrRenderTiepPosLockTable(posLockData) {
+    let p = posLockData || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.posLock : null);
+    if (!p) {
+        return `<div class="wr-report-table-empty">Chưa có dữ liệu Tệp POS Lock từ Google Sheets</div>`;
+    }
+
+    const headers = ['STT', 'Nhóm Kết Quả Gọi Data POS Lock', 'Số Lượng (SL)', `Tỷ Lệ Trên ${p.grandTotal || 31}`];
+    const rows = (p.items || []).map((it, i) => [
+        wrInt(i + 1),
+        `<b>${wrEscapeHtml(it.name)}</b>`,
+        wrInt(it.count),
+        `<b class="wr-kpi-good">${wrEscapeHtml(it.rate || '-')}</b>`
+    ]);
+
+    if (p.totalRow) {
+        rows.push([
+            '∑',
+            `<b>${wrEscapeHtml(p.totalRow.name || 'TỔNG')}</b>`,
+            `<b>${wrInt(p.totalRow.count || p.grandTotal)}</b>`,
+            `<b class="wr-kpi-good">${wrEscapeHtml(p.totalRow.rate || '100%')}</b>`
+        ]);
+    }
+
+    return wrTable(headers, rows, 'wr-report-table');
+}
+
 // 19. Báo Cáo Data Tồn: Mục 9 (Sheet 'Data tồn')
 function wrRenderDataTonMuc9Table(dataTonData) {
     let p = dataTonData || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.dataTon : null);
@@ -2672,7 +2699,7 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         summaryBullets.push(`<b>Khách ký mới &amp; SC chăm sóc:</b> Toàn quốc có <b>${totKyMoi ? wrInt(totKyMoi) : '-'}</b> khách ký mới. Tỷ lệ Inactive New: <b>${avgInact != null ? avgInact.toFixed(2) + '%' : '-'}</b>; Tỷ lệ SC tiếp cận chăm sóc: <b>${avgCham != null ? avgCham.toFixed(2) + '%' : '-'}</b>.`);
     }
     if (bsc.tiepTrienKhai?.fnb) {
-        summaryBullets.push(`<b>Các tệp triển khai trọng điểm:</b> Đang kiểm soát chặt chẽ 4 tệp lớn (F&B lớn / lỗi, Booking 3 sao, Retail lớn dùng HĐĐT, SC hỗ trợ tái ký) để hạn chế rủi ro ngưng sử dụng.`);
+        summaryBullets.push(`<b>Các tệp triển khai trọng điểm:</b> Đang kiểm soát chặt chẽ 5 tệp chiến lược (F&B lớn / lỗi, Booking 3 sao, Retail lớn dùng HĐĐT, SC hỗ trợ tái ký, Data máy POS Lock) để hạn chế rủi ro ngưng sử dụng.`);
     }
     if (bsc.tiepTrienKhai?.dataTon) {
         summaryBullets.push(`<b>Báo cáo Data tồn:</b> Toàn quốc ghi nhận <b>${wrInt(bsc.tiepTrienKhai.dataTon.combined.total)} gian hàng tồn</b> (Offline: <b>${wrInt(bsc.tiepTrienKhai.dataTon.offline.total.total)}</b>, Online: <b>${wrInt(bsc.tiepTrienKhai.dataTon.online.total.total)}</b>), trong đó Retail chiếm <b>${bsc.tiepTrienKhai.dataTon.combined.retailPct.toFixed(1)}%</b> và F&amp;B chiếm <b>${bsc.tiepTrienKhai.dataTon.combined.fnbPct.toFixed(1)}%</b>.`);
@@ -2836,7 +2863,7 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
         <!-- 8. CÁC TỆP TRIỂN KHAI -->
         <section>
             <h2>VIII. CÁC TỆP TRIỂN KHAI TRỌNG ĐIỂM</h2>
-            <p>Báo cáo chi tiết kết quả rà soát và hỗ trợ 4 tệp khách hàng chiến lược:</p>
+            <p>Báo cáo chi tiết kết quả rà soát và hỗ trợ 5 tệp khách hàng chiến lược:</p>
 
             <h3>1. Nhóm F&amp;B lớn / lỗi</h3>
             ${wrRenderTiepFnbTable(bsc.tiepTrienKhai?.fnb || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.fnb : null))}
@@ -2849,6 +2876,9 @@ function wrBuildReportHtmlV2(metrics, fromDate, toDate, previousSnapshot, manual
 
             <h3>4. Nhóm Hỗ Trợ Tái Ký</h3>
             ${wrRenderTiepTaiKyTable(bsc.tiepTrienKhai?.taiky || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.taiky : null))}
+
+            <h3>5. Tệp Gọi Data Máy POS Lock</h3>
+            ${wrRenderTiepPosLockTable(bsc.tiepTrienKhai?.posLock || (typeof TIEP_TRIEN_KHAI_STATE !== 'undefined' ? TIEP_TRIEN_KHAI_STATE.posLock : null))}
         </section>
 
         <!-- 9. DATA TỒN -->

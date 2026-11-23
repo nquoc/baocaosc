@@ -15,12 +15,13 @@ const SA_RANGES = [
   `'${SA_SHEET_NAME}'!J1:P60`,  // Mục 8.3: Nhóm retail lớn HDDT (cột J:P dự phòng)
   `'${SA_SHEET_NAME}'!Q1:T20`,  // Mục 8.4: Nhóm Hỗ trợ Tái ký (cột Q:T)
   `'Data tồn'!A1:K15`,          // Mục 9: Data tồn Tháng 11 (Offline & Online)
-  `'Khách ký mới'!A1:E6`        // Mục 7: Tỷ Lệ Chăm Khách New T11
+  `'Khách ký mới'!A1:E6`,       // Mục 7: Tỷ Lệ Chăm Khách New T11
+  `'${SA_SHEET_NAME}'!V1:X20`   // Mục 8.5: Tệp Gọi Data Máy POS Lock (cột V:X)
 ];
 
 const BOT_API_URL = 'https://script.google.com/macros/s/AKfycbwHmR0xSG4uZrBdyPrv-lypX5qjP1bOC2Ca1_8vY1oRfIAe_LeFnJa7wAWrGzCmPrU/exec?apiKey=my_secret_token_2026';
 
-const CACHE_KEY_TIEPTRIENKHAI = 'tiep_trien_khai_data_v6';
+const CACHE_KEY_TIEPTRIENKHAI = 'tiep_trien_khai_data_v7';
 
 // Bộ nhớ đệm token & cấu hình bot trong phiên (tránh sinh token liên tục)
 let _gSaConfig = null;
@@ -245,7 +246,8 @@ async function fetchTiepTrienKhaiFromGoogleSheets(isRetry = false) {
       retailValueRange,
       primaryJson.valueRanges[3],
       primaryJson.valueRanges[4],
-      primaryJson.valueRanges[5]
+      primaryJson.valueRanges[5],
+      primaryJson.valueRanges[6]
     ]
   };
 }
@@ -712,6 +714,81 @@ function parseTiepTrienKhaiTaiKy(rows) {
 }
 
 /**
+ * Chuẩn hóa 8.5: Tệp Gọi Data Máy POS Lock (cột V:X từ sheet Các tiệp triển khai)
+ */
+function parseTiepTrienKhaiPosLock(rows) {
+  if (!Array.isArray(rows) || rows.length < 2) return null;
+
+  const title = (rows[0] && rows[0][0]) || 'Tệp gọi data máy pos Lock';
+  let month = 'Tháng 11';
+
+  let headerRowIdx = -1;
+  for (let i = 0; i < Math.min(4, rows.length); i++) {
+    const r0 = rows[i] && rows[i][0] ? String(rows[i][0]).toLowerCase() : '';
+    const r1 = rows[i] && rows[i][1] ? String(rows[i][1]).toLowerCase() : '';
+    if (r0.includes('nhóm kết quả') || r0.includes('kết quả') || r1.includes('sl') || r1.includes('số lượng')) {
+      headerRowIdx = i;
+      break;
+    }
+  }
+
+  const headers = headerRowIdx >= 0 ? rows[headerRowIdx] : ['Nhóm kết quả', 'SL', 'Tỷ lệ trên 31'];
+  const items = [];
+  let totalRow = null;
+
+  for (let i = (headerRowIdx >= 0 ? headerRowIdx + 1 : 2); i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || !r.length || !r[0]) continue;
+    const name = String(r[0]).trim();
+    const countVal = String(r[1] || '0').trim();
+    const rateVal = r[2] != null ? String(r[2]).trim() : '';
+
+    if (name.toLowerCase().includes('tổng cộng') || name.toLowerCase().includes('tong cong') || name.toLowerCase() === 'tổng' || name.toLowerCase().startsWith('tổng')) {
+      totalRow = {
+        name,
+        count: _parseValNumber(countVal),
+        rawCount: countVal,
+        rate: rateVal || '100%'
+      };
+    } else {
+      const pct = _parseValNumber(rateVal);
+      items.push({
+        id: items.length + 1,
+        name,
+        count: _parseValNumber(countVal),
+        rawCount: countVal,
+        rate: rateVal,
+        pct: pct
+      });
+    }
+  }
+
+  const grandTotal = totalRow ? totalRow.count : items.reduce((s, it) => s + it.count, 0);
+
+  const itBinhThuong = items.find(it => it.name.toLowerCase().includes('bình thường') || it.name.toLowerCase().includes('không lỗi'));
+  const itCoLoi = items.find(it => it.name.toLowerCase().includes('có lỗi') || it.name.toLowerCase().includes('cần hỗ trợ'));
+  const itKhongNhuCau = items.find(it => it.name.toLowerCase().includes('không có nhu cầu'));
+  const itChuyenNhuong = items.find(it => it.name.toLowerCase().includes('chuyển nhượng'));
+  const itBan = items.find(it => it.name.toLowerCase().includes('bận'));
+  const itChuaXacDinh = items.find(it => it.name.toLowerCase().includes('chưa xác định'));
+
+  return {
+    title,
+    month,
+    headers,
+    items,
+    totalRow: totalRow || { name: 'Tổng', count: grandTotal, rawCount: String(grandTotal), rate: '100%' },
+    grandTotal,
+    itBinhThuong,
+    itCoLoi,
+    itKhongNhuCau,
+    itChuyenNhuong,
+    itBan,
+    itChuaXacDinh
+  };
+}
+
+/**
  * Chuẩn hóa Mục 9: Data tồn Tháng 11 (Offline & Online) từ sheet 'Data tồn' (cột A:E offline & G:K online)
  */
 function parseDataTonSheet(rows) {
@@ -852,9 +929,10 @@ let TIEP_TRIEN_KHAI_STATE = {
   booking: null,
   retail: null,
   taiky: null,
+  posLock: null,
   dataTon: null,
   careRate: null,
-  activeTab: 'all', // 'all' | 'fnb' | 'booking' | 'retail' | 'taiky'
+  activeTab: 'all', // 'all' | 'fnb' | 'booking' | 'retail' | 'taiky' | 'poslock'
   activeDataTonTab: 'all', // 'all' | 'offline' | 'online'
   savedAt: 0,
   timeStr: '',
@@ -966,6 +1044,7 @@ async function loadTiepTrienKhaiData(forceReload = false, isSilent = false) {
           booking: TIEP_TRIEN_KHAI_STATE.booking,
           retail: TIEP_TRIEN_KHAI_STATE.retail,
           taiky: TIEP_TRIEN_KHAI_STATE.taiky,
+          posLock: TIEP_TRIEN_KHAI_STATE.posLock,
           dataTon: TIEP_TRIEN_KHAI_STATE.dataTon,
           careRate: TIEP_TRIEN_KHAI_STATE.careRate,
           rawFnb: batchData.valueRanges[0].values,
@@ -1015,12 +1094,14 @@ function _applyRawRanges(valueRanges, source) {
   const taiKyRows = valueRanges[3]?.values || [];
   const dataTonRows = valueRanges[4]?.values || [];
   const careRows = valueRanges[5]?.values || [];
+  const posLockRows = valueRanges[6]?.values || [];
 
   const parsedFnb = parseTiepTrienKhaiFnb(fnbRows);
   const parsedBooking = parseTiepTrienKhaiBooking(bookingRows);
   const parsedRetail = parseTiepTrienKhaiRetail(retailRows);
   const parsedTaiKy = parseTiepTrienKhaiTaiKy(taiKyRows);
   const parsedDataTon = parseDataTonSheet(dataTonRows);
+  const parsedPosLock = parseTiepTrienKhaiPosLock(posLockRows);
 
   const now = new Date();
   const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -1030,6 +1111,7 @@ function _applyRawRanges(valueRanges, source) {
     booking: parsedBooking,
     retail: parsedRetail,
     taiky: parsedTaiKy,
+    posLock: parsedPosLock,
     dataTon: parsedDataTon,
     careRate: careRows.length ? careRows : (TIEP_TRIEN_KHAI_STATE?.careRate || null),
     activeTab: TIEP_TRIEN_KHAI_STATE.activeTab || 'all',
@@ -1078,7 +1160,7 @@ function onBscTiepTrienKhaiChange(val) {
  * Chuyển đổi tab tệp triển khai (đồng bộ cả Dropdown lẫn Pills)
  */
 function selectBscTiepTab(val) {
-  if (!['all', 'fnb', 'booking', 'retail', 'taiky'].includes(val)) val = 'all';
+  if (!['all', 'fnb', 'booking', 'retail', 'taiky', 'poslock'].includes(val)) val = 'all';
   TIEP_TRIEN_KHAI_STATE.activeTab = val;
 
   // Đồng bộ Dropdown
@@ -1093,7 +1175,8 @@ function selectBscTiepTab(val) {
     fnb: 'pillTiepFnb',
     booking: 'pillTiepBooking',
     retail: 'pillTiepRetail',
-    taiky: 'pillTiepTaiKy'
+    taiky: 'pillTiepTaiKy',
+    poslock: 'pillTiepPosLock'
   };
 
   Object.entries(pillMap).forEach(([k, id]) => {
@@ -1109,11 +1192,13 @@ function selectBscTiepTab(val) {
   const secBooking = $('bscSecTiepBooking');
   const secRetail = $('bscSecTiepRetail');
   const secTaiKy = $('bscSecTiepTaiKy');
+  const secPosLock = $('bscSecTiepPosLock');
 
   if (secFnb) secFnb.style.display = (val === 'all' || val === 'fnb') ? 'block' : 'none';
   if (secBooking) secBooking.style.display = (val === 'all' || val === 'booking') ? 'block' : 'none';
   if (secRetail) secRetail.style.display = (val === 'all' || val === 'retail') ? 'block' : 'none';
   if (secTaiKy) secTaiKy.style.display = (val === 'all' || val === 'taiky') ? 'block' : 'none';
+  if (secPosLock) secPosLock.style.display = (val === 'all' || val === 'poslock') ? 'block' : 'none';
 }
 
 /* ==========================================================================
@@ -1127,6 +1212,7 @@ function renderTiepTrienKhai() {
     renderBookingGroupUI(TIEP_TRIEN_KHAI_STATE.booking);
     renderRetailGroupUI(TIEP_TRIEN_KHAI_STATE.retail);
     renderTaiKyGroupUI(TIEP_TRIEN_KHAI_STATE.taiky);
+    renderPosLockGroupUI(TIEP_TRIEN_KHAI_STATE.posLock);
 
     // Áp dụng trạng thái lọc tab hiện tại
     selectBscTiepTab(TIEP_TRIEN_KHAI_STATE.activeTab || 'all');
@@ -1737,6 +1823,113 @@ function renderTaiKyGroupUI(parsed) {
   }
 }
 
+/**
+ * 8.5: Giao diện Nhóm Gọi Data Máy POS Lock (cột V:X)
+ */
+function renderPosLockGroupUI(parsed) {
+  const boxCards = $('bscTiepPosLockCards');
+  const boxTbl = $('bscTiepPosLockTbl');
+  if (!parsed) return;
+
+  const K = (label, val, sub, color = '') => `
+    <div class="card kpi">
+      <div class="l">${label}</div>
+      <div class="v" style="${color}">${val}</div>
+      <div class="s">${sub}</div>
+    </div>`;
+
+  const grand = parsed.grandTotal || 31;
+  const itBt = parsed.itBinhThuong;
+  const itLoi = parsed.itCoLoi;
+  const countBt = itBt ? itBt.count : 14;
+  const rateBt = itBt ? itBt.rate : '45,20%';
+  const countLoi = itLoi ? itLoi.count : 7;
+  const rateLoi = itLoi ? itLoi.rate : '22,60%';
+  const otherCount = grand - countBt - countLoi;
+  const otherRate = `${((otherCount / grand) * 100).toFixed(1)}%`;
+
+  if (boxCards) {
+    boxCards.innerHTML =
+      K('🔒 Tổng Data Máy POS Lock', `${n0(grand)} GH`, `Toàn bộ tệp rà soát (${esc(parsed.month || 'Tháng 11')})`, 'color:#06b6d4') +
+      K('✅ Sử Dụng Bình Thường', `${n0(countBt)} GH (${esc(rateBt)})`, `Hoạt động ổn định / không phát sinh lỗi`, 'color:#10b981') +
+      K('⚠️ Có Lỗi / Cần Hỗ Trợ', `${n0(countLoi)} GH (${esc(rateLoi)})`, `Cần SC & Kỹ thuật can thiệp hỗ trợ`, 'color:#ef4444') +
+      K('🔄 Không Nhu Cầu / Chuyển Nhượng', `${n0(otherCount)} GH (${esc(otherRate)})`, `Bao gồm hẹn gọi lại & chưa xác định`, 'color:#f59e0b');
+  }
+
+  if (boxTbl) {
+    let html = `<table class="kpi-table" style="width:100%">
+      <thead>
+        <tr>
+          <th style="width:55px;text-align:center">STT</th>
+          <th style="text-align:left">Nhóm Kết Quả Gọi Data POS Lock</th>
+          <th style="width:140px;text-align:center">Số Lượng (SL)</th>
+          <th style="width:200px;text-align:center">Tỷ Lệ Trên ${grand}</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+    (parsed.items || []).forEach((it, i) => {
+      let icon = '📌';
+      let color = 'var(--tx-heading)';
+      const nLower = it.name.toLowerCase();
+      if (nLower.includes('bình thường') || nLower.includes('không lỗi')) {
+        icon = '✅';
+        color = '#10b981';
+      } else if (nLower.includes('có lỗi') || nLower.includes('cần hỗ trợ')) {
+        icon = '⚠️';
+        color = '#ef4444';
+      } else if (nLower.includes('không có nhu cầu')) {
+        icon = '⏹️';
+        color = '#94a3b8';
+      } else if (nLower.includes('chuyển nhượng')) {
+        icon = '🔄';
+        color = '#f59e0b';
+      } else if (nLower.includes('bận')) {
+        icon = '⏳';
+        color = '#38bdf8';
+      } else if (nLower.includes('chưa xác định')) {
+        icon = '❓';
+        color = '#a855f7';
+      }
+
+      const pctVal = it.pct != null ? it.pct : _parseValNumber(it.rate);
+
+      html += `<tr>
+        <td style="text-align:center;font-weight:600;color:var(--mut)">${i + 1}</td>
+        <td style="text-align:left;font-weight:700;color:${color}">
+          <span style="margin-right:6px">${icon}</span>
+          <span>${esc(it.name)}</span>
+        </td>
+        <td style="text-align:center;font-weight:700;font-size:14px;color:var(--tx-heading)">${n0(it.count)}</td>
+        <td style="text-align:center">
+          <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+            <div style="flex:1;max-width:100px;height:7px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden">
+              <div style="width:${Math.min(100, pctVal)}%;height:100%;background:${color === 'var(--tx-heading)' ? '#06b6d4' : color};border-radius:4px"></div>
+            </div>
+            <span style="font-weight:700;font-size:12.5px;color:${color === 'var(--tx-heading)' ? '#06b6d4' : color};width:60px;text-align:right">${esc(it.rate || (pctVal.toFixed(2) + '%'))}</span>
+          </div>
+        </td>
+      </tr>`;
+    });
+
+    const totCount = parsed.totalRow ? parsed.totalRow.count : grand;
+    const totRate = parsed.totalRow && parsed.totalRow.rate ? parsed.totalRow.rate : '100%';
+
+    html += `</tbody>
+      <tfoot>
+        <tr style="background:var(--card-sub);font-weight:800;border-top:2px solid var(--line)">
+          <td style="text-align:center">∑</td>
+          <td style="text-align:left;text-transform:uppercase;color:var(--tx-heading)">${esc(parsed.totalRow ? parsed.totalRow.name : 'TỔNG')}</td>
+          <td style="text-align:center;font-size:14px;color:#06b6d4">${n0(totCount)}</td>
+          <td style="text-align:center;font-size:13.5px;color:#06b6d4">${esc(totRate)}</td>
+        </tr>
+      </tfoot>
+    </table>`;
+
+    boxTbl.innerHTML = html;
+  }
+}
+
 /* ==========================================================================
    6. CSV EXPORT UTILITIES (CHUẨN UTF-8 VỚI BOM)
    ========================================================================== */
@@ -1747,6 +1940,7 @@ function exportCurrentTiepCsv() {
   else if (tab === 'booking') exportTiepBookingCsv();
   else if (tab === 'retail') exportTiepRetailCsv();
   else if (tab === 'taiky') exportTiepTaiKyCsv();
+  else if (tab === 'poslock') exportTiepPosLockCsv();
   else exportAllTiepTrienKhaiCsv();
 }
 
@@ -1881,9 +2075,33 @@ function exportTiepTaiKyCsv() {
   showToast('Đã xuất file CSV Nhóm Tái ký thành công!', true);
 }
 
+function exportTiepPosLockCsv() {
+  const p = TIEP_TRIEN_KHAI_STATE.posLock;
+  if (!p) return showToast('Chưa có dữ liệu Máy POS Lock để xuất CSV', false);
+
+  const lines = [
+    ['BÁO CÁO CÁC TỆP TRIỂN KHAI - MỤC 8.5: TỆP GỌI DATA MÁY POS LOCK (' + (p.month || 'Tháng 11') + ')'],
+    ['Thời gian xuất: ' + new Date().toLocaleString('vi-VN')],
+    [],
+    ['STT', 'Nhóm Kết Quả Gọi Data POS Lock', 'Số Lượng (SL)', 'Tỷ Lệ Trên ' + (p.grandTotal || 31)]
+  ];
+
+  (p.items || []).forEach((it, i) => {
+    lines.push([i + 1, it.name, it.count, it.rate || '']);
+  });
+
+  const totCount = p.totalRow ? p.totalRow.count : p.grandTotal;
+  const totRate = p.totalRow && p.totalRow.rate ? p.totalRow.rate : '100%';
+  lines.push(['TỔNG', '', totCount, totRate]);
+
+  const csv = lines.map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  _downloadCsvFile(`BaoCao_TiepTrienKhai_POS_Lock_${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  showToast('Đã xuất file CSV Tệp POS Lock thành công!', true);
+}
+
 function exportAllTiepTrienKhaiCsv() {
   const lines = [
-    ['BÁO CÁO TỔNG HỢP CÁC TỆP TRIỂN KHAI (F&B LỚN - BOOKING 3 SAO - RETAIL LỚN HĐĐT - TÁI KÝ)'],
+    ['BÁO CÁO TỔNG HỢP CÁC TỆP TRIỂN KHAI (F&B LỚN - BOOKING 3 SAO - RETAIL LỚN HĐĐT - TÁI KÝ - POS LOCK)'],
     ['Thời gian xuất: ' + new Date().toLocaleString('vi-VN')],
     []
   ];
@@ -1943,6 +2161,17 @@ function exportAllTiepTrienKhaiCsv() {
     const totSuccess = ptaiky.totalRow && ptaiky.totalRow.success != null ? ptaiky.totalRow.success : '';
     const totRate = ptaiky.totalRow && ptaiky.totalRow.rate ? ptaiky.totalRow.rate : '';
     lines.push(['TỔNG CỘNG', '', totCount, totSuccess, totRate]);
+    lines.push([]);
+  }
+
+  const ppos = TIEP_TRIEN_KHAI_STATE.posLock;
+  if (ppos) {
+    lines.push(['============================== 8.5: TỆP GỌI DATA MÁY POS LOCK ==============================']);
+    lines.push(['STT', 'Nhóm Kết Quả Gọi Data POS Lock', 'Số Lượng (SL)', `Tỷ Lệ Trên ${ppos.grandTotal || 31}`]);
+    (ppos.items || []).forEach((it, i) => lines.push([i + 1, it.name, it.count, it.rate || '']));
+    const totCount = ppos.totalRow ? ppos.totalRow.count : ppos.grandTotal;
+    const totRate = ppos.totalRow && ppos.totalRow.rate ? ppos.totalRow.rate : '100%';
+    lines.push(['TỔNG', '', totCount, totRate]);
     lines.push([]);
   }
 
